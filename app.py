@@ -13,10 +13,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image
 import trimesh
+from fastapi.middleware.cors import CORSMiddleware
 
 import engine
 
 app = FastAPI(title="Agent Antigravity — PNG to 3D Print", version="1.0.0")
+
+# Enable CORS for browser access from GitHub Pages or local files
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
@@ -160,7 +170,8 @@ async def upload_image(file: UploadFile = File(...)):
 
 @app.post("/api/convert")
 async def convert_image(
-    filename: str = Form(...),
+    filename: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
     mode: int = Form(1),
     engine_mode: str = Form("ultra"), # "ultra" (Meshy-Grade 223k) or "standard"
     target_height_mm: float = Form(100.0),
@@ -172,17 +183,25 @@ async def convert_image(
     smooth_sigma: float = Form(1.0)
 ):
     """Point d'entrée principal de génération 3D selon le mode choisi."""
-    img_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.exists(img_path):
-        # Chercher dans static/demo si image de démo
-        demo_path = os.path.join(STATIC_DIR, "demo", filename)
-        if os.path.exists(demo_path):
-            img_path = demo_path
-        else:
-            raise HTTPException(status_code=404, detail="Image introuvable.")
+    out_id = str(uuid.uuid4())[:8]
+    
+    if file is not None:
+        save_name = f"upload_{out_id}_{file.filename}"
+        img_path = os.path.join(UPLOAD_DIR, save_name)
+        with open(img_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    elif filename:
+        img_path = os.path.join(UPLOAD_DIR, filename)
+        if not os.path.exists(img_path):
+            demo_path = os.path.join(STATIC_DIR, "demo", filename)
+            if os.path.exists(demo_path):
+                img_path = demo_path
+            else:
+                raise HTTPException(status_code=404, detail="Image introuvable.")
+    else:
+        raise HTTPException(status_code=400, detail="Veuillez fournir un fichier image ou un nom de fichier.")
             
     im = Image.open(img_path)
-    out_id = str(uuid.uuid4())[:8]
     
     try:
         if mode == 1:
@@ -251,6 +270,129 @@ async def convert_image(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/generate-from-prompt")
+async def generate_from_prompt(
+    prompt: str = Form(...),
+    style: str = Form("figurine"), # figurine, relief, bust, lowpoly
+    target_height_mm: float = Form(100.0),
+    base_thickness_mm: float = Form(4.5),
+    add_base: bool = Form(True),
+    engine_mode: str = Form("ultra")
+):
+    """Génération complète d'un modèle 3D volumétrique imprimable à partir d'un prompt textuel."""
+    import urllib.request
+    import urllib.parse
+    import random
+
+    prompt_clean = prompt.strip()
+    if not prompt_clean:
+        raise HTTPException(status_code=400, detail="Le prompt ne peut pas être vide.")
+
+    out_id = str(uuid.uuid4())[:8]
+
+    # Ingénierie de prompt spécialisée pour impression 3D FDM et détourage automatique
+    if style == "figurine":
+        enhanced_prompt = (
+            f"full 3D collectible figurine statue of {prompt_clean}, single subject standing upright, "
+            f"centered, clean sharp silhouette, isolated on pure solid white background, high detail, "
+            f"studio lighting, smooth watertight geometry, cute stylized vinyl toy"
+        )
+    elif style == "relief":
+        enhanced_prompt = (
+            f"bas-relief carved medallion coin of {prompt_clean}, circular crest, "
+            f"isolated on pure solid white background, high depth detail, crisp contours"
+        )
+    elif style == "bust":
+        enhanced_prompt = (
+            f"sculpted portrait bust statue of {prompt_clean}, museum marble sculpture, "
+            f"isolated on pure solid white background, centered, smooth lighting"
+        )
+    else:
+        enhanced_prompt = (
+            f"3D printable model of {prompt_clean}, centered, isolated on pure solid white background, "
+            f"studio lighting, watertight figurine"
+        )
+
+    # Téléchargement de l'image de référence générée par IA (100% gratuit, 0 clé API)
+    encoded = urllib.parse.quote(enhanced_prompt)
+    seed = random.randint(1000, 9999999)
+    img_api_url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true&seed={seed}"
+    
+    img_name = f"prompt_{out_id}.png"
+    img_path = os.path.join(UPLOAD_DIR, img_name)
+
+    try:
+        req = urllib.request.Request(img_api_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=30) as response, open(img_path, 'wb') as out_f:
+            shutil.copyfileobj(response, out_f)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur lors de la génération de l'image IA: {str(e)}")
+
+    im = Image.open(img_path)
+    
+    # Sauvegarde d'un aperçu public dans outputs
+    preview_name = f"preview_prompt_{out_id}.png"
+    preview_path = os.path.join(OUTPUT_DIR, preview_name)
+    im.save(preview_path)
+
+    try:
+        if style == "relief":
+            mesh = engine.generate_mode1_extruded(
+                image=im,
+                target_height_mm=target_height_mm,
+                base_thickness_mm=base_thickness_mm,
+                relief_height_mm=4.0,
+                add_base=add_base
+            )
+            mode_prefix = "Prompt_Relief"
+        else:
+            if engine_mode == "ultra":
+                mesh = engine.generate_mode3_ultra_sculpted(
+                    image=im,
+                    target_height_mm=target_height_mm,
+                    with_base=add_base,
+                    base_height_mm=base_thickness_mm
+                )
+                mode_prefix = "Prompt_Studio_Ultra"
+            else:
+                mesh = engine.generate_mode3_volumetric(
+                    image=im,
+                    target_height_mm=target_height_mm,
+                    with_base=add_base,
+                    base_height_mm=base_thickness_mm,
+                    resolution=256
+                )
+                mode_prefix = "Prompt_Figurine3D"
+
+        stl_name = f"{mode_prefix}_{out_id}.stl"
+        threemf_name = f"{mode_prefix}_{out_id}.3mf"
+        
+        stl_path = os.path.join(OUTPUT_DIR, stl_name)
+        threemf_path = os.path.join(OUTPUT_DIR, threemf_name)
+        
+        mesh.export(stl_path)
+        mesh.export(threemf_path)
+        
+        printability = engine.check_bambu_printability(mesh)
+        
+        return {
+            "success": True,
+            "prompt": prompt_clean,
+            "enhanced_prompt": enhanced_prompt,
+            "preview_image_url": f"/outputs/{preview_name}",
+            "stl_filename": stl_name,
+            "threemf_filename": threemf_name,
+            "stl_url": f"/outputs/{stl_name}",
+            "threemf_url": f"/outputs/{threemf_name}",
+            "printability": printability
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur de reconstruction 3D: {str(e)}")
 
 
 @app.post("/api/import-3d")

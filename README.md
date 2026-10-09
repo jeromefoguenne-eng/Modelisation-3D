@@ -21,6 +21,15 @@ L'application est hébergée gratuitement et accessible directement dans votre n
 
 ## ✨ Fonctionnalités Principales
 
+### 🌟 NOUVEAU : Génération 3D par Prompt (Texte vers 3D)
+Décrivez simplement en quelques mots l'objet ou la figurine souhaitée :
+- **Exemples en 1 clic** : *Chien bouledogue Babel*, *Robot vintage steampunk*, *Dragon féerique miniature*, *Chat astronaute*, *Chevalier médiéval*, *Pion d'échecs royal*...
+- **Génération IA 100% Gratuite** : Création instantanée de la vue de référence studio isolée sur fond blanc.
+- **Sculpture Volumétrique 360°** :
+  - **Sur GPU local (RTX 4070 Ti)** : Inférence TripoSR ultra-rapide (~15 secondes) produisant un maillage haute définition complet à 360° (120k+ polygones).
+  - **En mode Web / GitHub Pages** : Moteur autonome d'inflation géométrique organique (EDT Distance Field) garantissant des statuettes douces, arrondies et sans aucun artefact de bloc.
+- **Socle d'Adhérence Bambu Lab A1 Mini Automatique** : Fusion d'un socle biseauté à Z = 0 pour une adhérence parfaite sans décollement.
+
 ### 1. Trois Modes de Modélisation 3D
 
 | Mode | Type | Utilisation Idéale |

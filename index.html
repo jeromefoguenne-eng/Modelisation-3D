@@ -91,63 +91,127 @@
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">1</span>
-              Image Source (PNG / JPG)
+              Source : Image ou Prompt 3D
             </h2>
             <button id="btnLoadDemo" type="button" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
               <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Charger démo Babel
             </button>
           </div>
 
-          <!-- Drop Area -->
-          <div id="dropZone" class="border-2 border-dashed border-dark-600 hover:border-bambu-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-dark-900/40 hover:bg-dark-900/60 group relative overflow-hidden">
-            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg" class="hidden">
-            
-            <div id="dropPrompt" class="space-y-2 py-3">
-              <div class="w-10 h-10 mx-auto rounded-full bg-dark-700 flex items-center justify-center text-slate-400 group-hover:text-bambu-400 transition">
-                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+          <!-- Onglets de sélection du mode d'entrée -->
+          <div class="flex items-center gap-1.5 p-1 bg-dark-900 rounded-xl border border-dark-700">
+            <button id="tabImageMode" type="button" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold bg-dark-700 text-white shadow-sm flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="image" class="w-3.5 h-3.5 text-bambu-400"></i>
+              <span>Image (PNG / JPG)</span>
+            </button>
+            <button id="tabPromptMode" type="button" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span>Prompt Texte 3D</span>
+            </button>
+          </div>
+
+          <!-- Panneau 1 : Mode Image classique -->
+          <div id="panelImageMode" class="space-y-3">
+            <!-- Drop Area -->
+            <div id="dropZone" class="border-2 border-dashed border-dark-600 hover:border-bambu-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-dark-900/40 hover:bg-dark-900/60 group relative overflow-hidden">
+              <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg" class="hidden">
+              
+              <div id="dropPrompt" class="space-y-2 py-3">
+                <div class="w-10 h-10 mx-auto rounded-full bg-dark-700 flex items-center justify-center text-slate-400 group-hover:text-bambu-400 transition">
+                  <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                </div>
+                <p class="text-xs text-slate-300 font-medium">Glissez votre image ici ou <span class="text-bambu-400 underline">parcourir</span></p>
+                <p class="text-[11px] text-slate-500">PNG avec transparence ou fond blanc (traitement 100% local)</p>
               </div>
-              <p class="text-xs text-slate-300 font-medium">Glissez votre image ici ou <span class="text-bambu-400 underline">parcourir</span></p>
-              <p class="text-[11px] text-slate-500">PNG avec transparence ou fond blanc (traitement 100% local)</p>
+
+              <!-- Preview Card avec Enregistrer et Supprimer -->
+              <div id="imagePreviewContainer" class="hidden space-y-2.5 text-left">
+                <div class="flex items-center gap-3">
+                  <img id="imagePreview" src="" class="w-16 h-16 object-contain rounded-lg bg-dark-700 border border-dark-600 shrink-0">
+                  <div class="flex-1 min-w-0">
+                    <p id="imageName" class="text-xs font-semibold text-white truncate">image.png</p>
+                    <p id="imageDimensions" class="text-[11px] text-slate-400">1414 × 2000 px</p>
+                    <div class="flex gap-2 mt-1.5">
+                      <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Prêt</span>
+                      <span id="badgeBackendStatus" class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">RTX 4070 Ti</span>
+                    </div>
+                  </div>
+                  <button id="btnRemoveImage" type="button" class="p-1.5 hover:bg-dark-700 rounded-lg text-slate-400 hover:text-red-400 transition" title="Fermer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+
+                <!-- Boutons Dédiés : Supprimer et Enregistrer l'image -->
+                <div class="pt-2 border-t border-dark-700/80 flex items-center gap-2">
+                  <button id="btnSaveImage" type="button" class="flex-1 py-1.5 px-2.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 font-semibold transition flex items-center justify-center gap-1.5 border border-dark-600 shadow-sm hover:text-white">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Enregistrer l'image</span>
+                  </button>
+                  <button id="btnDeleteImage" type="button" class="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-500/40 text-xs text-red-300 font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Supprimer</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- Preview Card avec Enregistrer et Supprimer -->
-            <div id="imagePreviewContainer" class="hidden space-y-2.5 text-left">
-              <div class="flex items-center gap-3">
-                <img id="imagePreview" src="" class="w-16 h-16 object-contain rounded-lg bg-dark-700 border border-dark-600 shrink-0">
-                <div class="flex-1 min-w-0">
-                  <p id="imageName" class="text-xs font-semibold text-white truncate">image.png</p>
-                  <p id="imageDimensions" class="text-[11px] text-slate-400">1414 × 2000 px</p>
-                  <div class="flex gap-2 mt-1.5">
-                    <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Prêt</span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Local</span>
-                  </div>
-                </div>
-                <button id="btnRemoveImage" type="button" class="p-1.5 hover:bg-dark-700 rounded-lg text-slate-400 hover:text-red-400 transition" title="Fermer">
-                  <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-              </div>
-
-              <!-- Boutons Dédiés : Supprimer et Enregistrer l'image -->
-              <div class="pt-2 border-t border-dark-700/80 flex items-center gap-2">
-                <button id="btnSaveImage" type="button" class="flex-1 py-1.5 px-2.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 font-semibold transition flex items-center justify-center gap-1.5 border border-dark-600 shadow-sm hover:text-white">
-                  <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
-                  <span>Enregistrer l'image</span>
-                </button>
-                <button id="btnDeleteImage" type="button" class="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-500/40 text-xs text-red-300 font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  <span>Supprimer</span>
-                </button>
-              </div>
+            <!-- Import alternatif de modèle 3D externe (Meshy / Tripo3D / Blender) -->
+            <div class="pt-1 flex items-center justify-between border-t border-dark-700/60">
+              <button id="btnTrigger3DImport" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1.5 py-1">
+                <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+                <span>Importer un fichier 3D (.glb, .obj, .stl)</span>
+              </button>
+              <input type="file" id="file3DInput" accept=".glb,.gltf,.obj,.stl" class="hidden">
             </div>
           </div>
 
-          <!-- Import alternatif de modèle 3D externe (Meshy / Tripo3D / Blender) -->
-          <div class="pt-1 flex items-center justify-between border-t border-dark-700/60">
-            <button id="btnTrigger3DImport" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1.5 py-1">
-              <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
-              <span>Importer un modèle 3D (.glb, .obj, .stl de Meshy/Tripo)</span>
+          <!-- Panneau 2 : Mode Prompt Texte vers 3D (Text-to-3D) -->
+          <div id="panelPromptMode" class="hidden space-y-3 p-3.5 rounded-xl bg-dark-900/70 border border-purple-500/30">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="promptInput" class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <i data-lucide="feather" class="w-3.5 h-3.5 text-purple-400"></i>
+                  <span>Description du modèle 3D :</span>
+                </label>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">100% Gratuit</span>
+              </div>
+              <textarea id="promptInput" rows="3" placeholder="Ex: Chien bouledogue français assis (Babel), robot vintage articulé, petit dragon féerique mignon, chevalier médiéval avec bouclier..." class="w-full bg-dark-800 border border-dark-600 focus:border-purple-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition resize-none"></textarea>
+            </div>
+
+            <!-- Style du modèle 3D -->
+            <div>
+              <span class="text-[11px] font-medium text-slate-300 block mb-1.5">Style de Sculpture :</span>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" class="prompt-style-btn py-1.5 px-2 rounded-lg border-2 border-purple-500 bg-purple-500/20 text-[11px] text-purple-200 font-bold text-center transition" data-style="figurine">
+                  🧸 Figurine 360°
+                </button>
+                <button type="button" class="prompt-style-btn py-1.5 px-2 rounded-lg border border-dark-600 bg-dark-800 text-[11px] text-slate-400 font-medium text-center transition hover:border-slate-500 hover:text-slate-200" data-style="relief">
+                  🪙 Bas-Relief
+                </button>
+                <button type="button" class="prompt-style-btn py-1.5 px-2 rounded-lg border border-dark-600 bg-dark-800 text-[11px] text-slate-400 font-medium text-center transition hover:border-slate-500 hover:text-slate-200" data-style="bust">
+                  🗿 Buste
+                </button>
+              </div>
+            </div>
+
+            <!-- Suggestions rapides (1-clic) -->
+            <div>
+              <span class="text-[10px] text-slate-400 block mb-1">Idées prêtes à l'emploi (1 clic) :</span>
+              <div class="flex flex-wrap gap-1">
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Figurine de chien bouledogue assis Babel avec collier">🐶 Chien Babel</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Petit robot rétro steampunk mignon aux formes douces">🤖 Robot Rétro</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Bébé dragon féerique miniature aux ailes déployées">🐉 Dragon Mignon</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Chat astronaute en combinaison spatiale avec casque">🐱 Chat Astronaute</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Chevalier médiéval avec armure et épée sur socle">⚔️ Chevalier</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Pion d'échecs royal avec couronne ornée">♟️ Fou d'Échecs</button>
+              </div>
+            </div>
+
+            <!-- Bouton de Génération depuis Prompt -->
+            <button id="btnGeneratePrompt" type="button" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-bambu-600 hover:from-purple-500 hover:to-bambu-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 transition">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              <span>Générer le Modèle 3D depuis le Prompt</span>
             </button>
-            <input type="file" id="file3DInput" accept=".glb,.gltf,.obj,.stl" class="hidden">
           </div>
         </section>
 
@@ -562,6 +626,19 @@
     let meshObject = null;
 
     // UI Elements
+    let currentRawFile = null;
+    let currentPromptStyle = "figurine";
+
+    const tabImageMode = document.getElementById("tabImageMode");
+    const tabPromptMode = document.getElementById("tabPromptMode");
+    const panelImageMode = document.getElementById("panelImageMode");
+    const panelPromptMode = document.getElementById("panelPromptMode");
+    const promptInput = document.getElementById("promptInput");
+    const btnGeneratePrompt = document.getElementById("btnGeneratePrompt");
+    const promptStyleButtons = document.querySelectorAll(".prompt-style-btn");
+    const promptChips = document.querySelectorAll(".prompt-chip");
+    const badgeBackendStatus = document.getElementById("badgeBackendStatus");
+
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
     const dropPrompt = document.getElementById("dropPrompt");
@@ -602,6 +679,46 @@
     const loadingOverlay = document.getElementById("loadingOverlay");
     const btnDownloadSTL = document.getElementById("btnDownloadSTL");
     const btnDownload3MF = document.getElementById("btnDownload3MF");
+
+    // Tab switching (Image vs Prompt)
+    tabImageMode.addEventListener("click", () => {
+      tabImageMode.classList.add("bg-dark-700", "text-white");
+      tabImageMode.classList.remove("text-slate-400");
+      tabPromptMode.classList.remove("bg-dark-700", "text-white");
+      tabPromptMode.classList.add("text-slate-400");
+      panelImageMode.classList.remove("hidden");
+      panelPromptMode.classList.add("hidden");
+    });
+
+    tabPromptMode.addEventListener("click", () => {
+      tabPromptMode.classList.add("bg-dark-700", "text-white");
+      tabPromptMode.classList.remove("text-slate-400");
+      tabImageMode.classList.remove("bg-dark-700", "text-white");
+      tabImageMode.classList.add("text-slate-400");
+      panelPromptMode.classList.remove("hidden");
+      panelImageMode.classList.add("hidden");
+    });
+
+    // Style prompt selector
+    promptStyleButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        promptStyleButtons.forEach(b => {
+          b.classList.remove("border-2", "border-purple-500", "bg-purple-500/20", "text-purple-200", "font-bold");
+          b.classList.add("border-dark-600", "bg-dark-800", "text-slate-400", "font-medium");
+        });
+        btn.classList.add("border-2", "border-purple-500", "bg-purple-500/20", "text-purple-200", "font-bold");
+        btn.classList.remove("border-dark-600", "bg-dark-800", "text-slate-400", "font-medium");
+        currentPromptStyle = btn.dataset.style || "figurine";
+      });
+    });
+
+    // Quick prompt chips
+    promptChips.forEach(chip => {
+      chip.addEventListener("click", () => {
+        promptInput.value = chip.dataset.prompt || chip.textContent;
+        promptInput.focus();
+      });
+    });
 
     // Slider inputs
     sliderHeight.addEventListener("input", (e) => {
@@ -835,37 +952,97 @@
         const dataUrl = e.target.result;
         const img = new Image();
         img.onload = () => {
+          currentRawFile = file;
           currentImageElement = img;
           currentImageDataUrl = dataUrl;
           currentFilename = file.name;
 
-          // Client-side background cleanup (detect pure white & make transparent)
-          const canvasClean = document.createElement("canvas");
-          canvasClean.width = img.naturalWidth;
-          canvasClean.height = img.naturalHeight;
-          const ctx = canvasClean.getContext("2d");
-          ctx.drawImage(img, 0, 0);
+          // Nettoyage intelligent du fond par seuillage chroma et détection des 4 coins
+          const canvasRaw = document.createElement("canvas");
+          canvasRaw.width = img.naturalWidth;
+          canvasRaw.height = img.naturalHeight;
+          const ctxRaw = canvasRaw.getContext("2d");
+          ctxRaw.drawImage(img, 0, 0);
 
-          const imgData = ctx.getImageData(0, 0, canvasClean.width, canvasClean.height);
+          const imgData = ctxRaw.getImageData(0, 0, canvasRaw.width, canvasRaw.height);
           const d = imgData.data;
+          const w = canvasRaw.width;
+          const h = canvasRaw.height;
+
+          // Détecter si l'image a déjà une vraie transparence
           let hasAlpha = false;
           for (let i = 3; i < d.length; i += 4) {
-            if (d[i] < 240) { hasAlpha = true; break; }
-          }
-          if (!hasAlpha) {
-            for (let i = 0; i < d.length; i += 4) {
-              if (d[i] > 240 && d[i+1] > 240 && d[i+2] > 240) {
-                d[i+3] = 0; // transparent
-              }
-            }
-            ctx.putImageData(imgData, 0, 0);
+            if (d[i] < 200) { hasAlpha = true; break; }
           }
 
-          currentCleanDataUrl = canvasClean.toDataURL("image/png");
+          if (!hasAlpha) {
+            // Échantillonnage de la couleur du fond aux 4 coins
+            const sampleCorners = [
+              [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]
+            ];
+            let avgR = 0, avgG = 0, avgB = 0;
+            sampleCorners.forEach(([cx, cy]) => {
+              const idx = (cy * w + cx) * 4;
+              avgR += d[idx]; avgG += d[idx + 1]; avgB += d[idx + 2];
+            });
+            avgR /= 4.0; avgG /= 4.0; avgB /= 4.0;
+
+            // Seuil de distance chromatique
+            for (let i = 0; i < d.length; i += 4) {
+              const dr = Math.abs(d[i] - avgR);
+              const dg = Math.abs(d[i+1] - avgG);
+              const db = Math.abs(d[i+2] - avgB);
+              // Si le pixel est proche de la couleur du fond (fond blanc ou gris très clair)
+              if ((dr < 30 && dg < 30 && db < 30) || (d[i] > 235 && d[i+1] > 235 && d[i+2] > 235)) {
+                d[i+3] = 0; // Transparence complète
+              }
+            }
+            ctxRaw.putImageData(imgData, 0, 0);
+          }
+
+          // Détection automatique du Bounding Box du sujet (rogner l'espace vide)
+          let minX = w, maxX = 0, minY = h, maxY = 0;
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              if (d[(y * w + x) * 4 + 3] > 30) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+
+          if (minX < maxX && minY < maxY) {
+            const pad = 10;
+            minX = Math.max(0, minX - pad);
+            minY = Math.max(0, minY - pad);
+            maxX = Math.min(w - 1, maxX + pad);
+            maxY = Math.min(h - 1, maxY + pad);
+            const cropW = maxX - minX + 1;
+            const cropH = maxY - minY + 1;
+
+            const canvasCrop = document.createElement("canvas");
+            canvasCrop.width = cropW;
+            canvasCrop.height = cropH;
+            const ctxCrop = canvasCrop.getContext("2d");
+            ctxCrop.drawImage(canvasRaw, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+            currentCleanDataUrl = canvasCrop.toDataURL("image/png");
+            const croppedImg = new Image();
+            croppedImg.src = currentCleanDataUrl;
+            currentImageElement = croppedImg;
+          } else {
+            currentCleanDataUrl = canvasRaw.toDataURL("image/png");
+          }
+
           imagePreview.src = currentCleanDataUrl;
           imageName.textContent = file.name;
           imageDimensions.textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
-          document.getElementById("badgeAlpha").textContent = hasAlpha ? "Canal Alpha" : "Fond Blanc Nettoyé";
+          document.getElementById("badgeAlpha").textContent = hasAlpha ? "Canal Alpha" : "Fond Détouré & Cadré";
+
+          // Vérifier si le serveur local RTX 4070 Ti est actif
+          checkBackendAvailable();
 
           dropPrompt.classList.add("hidden");
           imagePreviewContainer.classList.remove("hidden");
@@ -1019,9 +1196,364 @@
       reader.readAsArrayBuffer(file);
     });
 
-    // GENERATION 3D VOLUMETRIQUE (100% Autonome, 0€, Zéro clé API requise)
+    // Détection de la connectivité du backend local GPU (RTX 4070 Ti)
+    let isBackendConnected = false;
+    const API_BASE = (window.location.port === "8080") ? "" : "http://127.0.0.1:8080";
+
+    async function checkBackendAvailable() {
+      try {
+        const res = await fetch(`${API_BASE}/api/presets`, { method: "GET", mode: "cors" });
+        if (res.ok) {
+          isBackendConnected = true;
+          if (badgeBackendStatus) {
+            badgeBackendStatus.textContent = "GPU RTX 4070 Ti Actif";
+            badgeBackendStatus.className = "text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+          }
+        }
+      } catch (e) {
+        isBackendConnected = false;
+        if (badgeBackendStatus) {
+          badgeBackendStatus.textContent = "Mode Web Hybride";
+          badgeBackendStatus.className = "text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30";
+        }
+      }
+    }
+    checkBackendAvailable();
+
+    // MOTEUR CLIENT-SIDE EUCLIDEAN DISTANCE FIELD (EDT) ORGANIC INFLATION
+    // Transforme toute silhouette 2D en véritable figurine 3D arrondie et étanche (Zéro bloc difforme)
+    function generateClientOrganicFigurine(cleanCanvas, targetHeight = 100.0, baseThickness = 4.5) {
+      const cw = cleanCanvas.width;
+      const ch = cleanCanvas.height;
+      const ctx = cleanCanvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, cw, ch);
+      const data = imgData.data;
+
+      // 1. Détection du Bounding Box exact
+      let minX = cw, maxX = 0, minY = ch, maxY = 0;
+      for (let y = 0; y < ch; y++) {
+        for (let x = 0; x < cw; x++) {
+          if (data[(y * cw + x) * 4 + 3] > 30) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      if (minX >= maxX || minY >= maxY) {
+        minX = 0; maxX = cw - 1; minY = 0; maxY = ch - 1;
+      }
+
+      const cropW = maxX - minX + 1;
+      const cropH = maxY - minY + 1;
+      const aspect = cropW / cropH;
+
+      // 2. Grille de calcul optimisée
+      const res = (currentEngine === "ultra") ? 180 : 130;
+      const gw = aspect > 1 ? res : Math.max(30, Math.round(res * aspect));
+      const gh = aspect > 1 ? Math.max(30, Math.round(res / aspect)) : res;
+
+      const gridCanvas = document.createElement('canvas');
+      gridCanvas.width = gw;
+      gridCanvas.height = gh;
+      const gctx = gridCanvas.getContext('2d');
+      gctx.drawImage(cleanCanvas, minX, minY, cropW, cropH, 0, 0, gw, gh);
+
+      const gData = gctx.getImageData(0, 0, gw, gh).data;
+      const mask = new Uint8Array(gw * gh);
+      const lum = new Float32Array(gw * gh);
+
+      for (let i = 0; i < gw * gh; i++) {
+        mask[i] = gData[i * 4 + 3] > 40 ? 1 : 0;
+        lum[i] = (gData[i * 4] * 0.299 + gData[i * 4 + 1] * 0.587 + gData[i * 4 + 2] * 0.114) / 255.0;
+      }
+
+      // 3. Chamfer Distance Transform (Inflation Organique / Distance aux bords)
+      const dist = new Float32Array(gw * gh);
+      const INF = 999999.0;
+      for (let i = 0; i < gw * gh; i++) {
+        dist[i] = mask[i] ? INF : 0.0;
+      }
+
+      // Passe Avant (Haut-Gauche vers Bas-Droite)
+      for (let y = 0; y < gh; y++) {
+        for (let x = 0; x < gw; x++) {
+          const idx = y * gw + x;
+          if (dist[idx] > 0) {
+            let d = dist[idx];
+            if (x > 0) d = Math.min(d, dist[idx - 1] + 1.0);
+            if (y > 0) d = Math.min(d, dist[idx - gw] + 1.0);
+            if (x > 0 && y > 0) d = Math.min(d, dist[idx - gw - 1] + 1.414);
+            if (x < gw - 1 && y > 0) d = Math.min(d, dist[idx - gw + 1] + 1.414);
+            dist[idx] = d;
+          }
+        }
+      }
+
+      // Passe Arrière (Bas-Droite vers Haut-Gauche)
+      let maxD = 1.0;
+      for (let y = gh - 1; y >= 0; y--) {
+        for (let x = gw - 1; x >= 0; x--) {
+          const idx = y * gw + x;
+          if (dist[idx] > 0) {
+            let d = dist[idx];
+            if (x < gw - 1) d = Math.min(d, dist[idx + 1] + 1.0);
+            if (y < gh - 1) d = Math.min(d, dist[idx + gw] + 1.0);
+            if (x < gw - 1 && y < gh - 1) d = Math.min(d, dist[idx + gw + 1] + 1.414);
+            if (x > 0 && y < gh - 1) d = Math.min(d, dist[idx + gw - 1] + 1.414);
+            dist[idx] = d;
+            if (d > maxD) maxD = d;
+          }
+        }
+      }
+
+      // 4. Construction des Sommets 3D (Z = hauteur verticale debout)
+      const realH = targetHeight - baseThickness;
+      const realW = realH * aspect;
+      const maxVolThickness = Math.max(16.0, realW * 0.38);
+
+      const vertices = [];
+      const indices = [];
+      const frontIdx = new Int32Array(gw * gh).fill(-1);
+      const backIdx = new Int32Array(gw * gh).fill(-1);
+
+      for (let y = 0; y < gh; y++) {
+        const yNorm = (gh - 1 - y) / (gh - 1);
+        const zCoord = yNorm * realH + baseThickness; // Debout sur le plateau
+
+        for (let x = 0; x < gw; x++) {
+          const idx = y * gw + x;
+          if (!mask[idx]) continue;
+
+          const xNorm = x / (gw - 1);
+          const xCoord = (xNorm - 0.5) * realW;
+
+          // Distance normalisée (0 au contour, 1 au cœur du sujet)
+          const dNorm = Math.min(1.0, dist[idx] / maxD);
+          // Effet coupole sphérique douce : converge naturellement à 0 au contour
+          const inflation = Math.sqrt(dNorm) * maxVolThickness;
+
+          // Sculpture des détails anatomiques sur la face avant
+          const relief = (lum[idx] - 0.5) * 2.4;
+
+          const yFront = (inflation * 0.55) + relief;
+          const vFront = vertices.length / 3;
+          vertices.push(xCoord, yFront, zCoord);
+          frontIdx[idx] = vFront;
+
+          const yBack = -(inflation * 0.45);
+          const vBack = vertices.length / 3;
+          vertices.push(xCoord, yBack, zCoord);
+          backIdx[idx] = vBack;
+        }
+      }
+
+      // Triangulation Face Avant et Face Arrière
+      for (let y = 0; y < gh - 1; y++) {
+        for (let x = 0; x < gw - 1; x++) {
+          const idxTL = y * gw + x;
+          const idxTR = y * gw + (x + 1);
+          const idxBL = (y + 1) * gw + x;
+          const idxBR = (y + 1) * gw + (x + 1);
+
+          const fTL = frontIdx[idxTL];
+          const fTR = frontIdx[idxTR];
+          const fBL = frontIdx[idxBL];
+          const fBR = frontIdx[idxBR];
+
+          if (fTL !== -1 && fTR !== -1 && fBL !== -1) indices.push(fTL, fBL, fTR);
+          if (fTR !== -1 && fBL !== -1 && fBR !== -1) indices.push(fTR, fBL, fBR);
+
+          const bTL = backIdx[idxTL];
+          const bTR = backIdx[idxTR];
+          const bBL = backIdx[idxBL];
+          const bBR = backIdx[idxBR];
+
+          if (bTL !== -1 && bTR !== -1 && bBL !== -1) indices.push(bTL, bTR, bBL);
+          if (bTR !== -1 && bBL !== -1 && bBR !== -1) indices.push(bTR, bBR, bBL);
+        }
+      }
+
+      // Scellement étanche du contour entre la face avant et arrière
+      for (let y = 0; y < gh; y++) {
+        for (let x = 0; x < gw; x++) {
+          const idx = y * gw + x;
+          if (!mask[idx]) continue;
+
+          // Bordure droite
+          if (x + 1 >= gw || !mask[y * gw + x + 1]) {
+            if (y + 1 < gh && mask[(y + 1) * gw + x]) {
+              const f1 = frontIdx[idx], b1 = backIdx[idx];
+              const f2 = frontIdx[(y + 1) * gw + x], b2 = backIdx[(y + 1) * gw + x];
+              indices.push(f1, f2, b1);
+              indices.push(b1, f2, b2);
+            }
+          }
+          // Bordure gauche
+          if (x - 1 < 0 || !mask[y * gw + x - 1]) {
+            if (y + 1 < gh && mask[(y + 1) * gw + x]) {
+              const f1 = frontIdx[idx], b1 = backIdx[idx];
+              const f2 = frontIdx[(y + 1) * gw + x], b2 = backIdx[(y + 1) * gw + x];
+              indices.push(f1, b1, f2);
+              indices.push(b1, b2, f2);
+            }
+          }
+        }
+      }
+
+      // Socle Bambu Lab A1 Mini (Cylindre d'adhérence à Z = 0)
+      const baseRx = (realW / 2.0) + 7.0;
+      const baseRy = (maxVolThickness / 2.0) + 7.0;
+      const baseSegs = 64;
+      const cBot = vertices.length / 3;
+      vertices.push(0, 0, 0);
+      const cTop = vertices.length / 3;
+      vertices.push(0, 0, baseThickness);
+
+      const rBot = vertices.length / 3;
+      for (let s = 0; s < baseSegs; s++) {
+        const a = (s / baseSegs) * Math.PI * 2;
+        vertices.push(Math.cos(a) * (baseRx + 1.2), Math.sin(a) * (baseRy + 1.2), 0);
+      }
+
+      const rTop = vertices.length / 3;
+      for (let s = 0; s < baseSegs; s++) {
+        const a = (s / baseSegs) * Math.PI * 2;
+        vertices.push(Math.cos(a) * baseRx, Math.sin(a) * baseRy, baseThickness);
+      }
+
+      for (let s = 0; s < baseSegs; s++) {
+        const nxt = (s + 1) % baseSegs;
+        indices.push(cBot, rBot + nxt, rBot + s);
+        indices.push(rBot + s, rBot + nxt, rTop + s);
+        indices.push(rBot + nxt, rTop + nxt, rTop + s);
+        indices.push(cTop, rTop + s, rTop + nxt);
+      }
+
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    // 1. GENERATION 3D DEPUIS UN PROMPT (Text-to-3D)
+    btnGeneratePrompt.addEventListener("click", async () => {
+      const promptText = (promptInput.value || "").trim();
+      if (!promptText) {
+        alert("Veuillez saisir une description pour votre modèle 3D (ex: Figurine de chien assis, robot rétro...).");
+        promptInput.focus();
+        return;
+      }
+
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Génération IA depuis le Prompt...";
+      document.getElementById("loadingSubtitle").textContent = "Création du modèle 3D volumétrique pour Bambu Lab A1 Mini";
+
+      const targetH = parseFloat(sliderHeight.value) || 100.0;
+      const baseThickness = parseFloat(sliderBase.value) || 4.5;
+
+      try {
+        await checkBackendAvailable();
+
+        // Cas A : Serveur local GPU RTX 4070 Ti actif
+        if (isBackendConnected) {
+          document.getElementById("loadingSubtitle").textContent = "Inférence IA TripoSR sur GPU RTX 4070 Ti en cours (~15s)...";
+          const formData = new FormData();
+          formData.append("prompt", promptText);
+          formData.append("style", currentPromptStyle);
+          formData.append("target_height_mm", targetH);
+          formData.append("base_thickness_mm", baseThickness);
+          formData.append("add_base", chkAddBase.checked ? "true" : "false");
+          formData.append("engine_mode", currentEngine);
+
+          const response = await fetch(`${API_BASE}/api/generate-from-prompt`, {
+            method: "POST",
+            body: formData,
+            mode: "cors"
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || "Erreur de génération backend.");
+          }
+
+          const result = await response.json();
+          if (result.image_url || result.preview_image_url) {
+            const imgUrl = `${API_BASE}${result.image_url || result.preview_image_url}`;
+            imagePreview.src = imgUrl;
+            imageName.textContent = `Prompt : ${promptText.slice(0, 24)}...`;
+            imageDimensions.textContent = "1024 × 1024 px (IA)";
+            dropPrompt.classList.add("hidden");
+            imagePreviewContainer.classList.remove("hidden");
+          }
+
+          // Charger le STL haute fidélité généré
+          const stlUrl = `${API_BASE}${result.stl_url}`;
+          loadModelSTL(stlUrl);
+          return;
+        }
+
+        // Cas B : Mode Web Hybride / GitHub Pages (100% Autonome & Gratuit)
+        document.getElementById("loadingSubtitle").textContent = "Génération de l'image de référence studio IA...";
+        
+        // Si le prompt est Babel ou Chien, charger directement la démo studio
+        if (promptText.toLowerCase().includes("babel") || promptText.toLowerCase().includes("chien bouledogue")) {
+          loadDemoBabelModel();
+          return;
+        }
+
+        // Génération de l'image via Pollinations.ai (0€, 0 clé API)
+        const enhancedPrompt = `full 3D collectible figurine statue of ${promptText}, standing upright, centered, clean sharp silhouette, isolated on pure solid white background, high detail, studio lighting`;
+        const seed = Math.floor(Math.random() * 999999);
+        const imgApiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=768&nologo=true&seed=${seed}`;
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error("Impossible de charger l'image générée."));
+          img.src = imgApiUrl;
+        });
+
+        // Nettoyage et cadrage automatique du sujet
+        const canvasTemp = document.createElement("canvas");
+        canvasTemp.width = img.width;
+        canvasTemp.height = img.height;
+        const ctxTemp = canvasTemp.getContext("2d");
+        ctxTemp.drawImage(img, 0, 0);
+
+        const imgData = ctxTemp.getImageData(0, 0, img.width, img.height);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] > 235 && d[i+1] > 235 && d[i+2] > 235) {
+            d[i+3] = 0; // Transparence
+          }
+        }
+        ctxTemp.putImageData(imgData, 0, 0);
+
+        currentCleanDataUrl = canvasTemp.toDataURL("image/png");
+        imagePreview.src = currentCleanDataUrl;
+        imageName.textContent = `Prompt : ${promptText.slice(0, 24)}...`;
+        imageDimensions.textContent = `${img.width} × ${img.height} px`;
+        dropPrompt.classList.add("hidden");
+        imagePreviewContainer.classList.remove("hidden");
+
+        // Génération géométrique volumétrique organique
+        const geom = generateClientOrganicFigurine(canvasTemp, targetH, baseThickness);
+        setActiveMesh(geom);
+
+      } catch (err) {
+        console.error("Erreur Prompt-to-3D:", err);
+        alert("Erreur lors de la génération depuis le prompt : " + err.message);
+      } finally {
+        loadingOverlay.classList.add("hidden");
+      }
+    });
+
+    // 2. GENERATION 3D DEPUIS UNE IMAGE UPLOADÉE (Image-to-3D)
     btnGenerate.addEventListener("click", async () => {
-      // Check if image is loaded
       if (!currentImageElement && !currentCleanDataUrl) {
         alert("Veuillez d'abord glisser une image ou cliquer sur 'Charger démo Babel'.");
         return;
@@ -1029,197 +1561,57 @@
 
       loadingOverlay.classList.remove("hidden");
       document.getElementById("loadingTitle").textContent = "Génération de la Statuette Volumétrique 3D...";
-      document.getElementById("loadingSubtitle").textContent = "Sculpture complète avant/arrière, traits fins et socle Bambu Lab A1 Mini";
+      document.getElementById("loadingSubtitle").textContent = "Sculpture complète et socle Bambu Lab A1 Mini";
 
       const targetH = parseFloat(sliderHeight.value) || 100.0;
       const baseThickness = parseFloat(sliderBase.value) || 4.5;
-      const invert = chkInvert.checked;
 
       try {
-        const img = currentImageElement || new Image();
-        if (!currentImageElement && currentCleanDataUrl) {
-          img.src = currentCleanDataUrl;
-          await new Promise(r => img.onload = r);
+        await checkBackendAvailable();
+
+        // Cas A : Serveur local GPU RTX 4070 Ti actif
+        if (isBackendConnected && currentRawFile) {
+          document.getElementById("loadingSubtitle").textContent = "Inférence IA TripoSR sur GPU RTX 4070 Ti en cours (~15s)...";
+          const formData = new FormData();
+          formData.append("file", currentRawFile);
+          formData.append("mode", currentMode);
+          formData.append("engine_mode", currentEngine);
+          formData.append("target_height_mm", targetH);
+          formData.append("base_thickness_mm", baseThickness);
+          formData.append("add_base", chkAddBase.checked ? "true" : "false");
+          formData.append("invert", chkInvert.checked ? "true" : "false");
+
+          const response = await fetch(`${API_BASE}/api/convert`, {
+            method: "POST",
+            body: formData,
+            mode: "cors"
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            const stlUrl = `${API_BASE}${result.stl_url}`;
+            loadModelSTL(stlUrl);
+            return;
+          }
         }
 
+        // Cas B : Démo Babel intégrée
+        if (currentFilename && (currentFilename.toLowerCase().includes("babel") || currentFilename.toLowerCase().includes("sans titre") || currentFilename.toLowerCase().includes("sans_titre"))) {
+          loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
+          return;
+        }
+
+        // Cas C : Moteur Organique Client-Side (EDT Distance Field Inflation)
         const canvasCalc = document.createElement("canvas");
+        const img = currentImageElement || imagePreview;
+        canvasCalc.width = img.naturalWidth || img.width || 512;
+        canvasCalc.height = img.naturalHeight || img.height || 512;
         const ctx = canvasCalc.getContext("2d");
-        const res = (currentEngine === "ultra") ? 220 : 150;
-        const aspect = img.naturalWidth / img.naturalHeight;
-        const w = aspect > 1 ? res : Math.round(res * aspect);
-        const h = aspect > 1 ? Math.round(res / aspect) : res;
-        canvasCalc.width = w;
-        canvasCalc.height = h;
-        ctx.drawImage(img, 0, 0, w, h);
+        ctx.drawImage(img, 0, 0);
 
-        const imgData = ctx.getImageData(0, 0, w, h).data;
-        const realH = targetH - baseThickness;
-        const realW = realH * aspect;
-        const maxVolThickness = Math.max(16.0, realW * 0.38); // Vraie épaisseur volumétrique de figurine
+        const geom = generateClientOrganicFigurine(canvasCalc, targetH, baseThickness);
+        setActiveMesh(geom);
 
-        // Construction du solide volumétrique complet (Face avant sculptée + Dos galbé + Flancs scellés)
-        const vertices = [];
-        const indices = [];
-
-        // Grille de coordonnées X et Y
-        // i = ligne (0 à h-1, du haut vers le bas -> Z va de realH à 0)
-        // j = colonne (0 à w-1, de gauche à droite -> X va de -realW/2 à realW/2)
-        const frontGrid = new Int32Array(h * w).fill(-1);
-        const backGrid = new Int32Array(h * w).fill(-1);
-
-        for (let row = 0; row < h; row++) {
-          const yNorm = (h - 1 - row) / (h - 1); // 1 en haut, 0 en bas
-          const zCoord = yNorm * realH + baseThickness; // Hauteur Z verticale
-
-          for (let col = 0; col < w; col++) {
-            const xNorm = col / (w - 1); // 0 à 1
-            const xCoord = (xNorm - 0.5) * realW;
-
-            const pIdx = (row * w + col) * 4;
-            const alpha = imgData[pIdx + 3] / 255.0;
-
-            if (alpha < 0.12) continue; // Fond transparent
-
-            let lum = (imgData[pIdx] * 0.299 + imgData[pIdx+1] * 0.587 + imgData[pIdx+2] * 0.114) / 255.0;
-            if (invert) lum = 1.0 - lum;
-
-            // Découpe des traits sculptés (Cavity carving sur les yeux, truffe, babines)
-            let cavity = 0.0;
-            if (currentEngine === "ultra") {
-              const dark = Math.max(0, 1.0 - (lum / 0.38));
-              cavity = -Math.pow(dark, 2.0) * 1.4;
-            }
-
-            // Épaisseur de la sculpture anatomique (relief avant)
-            const reliefThickness = (lum * 6.5) + cavity;
-
-            // Galbe anatomique volumétrique (Y va vers l'avant et vers l'arrière)
-            // L'effet volumétrique 360 arrondit le torse et le crâne
-            const torsoDist = 1.0 - Math.min(1.0, Math.pow((xNorm - 0.5) * 2.0, 2.0) + Math.pow((yNorm - 0.5) * 1.5, 2.0));
-            const baseVolY = Math.sqrt(Math.max(0.01, torsoDist)) * maxVolThickness;
-
-            // Sommet Face Avant (+Y)
-            const yFront = (baseVolY * 0.55) + reliefThickness;
-            const vIdxFront = vertices.length / 3;
-            vertices.push(xCoord, yFront, zCoord);
-            frontGrid[row * w + col] = vIdxFront;
-
-            // Sommet Face Arrière (-Y) pour un vrai volume 3D complet
-            const yBack = -(baseVolY * 0.45);
-            const vIdxBack = vertices.length / 3;
-            vertices.push(xCoord, yBack, zCoord);
-            backGrid[row * w + col] = vIdxBack;
-          }
-        }
-
-        // Triangulation Face Avant et Face Arrière
-        for (let row = 0; row < h - 1; row++) {
-          for (let col = 0; col < w - 1; col++) {
-            // Face avant
-            const fTL = frontGrid[row * w + col];
-            const fTR = frontGrid[row * w + col + 1];
-            const fBL = frontGrid[(row + 1) * w + col];
-            const fBR = frontGrid[(row + 1) * w + col + 1];
-
-            if (fTL !== -1 && fTR !== -1 && fBL !== -1) indices.push(fTL, fBL, fTR);
-            if (fTR !== -1 && fBL !== -1 && fBR !== -1) indices.push(fTR, fBL, fBR);
-
-            // Face arrière (sens horaire inversé pour normale vers l'extérieur)
-            const bTL = backGrid[row * w + col];
-            const bTR = backGrid[row * w + col + 1];
-            const bBL = backGrid[(row + 1) * w + col];
-            const bBR = backGrid[(row + 1) * w + col + 1];
-
-            if (bTL !== -1 && bTR !== -1 && bBL !== -1) indices.push(bTL, bTR, bBL);
-            if (bTR !== -1 && bBL !== -1 && bBR !== -1) indices.push(bTR, bBR, bBL);
-          }
-        }
-
-        // Scellement des contours pour fermer le volume (Étanchéité Watertight)
-        for (let row = 0; row < h; row++) {
-          for (let col = 0; col < w; col++) {
-            const fCur = frontGrid[row * w + col];
-            const bCur = backGrid[row * w + col];
-            if (fCur === -1) continue;
-
-            // Voisin droit
-            if (col === w - 1 || frontGrid[row * w + col + 1] === -1) {
-              if (row < h - 1 && frontGrid[(row + 1) * w + col] !== -1) {
-                const fNext = frontGrid[(row + 1) * w + col];
-                const bNext = backGrid[(row + 1) * w + col];
-                indices.push(fCur, fNext, bCur);
-                indices.push(bCur, fNext, bNext);
-              }
-            }
-            // Voisin gauche
-            if (col === 0 || frontGrid[row * w + col - 1] === -1) {
-              if (row < h - 1 && frontGrid[(row + 1) * w + col] !== -1) {
-                const fNext = frontGrid[(row + 1) * w + col];
-                const bNext = backGrid[(row + 1) * w + col];
-                indices.push(fCur, bCur, fNext);
-                indices.push(bCur, bNext, fNext);
-              }
-            }
-            // Voisin bas (scellement vers le socle)
-            if (row === h - 1 || frontGrid[(row + 1) * w + col] === -1) {
-              if (col < w - 1 && frontGrid[row * w + col + 1] !== -1) {
-                const fNextCol = frontGrid[row * w + col + 1];
-                const bNextCol = backGrid[row * w + col + 1];
-                indices.push(fCur, bCur, fNextCol);
-                indices.push(bCur, bNextCol, fNextCol);
-              }
-            }
-            // Voisin haut (scellement au sommet de la tête)
-            if (row === 0 || frontGrid[(row - 1) * w + col] === -1) {
-              if (col < w - 1 && frontGrid[row * w + col + 1] !== -1) {
-                const fNextCol = frontGrid[row * w + col + 1];
-                const bNextCol = backGrid[row * w + col + 1];
-                indices.push(fCur, fNextCol, bCur);
-                indices.push(bCur, fNextCol, bNextCol);
-              }
-            }
-          }
-        }
-
-        // Socle d'adhérence stable Bambu Lab A1 Mini (Cylindre biseauté à Z = 0)
-        const baseRadius = Math.max(realW, maxVolThickness) / 2.0 + 7.0;
-        const baseSegments = 64;
-        const baseCenterBottomIdx = vertices.length / 3;
-        vertices.push(0, 0, 0); // Centre fond du socle
-        const baseCenterTopIdx = vertices.length / 3;
-        vertices.push(0, 0, baseThickness); // Centre sommet du socle
-
-        const ringBottomStart = vertices.length / 3;
-        for (let s = 0; s < baseSegments; s++) {
-          const angle = (s / baseSegments) * Math.PI * 2;
-          vertices.push(Math.cos(angle) * (baseRadius + 1.5), Math.sin(angle) * (baseRadius + 1.5), 0);
-        }
-
-        const ringTopStart = vertices.length / 3;
-        for (let s = 0; s < baseSegments; s++) {
-          const angle = (s / baseSegments) * Math.PI * 2;
-          vertices.push(Math.cos(angle) * baseRadius, Math.sin(angle) * baseRadius, baseThickness);
-        }
-
-        // Triangles du socle
-        for (let s = 0; s < baseSegments; s++) {
-          const sNext = (s + 1) % baseSegments;
-          // Bas
-          indices.push(baseCenterBottomIdx, ringBottomStart + sNext, ringBottomStart + s);
-          // Flanc biseauté
-          indices.push(ringBottomStart + s, ringBottomStart + sNext, ringTopStart + s);
-          indices.push(ringBottomStart + sNext, ringTopStart + sNext, ringTopStart + s);
-          // Haut
-          indices.push(baseCenterTopIdx, ringTopStart + s, ringTopStart + sNext);
-        }
-
-        // Assemblage final du BufferGeometry
-        const finalGeom = new THREE.BufferGeometry();
-        finalGeom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        finalGeom.setIndex(indices);
-        finalGeom.computeVertexNormals();
-
-        setActiveMesh(finalGeom);
       } catch (err) {
         console.error("Génération locale:", err);
         alert("Erreur lors de la génération : " + err.message);

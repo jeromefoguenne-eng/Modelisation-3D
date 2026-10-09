@@ -312,8 +312,14 @@ def generate_mode3_volumetric(
 ) -> trimesh.Trimesh:
     """Mode 3 : Véritable reconstruction 3D volumétrique (360°) par IA TripoSR sur GPU RTX 4070 Ti."""
     clean_im = process_image_cleanup(image, remove_bg=True)
-    temp_in = r"C:\Users\TrendingPC\.gemini\antigravity\scratch\png-to-3d-print\uploads\temp_mode3_in.png"
-    temp_out = r"C:\Users\TrendingPC\.gemini\antigravity\scratch\png-to-3d-print\outputs\temp_mode3_raw.stl"
+    import tempfile
+    import uuid
+    uid = uuid.uuid4().hex[:8]
+    temp_dir = os.path.join(tempfile.gettempdir(), "triposr_tmp")
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_in = os.path.join(temp_dir, f"in_{uid}.png")
+    temp_out = os.path.join(temp_dir, f"out_{uid}.stl")
+    script_path = os.path.join(temp_dir, f"run_{uid}.py")
     
     clean_im.save(temp_in)
     
@@ -355,7 +361,6 @@ with torch.no_grad():
 mesh.export(r'{temp_out}')
 print('TripoSR completed!')
 """
-    script_path = r"C:\Users\TrendingPC\.gemini\antigravity\scratch\png-to-3d-print\run_triposr_task.py"
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(py_script)
         
