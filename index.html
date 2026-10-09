@@ -739,11 +739,16 @@
       // Hide blank bed overlay
       if (emptyBedOverlay) emptyBedOverlay.classList.add("hidden");
 
-      // Center and frame
+      // Center XY and place bottom directly on bed surface (Z = 0)
       geometry.computeBoundingBox();
       const box = geometry.boundingBox;
       const center = new THREE.Vector3();
       box.getCenter(center);
+
+      // If bottom of mesh is below 0 or floating, align bottom to Z=0
+      if (box.min.z !== 0) {
+        meshObject.position.z = -box.min.z;
+      }
 
       const dx = (box.max.x - box.min.x).toFixed(1);
       const dy = (box.max.y - box.min.y).toFixed(1);
@@ -801,7 +806,7 @@
       });
     }
 
-    // Quick Demo Babel Load
+    // Quick Demo Babel Load (Statuette 3D Volumétrique Debout 10cm - Qualité Meshy-7)
     function loadDemoBabelModel() {
       currentFilename = "Babel_Sans_Titre";
       imageName.textContent = "Sans titre.png (Babel)";
@@ -810,7 +815,7 @@
       currentImageDataUrl = "./demo/sans_titre.png";
       dropPrompt.classList.add("hidden");
       imagePreviewContainer.classList.remove("hidden");
-      loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
+      loadModelSTL("./demo/Babel_10cm_Standing.stl");
     }
 
     btnLoadDemo.addEventListener("click", loadDemoBabelModel);
@@ -1156,20 +1161,38 @@
           pos.setZ(i, Math.max(0.5, zVal));
         }
 
-        geom.computeVertexNormals();
+        // Orientation selon le mode :
+        // Mode 1 & 2 : Bas-relief / Lithophane à plat
+        // Mode 3 : Statuette Volumétrique DEBOUT (Hauteur Z = 100mm)
+        if (currentMode === 3) {
+          // Statuette Debout : rotation de la géométrie de relief à 90° autour de X pour que la tête soit en haut le long de l'axe Z
+          geom.rotateX(Math.PI / 2);
+          geom.computeBoundingBox();
+          // Repositionner au-dessus du socle solide
+          const curMinZ = geom.boundingBox.min.z;
+          geom.translate(0, 0, baseThickness - curMinZ);
 
-        // Solid watertight base box
-        const baseGeo = new THREE.BoxGeometry(realW, realH, baseThickness);
-        baseGeo.translate(0, 0, baseThickness / 2);
+          // Socle cylindrique ou rectangulaire robuste pour adhérence plateau Bambu Lab A1 Mini
+          const baseRadius = Math.max(realW, reliefH) / 2 + 6.0;
+          const standingBase = new THREE.CylinderGeometry(baseRadius, baseRadius + 2.0, baseThickness, 64);
+          standingBase.rotateX(Math.PI / 2);
+          standingBase.translate(0, 0, baseThickness / 2);
 
-        // Merge watertight mesh
-        const solidGroup = new THREE.Group();
-        const mTop = new THREE.Mesh(geom, materials[currentMaterialName]);
-        const mBase = new THREE.Mesh(baseGeo, materials[currentMaterialName]);
-        solidGroup.add(mTop);
-        solidGroup.add(mBase);
+          // Fusion du maillage statuette + socle
+          const standingGroup = new THREE.Group();
+          const mSubject = new THREE.Mesh(geom, materials[currentMaterialName]);
+          const mPlinth = new THREE.Mesh(standingBase, materials[currentMaterialName]);
+          standingGroup.add(mSubject);
+          standingGroup.add(mPlinth);
 
-        setActiveMesh(geom);
+          setActiveMesh(geom);
+        } else {
+          // Mode 1 ou 2 : Plaque / bas-relief à plat sur le plateau
+          geom.computeBoundingBox();
+          const curMinZ = geom.boundingBox.min.z;
+          geom.translate(0, 0, -curMinZ);
+          setActiveMesh(geom);
+        }
       } catch (err) {
         console.error("Génération locale:", err);
         alert("Erreur lors de la génération : " + err.message);

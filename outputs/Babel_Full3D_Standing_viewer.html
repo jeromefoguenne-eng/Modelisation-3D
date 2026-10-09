@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentCorp 3D Viewer — Babel_Full3D_Standing</title>
+    <style>
+        body { margin: 0; background: #0f172a; overflow: hidden; font-family: system-ui, sans-serif; color: #f8fafc; }
+        #info { position: absolute; top: 16px; left: 16px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        h1 { margin: 0 0 6px 0; font-size: 16px; font-weight: 600; color: #38bdf8; }
+        p { margin: 0; font-size: 13px; color: #94a3b8; }
+    </style>
+    <!-- Three.js + OrbitControls + GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+    <div id="info">
+        <h1>AgentCorp 3D Studio</h1>
+        <p>Modèle : <strong>Babel_Full3D_Standing.glb</strong> (TripoSR Local)</p>
+        <p>Polygones : 274014 faces | Sommets : 137630</p>
+    </div>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1.2, 2.5);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        
+        // Lumières
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        
+        const gridHelper = new THREE.GridHelper(10, 20, 0x38bdf8, 0x334155);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+        
+        // Chargement du GLB
+        const loader = new THREE.GLTFLoader();
+        loader.load('Babel_Full3D_Standing.glb', (gltf) => {
+            const obj = gltf.scene;
+            obj.position.set(0, 0, 0);
+            scene.add(obj);
+        });
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
