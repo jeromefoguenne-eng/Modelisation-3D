@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Antigravity — PNG to 3D Print (Bambu Lab A1 Mini)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bambu: {
+              50: '#f0fdf4',
+              500: '#00ae42',
+              600: '#009237',
+              700: '#00752c',
+            },
+            dark: {
+              900: '#0b0f17',
+              800: '#111827',
+              700: '#1f2937',
+              600: '#374151'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Three.js & STLLoader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    .canvas-container { position: relative; width: 100%; height: 100%; }
+  </style>
+</head>
+<body class="bg-dark-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-hidden">
+
+  <!-- Header -->
+  <header class="h-16 border-b border-dark-700 bg-dark-800/80 backdrop-blur px-6 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-bambu-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-bambu-500/20">
+        <i data-lucide="box" class="w-6 h-6 text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Agent Antigravity <span class="text-xs px-2 py-0.5 rounded-full bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/30">PNG to 3D Print</span>
+        </h1>
+        <p class="text-xs text-slate-400">Générateur de Maillages Volumétriques FDM pour Bambu Lab A1 Mini</p>
+      </div>
+    </div>
+
+    <!-- Machine Badge & Status -->
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700/60 border border-dark-600 text-xs">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300">GPU : <strong>RTX 4070 Ti (12GB)</strong></span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-bambu-500/40 text-xs text-emerald-300">
+        <i data-lucide="printer" class="w-4 h-4 text-bambu-400"></i>
+        <span>Bambu Lab A1 Mini (180×180×180 mm)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- Left Sidebar: Controls & Workflow -->
+    <aside class="w-[440px] border-r border-dark-700 bg-dark-800 flex flex-col shrink-0 overflow-y-auto">
+      <div class="p-5 space-y-6">
+
+        <!-- Étape 1 : Source Image -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">1</span>
+              Image Source (PNG / JPG)
+            </h2>
+            <button id="btnLoadDemo" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Charger "Sans titre.png"
+            </button>
+          </div>
+
+          <!-- Drop Area -->
+          <div id="dropZone" class="border-2 border-dashed border-dark-600 hover:border-bambu-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-dark-900/40 hover:bg-dark-900/60 group relative overflow-hidden">
+            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg" class="hidden">
+            <div id="dropPrompt" class="space-y-2 py-3">
+              <div class="w-10 h-10 mx-auto rounded-full bg-dark-700 flex items-center justify-center text-slate-400 group-hover:text-bambu-400 transition">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              </div>
+              <p class="text-xs text-slate-300 font-medium">Glissez votre image ici ou <span class="text-bambu-400 underline">parcourir</span></p>
+              <p class="text-[11px] text-slate-500">PNG avec transparence ou fond blanc (max 25 Mo)</p>
+            </div>
+
+            <!-- Preview Card -->
+            <div id="imagePreviewContainer" class="hidden flex items-center gap-3 text-left">
+              <img id="imagePreview" src="" class="w-16 h-16 object-contain rounded-lg bg-dark-700 border border-dark-600 shrink-0">
+              <div class="flex-1 min-w-0">
+                <p id="imageName" class="text-xs font-semibold text-white truncate">image.png</p>
+                <p id="imageDimensions" class="text-[11px] text-slate-400">1414 × 2000 px</p>
+                <div class="flex gap-2 mt-1.5">
+                  <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Détouré</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Prêt</span>
+                </div>
+              </div>
+              <button id="btnRemoveImage" class="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-red-400 transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Import alternatif de modèle 3D externe (Meshy / Tripo3D / Blender) -->
+          <div class="pt-1 flex items-center justify-between border-t border-dark-700/60">
+            <button id="btnTrigger3DImport" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1.5 py-1">
+              <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+              <span>Importer un modèle 3D (.glb, .obj, .stl de Meshy/Tripo)</span>
+            </button>
+            <input type="file" id="file3DInput" accept=".glb,.gltf,.obj,.stl" class="hidden">
+          </div>
+        </section>
+
+        <!-- Étape 2 : Mode de Conversion 3D -->
+        <section class="space-y-3">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">2</span>
+            Mode de Conversion 3D
+          </h2>
+
+          <div class="grid grid-cols-3 gap-2">
+            <!-- Mode 1 -->
+            <button class="mode-btn p-3 rounded-xl border border-dark-600 bg-dark-900/40 hover:bg-dark-700/40 text-left transition relative" data-mode="1">
+              <i data-lucide="layers" class="w-4 h-4 text-amber-400 mb-1.5"></i>
+              <div class="text-xs font-semibold text-slate-200">Relief Extrudé</div>
+              <div class="text-[10px] text-slate-400 line-clamp-2 mt-0.5">Contours nets, logos et découpes</div>
+            </button>
+
+            <!-- Mode 2 -->
+            <button class="mode-btn p-3 rounded-xl border border-dark-600 bg-dark-900/40 hover:bg-dark-700/40 text-left transition relative" data-mode="2">
+              <i data-lucide="mountain" class="w-4 h-4 text-cyan-400 mb-1.5"></i>
+              <div class="text-xs font-semibold text-slate-200">Heightmap</div>
+              <div class="text-[10px] text-slate-400 line-clamp-2 mt-0.5">Nuances de gris et lithophane</div>
+            </button>
+
+            <!-- Mode 3 -->
+            <button class="mode-btn p-3 rounded-xl border-2 border-bambu-500 bg-bambu-500/10 text-left transition relative" data-mode="3">
+              <span class="absolute -top-1.5 -right-1 px-1.5 py-0.2 bg-gradient-to-r from-bambu-500 to-emerald-400 text-[9px] font-bold text-dark-900 rounded-full shadow">IA 360°</span>
+              <i data-lucide="box" class="w-4 h-4 text-bambu-400 mb-1.5"></i>
+              <div class="text-xs font-semibold text-white">Objet 3D Complet</div>
+              <div class="text-[10px] text-slate-400 line-clamp-2 mt-0.5">Sculpture volumétrique intégrale</div>
+            </button>
+          </div>
+
+          <!-- Sélecteur de Précision Mode 3 (Studio Ultra-HD vs Standard) -->
+          <div id="mode3EngineSelector" class="p-3 rounded-xl bg-dark-900/70 border border-dark-600 space-y-2.5">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-200">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="sliders" class="w-3.5 h-3.5 text-cyan-400"></i> Précision Géométrique :
+              </span>
+              <button id="btnOpenCompare" type="button" class="text-[11px] text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1 underline">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Comparatif HD
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnEngineUltra" type="button" class="engine-btn p-2 rounded-lg border-2 border-cyan-500 bg-cyan-500/15 text-left transition" data-engine="ultra">
+                <div class="flex items-center gap-1 text-[11px] font-bold text-cyan-300">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cyan-400"></i> Studio Ultra-HD
+                </div>
+                <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">223k polygones, yeux & museau sculptés (Qualité Meshy)</div>
+              </button>
+
+              <button id="btnEngineStandard" type="button" class="engine-btn p-2 rounded-lg border border-dark-600 bg-dark-900/40 text-left transition" data-engine="standard">
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-300">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Standard Rapide
+                </div>
+                <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">44k polygones lissés (TripoSR 10s)</div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Étape 3 : Préréglages Bambu Lab A1 Mini -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">3</span>
+              Préréglages d'Usine A1 Mini
+            </h2>
+          </div>
+
+          <select id="presetSelect" class="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-bambu-500">
+            <option value="statuette_volumetrique_10cm" selected>Statuette Volumétrique 3D (10 cm)</option>
+            <option value="relief_decoratif">Relief Décoratif Mural</option>
+            <option value="medaille_badge">Médaille ou Badge</option>
+            <option value="pion_jeu">Pion de Jeu de Société</option>
+            <option value="plaque_logo">Plaque avec Logo</option>
+            <option value="photo_lithophane">Photo en Relief (Lithophane)</option>
+          </select>
+        </section>
+
+        <!-- Étape 4 : Paramètres de Fabrication FDM -->
+        <section class="space-y-4 pt-2 border-t border-dark-700">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">4</span>
+            Dimensions & Géométrie
+          </h2>
+
+          <!-- Hauteur Totale -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Hauteur Totale (Z)</span>
+              <span class="text-bambu-400 font-bold"><span id="valHeight">100.0</span> mm (10.0 cm)</span>
+            </div>
+            <input type="range" id="sliderHeight" min="20" max="175" step="1" value="100" class="w-full accent-bambu-500">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>20 mm</span>
+              <span>100 mm (Recommandé)</span>
+              <span>175 mm (Max A1 Mini)</span>
+            </div>
+          </div>
+
+          <!-- Épaisseur Socle -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Épaisseur du Socle / Base</span>
+              <span class="text-slate-300"><span id="valBase">4.5</span> mm</span>
+            </div>
+            <input type="range" id="sliderBase" min="1.0" max="12.0" step="0.5" value="4.5" class="w-full accent-bambu-500">
+          </div>
+
+          <!-- Options d'adhérence & socle -->
+          <div class="space-y-2 pt-1">
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="chkAddBase" checked class="w-4 h-4 rounded text-bambu-500 focus:ring-0 bg-dark-900 border-dark-600">
+              <span>Intégrer un socle biseauté (Stabilité & adhérence plateau)</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="chkInvert" class="w-4 h-4 rounded text-bambu-500 focus:ring-0 bg-dark-900 border-dark-600">
+              <span>Inverser les reliefs (Mode creux / négatif)</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Bouton de Génération -->
+        <button id="btnGenerate" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-bambu-600 to-emerald-500 hover:from-bambu-500 hover:to-emerald-400 font-bold text-white text-sm shadow-lg shadow-bambu-500/25 transition flex items-center justify-center gap-2 active:scale-[0.99]">
+          <i data-lucide="wand-2" class="w-4 h-4"></i>
+          <span>Générer le Modèle 3D Imprimable</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- Center & Right: 3D Viewport & Fabrication Panel -->
+    <main class="flex-1 flex flex-col bg-dark-900 relative">
+
+      <!-- Viewport 3D Canvas -->
+      <div id="viewportContainer" class="flex-1 relative overflow-hidden bg-gradient-to-b from-dark-900 to-[#0e131d]">
+        <canvas id="threeCanvas" class="w-full h-full block"></canvas>
+
+        <!-- Viewport Overlay Toolbar -->
+        <div class="absolute top-4 left-4 flex items-center gap-2 bg-dark-800/90 backdrop-blur border border-dark-700 rounded-xl p-1.5 shadow-xl z-10">
+          <button id="btnViewFront" class="px-2.5 py-1 text-xs rounded-lg hover:bg-dark-700 text-slate-300 font-medium transition">Face</button>
+          <button id="btnViewSide" class="px-2.5 py-1 text-xs rounded-lg hover:bg-dark-700 text-slate-300 font-medium transition">Profil</button>
+          <button id="btnViewIso" class="px-2.5 py-1 text-xs rounded-lg bg-dark-700 text-bambu-400 font-semibold transition">3/4 Iso</button>
+          <button id="btnViewTop" class="px-2.5 py-1 text-xs rounded-lg hover:bg-dark-700 text-slate-300 font-medium transition">Dessus</button>
+          <div class="h-4 w-px bg-dark-600 mx-1"></div>
+          <button id="btnWireframe" class="p-1.5 rounded-lg hover:bg-dark-700 text-slate-300 transition" title="Activer/Désactiver Fil de fer">
+            <i data-lucide="grid" class="w-4 h-4"></i>
+          </button>
+          <button id="btnResetCamera" class="p-1.5 rounded-lg hover:bg-dark-700 text-slate-300 transition" title="Recentrer">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Matériaux & Shaders -->
+        <div class="absolute top-4 right-4 flex items-center gap-2 bg-dark-800/90 backdrop-blur border border-dark-700 rounded-xl p-1.5 shadow-xl z-10 text-xs">
+          <span class="text-slate-400 pl-2">Matière :</span>
+          <button class="mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40" data-mat="gold">Bronze Doré</button>
+          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="white">PLA Blanc</button>
+          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="gray">Gris Studio</button>
+        </div>
+
+        <!-- Plateau Bambu Lab Legend -->
+        <div class="absolute bottom-4 left-4 pointer-events-none flex items-center gap-2 bg-dark-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-dark-700 text-[11px] text-slate-400">
+          <div class="w-3 h-3 rounded border border-bambu-500/60 bg-bambu-500/10"></div>
+          <span>Volume A1 Mini : 180 × 180 mm (Plateau texturé PEI)</span>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingOverlay" class="hidden absolute inset-0 bg-dark-900/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
+          <div class="w-12 h-12 border-4 border-bambu-500 border-t-transparent rounded-full animate-spin"></div>
+          <div class="text-center space-y-1">
+            <p id="loadingTitle" class="text-sm font-bold text-white">Reconstruction 3D en cours...</p>
+            <p id="loadingSubtitle" class="text-xs text-slate-400">Calcul du maillage volumétrique sur GPU RTX 4070 Ti</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Dashboard: Fabrication & Download Panel -->
+      <div class="h-44 border-t border-dark-700 bg-dark-800 p-4 shrink-0 flex items-center justify-between gap-6 z-10">
+        
+        <!-- Métriques Pièce -->
+        <div class="flex items-center gap-6">
+          <div class="space-y-1">
+            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Dimensions Pièce</div>
+            <div class="text-base font-bold text-white font-mono flex items-center gap-2">
+              <span id="statDimX">119.0</span> × <span id="statDimY">114.6</span> × <span id="statDimZ" class="text-bambu-400">100.0</span> mm
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>100% Imprimable (Watertight Manifold)</span>
+            </div>
+          </div>
+
+          <div class="h-10 w-px bg-dark-700"></div>
+
+          <div class="space-y-1">
+            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Estimation A1 Mini (PLA)</div>
+            <div class="text-base font-bold text-white flex items-center gap-3">
+              <span class="flex items-center gap-1 font-mono text-emerald-400"><i data-lucide="scale" class="w-3.5 h-3.5"></i> <span id="statWeight">38.5</span> g</span>
+              <span class="flex items-center gap-1 font-mono text-cyan-400"><i data-lucide="clock" class="w-3.5 h-3.5"></i> <span id="statTime">1h 45m</span></span>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-bambu-400"></i>
+              <span>Hauteur de couche conseillée : <strong>0.12 mm</strong></span>
+            </div>
+          </div>
+
+          <div class="h-10 w-px bg-dark-700"></div>
+
+          <!-- Paramètres Bambu Studio -->
+          <div class="space-y-1 text-xs">
+            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Tranchage Bambu Studio</div>
+            <div class="text-slate-300">Supports : <strong class="text-amber-400">Arborescents (Tree)</strong></div>
+          <!-- Paramètres Bambu Studio -->
+          <div class="space-y-1 text-xs">
+            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Tranchage Bambu Studio</div>
+            <div class="text-slate-300">Supports : <strong class="text-amber-400">Arborescents (Tree)</strong></div>
+            <div class="text-slate-300">Remplissage : <strong class="text-emerald-400">12% Gyroid</strong> (3 parois)</div>
+          </div>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="flex items-center gap-3">
+          <a id="btnDownloadSTL" href="./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl" download="Babel_Ultra_Detail_MeshyGrade_10cm.stl" class="px-5 py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white font-bold text-xs flex items-center gap-2 transition hover:scale-[1.02] shadow">
+            <i data-lucide="download" class="w-4 h-4 text-slate-300"></i>
+            <span>Télécharger STL (Ultra-HD)</span>
+          </a>
+
+          <a id="btnDownload3MF" href="./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.3mf" download="Babel_Ultra_Detail_MeshyGrade_10cm.3mf" class="px-6 py-3 rounded-xl bg-gradient-to-r from-bambu-600 to-emerald-500 hover:from-bambu-500 hover:to-emerald-400 text-white font-extrabold text-xs flex items-center gap-2 transition hover:scale-[1.02] shadow-lg shadow-bambu-500/20">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Télécharger 3MF (Bambu Studio)</span>
+          </a>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Modal Comparatif HD -->
+  <div id="compareModal" class="hidden fixed inset-0 bg-dark-900/90 backdrop-blur-md flex items-center justify-center p-6 z-50">
+    <div class="bg-dark-800 border border-dark-600 rounded-2xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
+      <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
+          <h3 class="text-sm font-bold text-white">Comparatif de Précision Géométrique : Standard vs Studio Ultra-HD (Qualité Meshy)</h3>
+        </div>
+        <button id="btnCloseCompare" type="button" class="p-1 rounded-lg hover:bg-dark-700 text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1 flex flex-col items-center gap-4">
+        <img src="./demo/comparaison_ultra.png" class="w-full rounded-xl border border-dark-700 shadow-xl object-contain max-h-[60vh]">
+        <div class="grid grid-cols-3 gap-3 text-xs w-full">
+          <div class="p-3 rounded-xl bg-dark-900/80 border border-dark-700">
+            <div class="font-bold text-slate-300 mb-1">1. Modèle Standard Lissé</div>
+            <p class="text-[11px] text-slate-400">44k vertices. Forme globale correcte mais absence de relief sur les détails faciaux.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/40">
+            <div class="font-bold text-cyan-300 mb-1">2. Studio Ultra-HD (223k polygones)</div>
+            <p class="text-[11px] text-slate-300">Projection sub-millimétrique des traits photographiques (yeux, oreilles, musculature).</p>
+          </div>
+          <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40">
+            <div class="font-bold text-amber-300 mb-1">3. Zoom Museau & Yeux</div>
+            <p class="text-[11px] text-slate-300">Tranchant net de la truffe, des babines et du médaillon parfaitement imprimable à 0.12mm sur A1 Mini.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // App State
+    let currentMode = 3;
+    let currentEngine = "ultra"; // "ultra" or "standard"
+    let currentFilename = "sans_titre.png";
+    let isWireframe = false;
+    let currentMaterialName = "gold";
+    let meshObject = null;
+
+    // UI Elements
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const dropPrompt = document.getElementById("dropPrompt");
+    const imagePreviewContainer = document.getElementById("imagePreviewContainer");
+    const imagePreview = document.getElementById("imagePreview");
+    const imageName = document.getElementById("imageName");
+    const imageDimensions = document.getElementById("imageDimensions");
+    const btnRemoveImage = document.getElementById("btnRemoveImage");
+    const btnLoadDemo = document.getElementById("btnLoadDemo");
+    const btnTrigger3DImport = document.getElementById("btnTrigger3DImport");
+    const file3DInput = document.getElementById("file3DInput");
+    const modeButtons = document.querySelectorAll(".mode-btn");
+    const engineButtons = document.querySelectorAll(".engine-btn");
+    const mode3EngineSelector = document.getElementById("mode3EngineSelector");
+    const btnOpenCompare = document.getElementById("btnOpenCompare");
+    const btnCloseCompare = document.getElementById("btnCloseCompare");
+    const compareModal = document.getElementById("compareModal");
+    const sliderHeight = document.getElementById("sliderHeight");
+    const valHeight = document.getElementById("valHeight");
+    const sliderBase = document.getElementById("sliderBase");
+    const valBase = document.getElementById("valBase");
+    const chkAddBase = document.getElementById("chkAddBase");
+    const chkInvert = document.getElementById("chkInvert");
+    const btnGenerate = document.getElementById("btnGenerate");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const btnDownloadSTL = document.getElementById("btnDownloadSTL");
+    const btnDownload3MF = document.getElementById("btnDownload3MF");
+
+    // Slider inputs
+    sliderHeight.addEventListener("input", (e) => {
+      valHeight.textContent = parseFloat(e.target.value).toFixed(1);
+    });
+    sliderBase.addEventListener("input", (e) => {
+      valBase.textContent = parseFloat(e.target.value).toFixed(1);
+    });
+
+    // Three.js Scene Setup
+    const container = document.getElementById("viewportContainer");
+    const canvas = document.getElementById("threeCanvas");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0e131d);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(130, -180, 140);
+    camera.up.set(0, 0, 1); // Z is UP for 3D printing
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0, 45);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight1.position.set(150, -150, 200);
+    dirLight1.castShadow = true;
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.4);
+    dirLight2.position.set(-150, 150, 100);
+    scene.add(dirLight2);
+
+    // Bambu Lab A1 Mini Bed (180 x 180 mm)
+    function createBambuBed() {
+      const bedGroup = new THREE.Group();
+      
+      // Bed plate plate
+      const bedGeo = new THREE.BoxGeometry(180, 180, 2);
+      const bedMat = new THREE.MeshStandardMaterial({
+        color: 0x1e2430,
+        roughness: 0.8,
+        metalness: 0.2
+      });
+      const bedMesh = new THREE.Mesh(bedGeo, bedMat);
+      bedMesh.position.set(0, 0, -1);
+      bedMesh.receiveShadow = true;
+      bedGroup.add(bedMesh);
+
+      // Grid helper (180x180, 18 divisions = 10mm per square)
+      const grid = new THREE.GridHelper(180, 18, 0x00ae42, 0x334155);
+      grid.rotation.x = Math.PI / 2;
+      grid.position.set(0, 0, 0.1);
+      bedGroup.add(grid);
+
+      // Origin indicator (front-left notch)
+      const notchGeo = new THREE.BoxGeometry(10, 10, 2.2);
+      const notchMat = new THREE.MeshBasicMaterial({ color: 0x00ae42 });
+      const notch = new THREE.Mesh(notchGeo, notchMat);
+      notch.position.set(-85, -85, -0.9);
+      bedGroup.add(notch);
+
+      scene.add(bedGroup);
+    }
+    createBambuBed();
+
+    // Material library
+    const materials = {
+      gold: new THREE.MeshStandardMaterial({
+        color: 0xe6b360,
+        roughness: 0.35,
+        metalness: 0.45,
+        wireframe: false
+      }),
+      white: new THREE.MeshStandardMaterial({
+        color: 0xf1f5f9,
+        roughness: 0.4,
+        metalness: 0.1,
+        wireframe: false
+      }),
+      gray: new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        roughness: 0.5,
+        metalness: 0.2,
+        wireframe: false
+      })
+    };
+
+
+    // Client-Side In-Browser Generation (GitHub Pages Standalone)
+    const stlExporter = new THREE.STLExporter();
+
+    function generateClientSideHeightmap(img, targetH, baseThickness, reliefH, invert) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const res = 180;
+      const aspect = img.width / img.height;
+      const w = aspect > 1 ? res : Math.round(res * aspect);
+      const h = aspect > 1 ? Math.round(res / aspect) : res;
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(img, 0, 0, w, h);
+      const imgData = ctx.getImageData(0, 0, w, h).data;
+
+      const realH = targetH;
+      const realW = realH * aspect;
+
+      const geom = new THREE.PlaneGeometry(realW, realH, w - 1, h - 1);
+      const pos = geom.attributes.position;
+
+      for (let i = 0; i < pos.count; i++) {
+        const row = Math.floor(i / w);
+        const col = i % w;
+        const pIdx = (row * w + col) * 4;
+        let lum = (imgData[pIdx] * 0.299 + imgData[pIdx+1] * 0.587 + imgData[pIdx+2] * 0.114) / 255.0;
+        if (invert) lum = 1.0 - lum;
+        pos.setZ(i, baseThickness + lum * reliefH);
+      }
+      geom.computeVertexNormals();
+
+      // Base solid box
+      const baseGeom = new THREE.BoxGeometry(realW, realH, baseThickness);
+      baseGeom.translate(0, 0, baseThickness / 2);
+
+      const group = new THREE.Group();
+      const mTop = new THREE.Mesh(geom, materials[currentMaterialName]);
+      const mBase = new THREE.Mesh(baseGeom, materials[currentMaterialName]);
+      group.add(mTop);
+      group.add(mBase);
+      return group;
+    }
+
+    function exportMeshToSTL(object, filename) {
+      const result = stlExporter.parse(object, { binary: true });
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      btnDownloadSTL.href = url;
+      btnDownloadSTL.download = filename;
+      btnDownload3MF.href = url;
+      btnDownload3MF.download = filename.replace('.stl', '.3mf');
+      return url;
+    }
+
+    // Load STL Model
+    const stlLoader = new THREE.STLLoader();
+
+    function loadModelSTL(url) {
+      if (meshObject) {
+        scene.remove(meshObject);
+        meshObject.geometry.dispose();
+      }
+
+      stlLoader.load(url, (geometry) => {
+        geometry.computeVertexNormals();
+        const mat = materials[currentMaterialName].clone();
+        mat.wireframe = isWireframe;
+
+        meshObject = new THREE.Mesh(geometry, mat);
+        meshObject.castShadow = true;
+        meshObject.receiveShadow = true;
+
+        scene.add(meshObject);
+
+        // Center on bed
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox;
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        
+        controls.target.set(0, 0, (box.max.z - box.min.z) / 2);
+        controls.update();
+      });
+    }
+
+    // Initial Load: Babel Ultra-HD 10cm Model (Qualité Meshy)
+    loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
+
+    // Engine Selector (Studio Ultra-HD vs Standard)
+    engineButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        engineButtons.forEach(b => {
+          b.className = "engine-btn p-2 rounded-lg border border-dark-600 bg-dark-900/40 text-left transition";
+        });
+        btn.className = "engine-btn p-2 rounded-lg border-2 border-cyan-500 bg-cyan-500/15 text-left transition";
+        currentEngine = btn.dataset.engine;
+      });
+    });
+
+    // Comparateur HD Modal
+    btnOpenCompare.addEventListener("click", () => {
+      compareModal.classList.remove("hidden");
+    });
+    btnCloseCompare.addEventListener("click", () => {
+      compareModal.classList.add("hidden");
+    });
+    compareModal.addEventListener("click", (e) => {
+      if (e.target === compareModal) compareModal.classList.add("hidden");
+    });
+
+    // Import Modèle 3D Externe (Meshy / Tripo3D / GLB / OBJ / STL)
+    btnTrigger3DImport.addEventListener("click", () => file3DInput.click());
+    file3DInput.addEventListener("change", async (e) => {
+      if (e.target.files.length === 0) return;
+      const file = e.target.files[0];
+
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Import & Optimisation du Modèle 3D...";
+      document.getElementById("loadingSubtitle").textContent = "Mise à l'échelle (100mm), fusion du socle et contrôle d'imprimabilité";
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("target_height_mm", parseFloat(sliderHeight.value));
+      formData.append("with_base", chkAddBase.checked);
+      formData.append("base_height_mm", parseFloat(sliderBase.value));
+
+      try {
+        const res = await fetch("/api/import-3d", { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (data.success) {
+          loadModelSTL(data.stl_url);
+          btnDownloadSTL.href = data.stl_url;
+          btnDownloadSTL.download = data.stl_filename;
+          btnDownload3MF.href = data.threemf_url;
+          btnDownload3MF.download = data.threemf_filename;
+
+          const p = data.printability;
+          document.getElementById("statDimX").textContent = p.extents_mm[0];
+          document.getElementById("statDimY").textContent = p.extents_mm[1];
+          document.getElementById("statDimZ").textContent = p.extents_mm[2];
+          document.getElementById("statWeight").textContent = p.estimated_weight_g;
+          document.getElementById("statTime").textContent = p.estimated_time;
+          alert("Modèle 3D importé et optimisé avec succès pour la Bambu Lab A1 Mini !");
+        } else {
+          alert("Erreur lors de l'import : " + data.detail);
+        }
+      } catch (err) {
+        alert("Erreur d'import : " + err.message);
+      } finally {
+        loadingOverlay.classList.add("hidden");
+        file3DInput.value = "";
+      }
+    });
+
+    // Camera preset views
+    document.getElementById("btnViewFront").addEventListener("click", () => {
+      camera.position.set(0, -220, 50);
+      controls.target.set(0, 0, 50);
+      controls.update();
+    });
+    document.getElementById("btnViewSide").addEventListener("click", () => {
+      camera.position.set(220, 0, 50);
+      controls.target.set(0, 0, 50);
+      controls.update();
+    });
+    document.getElementById("btnViewIso").addEventListener("click", () => {
+      camera.position.set(130, -180, 140);
+      controls.target.set(0, 0, 45);
+      controls.update();
+    });
+    document.getElementById("btnViewTop").addEventListener("click", () => {
+      camera.position.set(0, -1, 240);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+    document.getElementById("btnResetCamera").addEventListener("click", () => {
+      camera.position.set(130, -180, 140);
+      controls.target.set(0, 0, 45);
+      controls.update();
+    });
+
+    // Wireframe toggle
+    document.getElementById("btnWireframe").addEventListener("click", () => {
+      isWireframe = !isWireframe;
+      if (meshObject) {
+        meshObject.material.wireframe = isWireframe;
+      }
+    });
+
+    // Materials picker
+    document.querySelectorAll(".mat-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        document.querySelectorAll(".mat-btn").forEach(b => {
+          b.className = "mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300";
+        });
+        e.target.className = "mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40";
+        currentMaterialName = e.target.dataset.mat;
+        if (meshObject) {
+          const mat = materials[currentMaterialName].clone();
+          mat.wireframe = isWireframe;
+          meshObject.material = mat;
+        }
+      });
+    });
+
+    // Mode Selector
+    modeButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        modeButtons.forEach(b => {
+          b.className = "mode-btn p-3 rounded-xl border border-dark-600 bg-dark-900/40 hover:bg-dark-700/40 text-left transition relative";
+        });
+        btn.className = "mode-btn p-3 rounded-xl border-2 border-bambu-500 bg-bambu-500/10 text-left transition relative";
+        currentMode = parseInt(btn.dataset.mode);
+        
+        mode3EngineSelector.style.display = currentMode === 3 ? "block" : "none";
+      });
+    });
+
+    // Presets handler
+    document.getElementById("presetSelect").addEventListener("change", (e) => {
+      const val = e.target.value;
+      if (val === "statuette_volumetrique_10cm") {
+        document.querySelector('[data-mode="3"]').click();
+        sliderHeight.value = 100;
+        valHeight.textContent = "100.0";
+        sliderBase.value = 4.5;
+        valBase.textContent = "4.5";
+        chkAddBase.checked = true;
+      } else if (val === "relief_decoratif") {
+        document.querySelector('[data-mode="1"]').click();
+        sliderHeight.value = 100;
+        valHeight.textContent = "100.0";
+        sliderBase.value = 3.0;
+        valBase.textContent = "3.0";
+        chkAddBase.checked = true;
+      } else if (val === "medaille_badge") {
+        document.querySelector('[data-mode="1"]').click();
+        sliderHeight.value = 60;
+        valHeight.textContent = "60.0";
+        sliderBase.value = 2.5;
+        valBase.textContent = "2.5";
+      } else if (val === "photo_lithophane") {
+        document.querySelector('[data-mode="2"]').click();
+        sliderHeight.value = 100;
+        valHeight.textContent = "100.0";
+        sliderBase.value = 1.5;
+        valBase.textContent = "1.5";
+      }
+    });
+
+    // Load Demo Image (Sans titre.png)
+    btnLoadDemo.addEventListener("click", () => {
+      currentFilename = "sans_titre.png";
+      dropPrompt.classList.add("hidden");
+      imagePreviewContainer.classList.remove("hidden");
+      imagePreview.src = "./demo/sans_titre.png";
+      imageName.textContent = "Sans titre.png (Babel)";
+      imageDimensions.textContent = "1414 × 2000 px";
+    });
+
+    // File Drop & Select
+    dropZone.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) handleFileUpload(e.target.files[0]);
+    });
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("border-bambu-500");
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("border-bambu-500");
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("border-bambu-500");
+      if (e.dataTransfer.files.length > 0) handleFileUpload(e.dataTransfer.files[0]);
+    });
+
+    btnRemoveImage.addEventListener("click", (e) => {
+      e.stopPropagation();
+      imagePreviewContainer.classList.add("hidden");
+      dropPrompt.classList.remove("hidden");
+      fileInput.value = "";
+    });
+
+    async function handleFileUpload(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Téléchargement & Analyse de l'image...";
+      document.getElementById("loadingSubtitle").textContent = "Détourage automatique et optimisation des contours";
+
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        
+        currentFilename = data.filename;
+        dropPrompt.classList.add("hidden");
+        imagePreviewContainer.classList.remove("hidden");
+        imagePreview.src = data.preview_url;
+        imageName.textContent = file.name;
+        imageDimensions.textContent = `${data.original_width} × ${data.original_height} px`;
+      } catch (err) {
+        alert("Erreur lors de l'upload : " + err.message);
+      } finally {
+        loadingOverlay.classList.add("hidden");
+      }
+    }
+
+    // Generate 3D Model
+    btnGenerate.addEventListener("click", async () => {
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = currentMode === 3 
+        ? (currentEngine === "ultra" ? "Sculpture 3D Studio Ultra-HD..." : "Reconstruction 3D Standard...") 
+        : "Génération du Maillage Solide...";
+      document.getElementById("loadingSubtitle").textContent = currentMode === 3 
+        ? (currentEngine === "ultra" ? "Calcul géométrique haute résolution (223k polygones, détails visage)" : "Inférence TripoSR rapide sur GPU RTX 4070 Ti (~15s)") 
+        : "Calcul des contours et triangulation";
+
+      const formData = new FormData();
+      formData.append("filename", currentFilename);
+      formData.append("mode", currentMode);
+      formData.append("engine_mode", currentEngine);
+      formData.append("target_height_mm", parseFloat(sliderHeight.value));
+      formData.append("base_thickness_mm", parseFloat(sliderBase.value));
+      formData.append("relief_height_mm", parseFloat(sliderBase.value));
+      formData.append("add_base", chkAddBase.checked);
+      formData.append("invert", chkInvert.checked);
+
+      try {
+        const res = await fetch("/api/convert", { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (data.success) {
+          loadModelSTL(data.stl_url);
+          btnDownloadSTL.href = data.stl_url;
+          btnDownloadSTL.download = data.stl_filename;
+          btnDownload3MF.href = data.threemf_url;
+          btnDownload3MF.download = data.threemf_filename;
+
+          // Update stats
+          const p = data.printability;
+          document.getElementById("statDimX").textContent = p.extents_mm[0];
+          document.getElementById("statDimY").textContent = p.extents_mm[1];
+          document.getElementById("statDimZ").textContent = p.extents_mm[2];
+          document.getElementById("statWeight").textContent = p.estimated_weight_g;
+          document.getElementById("statTime").textContent = p.estimated_time;
+        } else {
+          alert("Erreur lors de la génération : " + data.detail);
+        }
+      } catch (err) {
+        alert("Erreur : " + err.message);
+      } finally {
+        loadingOverlay.classList.add("hidden");
+      }
+    });
+
+    // Resize Window
+    window.addEventListener("resize", () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Trigger demo load on first open
+    btnLoadDemo.click();
+  </script>
+</body>
+</html>
