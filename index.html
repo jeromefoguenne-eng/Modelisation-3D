@@ -209,16 +209,15 @@
               </button>
             </div>
 
-            <!-- Espace Meshy Connecté -->
+            <!-- Moteur Volumétrique 100% Gratuit & Illimité -->
             <div class="pt-2 border-t border-dark-700/80 space-y-1.5">
               <div class="flex items-center justify-between text-[11px]">
-                <span class="text-purple-300 font-semibold flex items-center gap-1">
-                  <i data-lucide="key" class="w-3 h-3 text-purple-400"></i> Compte Meshy Connecté :
+                <span class="text-emerald-300 font-semibold flex items-center gap-1">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Statuette Volumétrique Complète :
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">jeromefoguenne@gmail.com</span>
+                <span class="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">100% Gratuit & Souverain</span>
               </div>
-              <input type="password" id="meshyApiKeyInput" placeholder="Clé API Meshy facultative (msy_...)" class="w-full px-2.5 py-1 bg-dark-800 border border-dark-600 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-400 placeholder:text-slate-500">
-              <p class="text-[10px] text-slate-400 italic">Ou glissez directement le fichier .glb téléchargé gratuitement depuis meshy.ai</p>
+              <p class="text-[11px] text-slate-300 leading-tight">Génération automatique avec sculpture faciale, dos galbé et socle d'adhérence A1 Mini. Zéro clé API requise, zéro coût.</p>
             </div>
           </div>
         </section>
@@ -503,10 +502,10 @@
 
         <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5">
           <div class="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
-            <i data-lucide="key" class="w-4 h-4 text-emerald-400"></i> Connexion Clé API Directe
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Traitement 100% Gratuit & Sans Clé
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            Vous pouvez également coller votre clé API Meshy (disponible dans vos paramètres Meshy.ai) dans le champ prévu à gauche sous l'Étape 2 pour déclencher la modélisation sans quitter l'application.
+            Aucune clé API ni carte bancaire requise. Vous pouvez utiliser le moteur de statuette volumétrique direct de l'application ou glisser un fichier .glb exporté gratuitement.
           </p>
         </div>
 
@@ -581,7 +580,6 @@
     const modeButtons = document.querySelectorAll(".mode-btn");
     const engineButtons = document.querySelectorAll(".engine-btn");
     const mode3EngineSelector = document.getElementById("mode3EngineSelector");
-    const meshyApiKeyInput = document.getElementById("meshyApiKeyInput");
     const btnOpenMeshyGuide = document.getElementById("btnOpenMeshyGuide");
     const btnCloseMeshyGuide = document.getElementById("btnCloseMeshyGuide");
     const meshyGuideModal = document.getElementById("meshyGuideModal");
@@ -1021,95 +1019,22 @@
       reader.readAsArrayBuffer(file);
     });
 
-    // GENERATION 3D (Autonomous In-Browser WebGL Engine + Local Server Detection)
+    // GENERATION 3D VOLUMETRIQUE (100% Autonome, 0€, Zéro clé API requise)
     btnGenerate.addEventListener("click", async () => {
-      // If user inputs Meshy API key and is in mode 3
-      const meshyKey = meshyApiKeyInput ? meshyApiKeyInput.value.trim() : "";
-      if (currentMode === 3 && meshyKey) {
-        if (!currentCleanDataUrl && !currentImageDataUrl) {
-          alert("Veuillez d'abord sélectionner une image source.");
-          return;
-        }
-        loadingOverlay.classList.remove("hidden");
-        document.getElementById("loadingTitle").textContent = "Génération Haute Fidélité via Meshy API...";
-        document.getElementById("loadingSubtitle").textContent = "Soumission de la tâche IA à Meshy.ai (200 crédits gratuits)";
-
-        try {
-          // Trigger Meshy Image to 3D
-          const postRes = await fetch("https://api.meshy.ai/openapi/v1/image-to-3d", {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer " + meshyKey,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              image_url: currentCleanDataUrl || currentImageDataUrl,
-              enable_pbr: false
-            })
-          });
-          const postData = await postRes.json();
-          if (!postData.result) throw new Error(postData.message || "Erreur de soumission Meshy");
-
-          const taskId = postData.result;
-          document.getElementById("loadingSubtitle").textContent = "Calcul neural 3D en cours chez Meshy (~45s)...";
-
-          // Poll task status
-          let finished = false;
-          let glbUrl = null;
-          for (let i = 0; i < 40; i++) {
-            await new Promise(r => setTimeout(r, 4000));
-            const pollRes = await fetch("https://api.meshy.ai/openapi/v1/image-to-3d/" + taskId, {
-              headers: { "Authorization": "Bearer " + meshyKey }
-            });
-            const pollData = await pollRes.json();
-            if (pollData.status === "SUCCEEDED") {
-              glbUrl = pollData.model_urls.glb;
-              finished = true;
-              break;
-            } else if (pollData.status === "FAILED") {
-              throw new Error("La génération Meshy a échoué.");
-            }
-          }
-
-          if (finished && glbUrl) {
-            gltfLoader.load(glbUrl, (gltf) => {
-              let g = null;
-              gltf.scene.traverse((c) => { if (c.isMesh && !g) g = c.geometry.clone(); });
-              if (g) {
-                // Center and scale to 100mm
-                const targetH = parseFloat(sliderHeight.value) || 100.0;
-                g.computeBoundingBox();
-                const curH = g.boundingBox.max.z - g.boundingBox.min.z;
-                const scale = targetH / Math.max(0.01, curH);
-                g.scale(scale, scale, scale);
-                setActiveMesh(g);
-              }
-            });
-          }
-        } catch (err) {
-          alert("Erreur Meshy API : " + err.message + "\nVous pouvez générer directement sur le site meshy.ai et importer le fichier .glb !");
-        } finally {
-          loadingOverlay.classList.add("hidden");
-        }
-        return;
-      }
-
       // Check if image is loaded
       if (!currentImageElement && !currentCleanDataUrl) {
-        alert("Veuillez d'abord glisser une image ou charger le modèle démo.");
+        alert("Veuillez d'abord glisser une image ou cliquer sur 'Charger démo Babel'.");
         return;
       }
 
       loadingOverlay.classList.remove("hidden");
-      document.getElementById("loadingTitle").textContent = "Génération du Maillage 3D...";
-      document.getElementById("loadingSubtitle").textContent = "Calcul géométrique haute précision pour Bambu Lab A1 Mini";
+      document.getElementById("loadingTitle").textContent = "Génération de la Statuette Volumétrique 3D...";
+      document.getElementById("loadingSubtitle").textContent = "Sculpture complète avant/arrière, traits fins et socle Bambu Lab A1 Mini";
 
       const targetH = parseFloat(sliderHeight.value) || 100.0;
       const baseThickness = parseFloat(sliderBase.value) || 4.5;
-      const reliefH = parseFloat(sliderBase.value) || 4.5;
       const invert = chkInvert.checked;
 
-      // CLIENT-SIDE IN-BROWSER 3D GENERATOR (Always works, 0€, 100% Free)
       try {
         const img = currentImageElement || new Image();
         if (!currentImageElement && currentCleanDataUrl) {
@@ -1119,7 +1044,7 @@
 
         const canvasCalc = document.createElement("canvas");
         const ctx = canvasCalc.getContext("2d");
-        const res = (currentEngine === "ultra") ? 220 : 140;
+        const res = (currentEngine === "ultra") ? 220 : 150;
         const aspect = img.naturalWidth / img.naturalHeight;
         const w = aspect > 1 ? res : Math.round(res * aspect);
         const h = aspect > 1 ? Math.round(res / aspect) : res;
@@ -1128,71 +1053,173 @@
         ctx.drawImage(img, 0, 0, w, h);
 
         const imgData = ctx.getImageData(0, 0, w, h).data;
-        const realH = targetH;
+        const realH = targetH - baseThickness;
         const realW = realH * aspect;
+        const maxVolThickness = Math.max(16.0, realW * 0.38); // Vraie épaisseur volumétrique de figurine
 
-        // Plane Geometry
-        const geom = new THREE.PlaneGeometry(realW, realH, w - 1, h - 1);
-        const pos = geom.attributes.position;
+        // Construction du solide volumétrique complet (Face avant sculptée + Dos galbé + Flancs scellés)
+        const vertices = [];
+        const indices = [];
 
-        // Gradients & Cavity extraction in JS
-        for (let i = 0; i < pos.count; i++) {
-          const row = Math.floor(i / w);
-          const col = i % w;
-          const pIdx = (row * w + col) * 4;
-          const alpha = imgData[pIdx + 3] / 255.0;
+        // Grille de coordonnées X et Y
+        // i = ligne (0 à h-1, du haut vers le bas -> Z va de realH à 0)
+        // j = colonne (0 à w-1, de gauche à droite -> X va de -realW/2 à realW/2)
+        const frontGrid = new Int32Array(h * w).fill(-1);
+        const backGrid = new Int32Array(h * w).fill(-1);
 
-          if (alpha < 0.1) {
-            pos.setZ(i, 0.0);
-            continue;
+        for (let row = 0; row < h; row++) {
+          const yNorm = (h - 1 - row) / (h - 1); // 1 en haut, 0 en bas
+          const zCoord = yNorm * realH + baseThickness; // Hauteur Z verticale
+
+          for (let col = 0; col < w; col++) {
+            const xNorm = col / (w - 1); // 0 à 1
+            const xCoord = (xNorm - 0.5) * realW;
+
+            const pIdx = (row * w + col) * 4;
+            const alpha = imgData[pIdx + 3] / 255.0;
+
+            if (alpha < 0.12) continue; // Fond transparent
+
+            let lum = (imgData[pIdx] * 0.299 + imgData[pIdx+1] * 0.587 + imgData[pIdx+2] * 0.114) / 255.0;
+            if (invert) lum = 1.0 - lum;
+
+            // Découpe des traits sculptés (Cavity carving sur les yeux, truffe, babines)
+            let cavity = 0.0;
+            if (currentEngine === "ultra") {
+              const dark = Math.max(0, 1.0 - (lum / 0.38));
+              cavity = -Math.pow(dark, 2.0) * 1.4;
+            }
+
+            // Épaisseur de la sculpture anatomique (relief avant)
+            const reliefThickness = (lum * 6.5) + cavity;
+
+            // Galbe anatomique volumétrique (Y va vers l'avant et vers l'arrière)
+            // L'effet volumétrique 360 arrondit le torse et le crâne
+            const torsoDist = 1.0 - Math.min(1.0, Math.pow((xNorm - 0.5) * 2.0, 2.0) + Math.pow((yNorm - 0.5) * 1.5, 2.0));
+            const baseVolY = Math.sqrt(Math.max(0.01, torsoDist)) * maxVolThickness;
+
+            // Sommet Face Avant (+Y)
+            const yFront = (baseVolY * 0.55) + reliefThickness;
+            const vIdxFront = vertices.length / 3;
+            vertices.push(xCoord, yFront, zCoord);
+            frontGrid[row * w + col] = vIdxFront;
+
+            // Sommet Face Arrière (-Y) pour un vrai volume 3D complet
+            const yBack = -(baseVolY * 0.45);
+            const vIdxBack = vertices.length / 3;
+            vertices.push(xCoord, yBack, zCoord);
+            backGrid[row * w + col] = vIdxBack;
           }
-
-          let lum = (imgData[pIdx] * 0.299 + imgData[pIdx+1] * 0.587 + imgData[pIdx+2] * 0.114) / 255.0;
-          if (invert) lum = 1.0 - lum;
-
-          // Cavity carving on dark facial regions (eyes, mouth, nostrils)
-          let cavity = 0.0;
-          if (currentEngine === "ultra") {
-            const dark = Math.max(0, 1.0 - (lum / 0.35));
-            cavity = -Math.pow(dark, 2.0) * 0.8;
-          }
-
-          const zVal = baseThickness + (lum * reliefH) + cavity;
-          pos.setZ(i, Math.max(0.5, zVal));
         }
 
-        // Orientation selon le mode :
-        // Mode 1 & 2 : Bas-relief / Lithophane à plat
-        // Mode 3 : Statuette Volumétrique DEBOUT (Hauteur Z = 100mm)
-        if (currentMode === 3) {
-          // Statuette Debout : rotation de la géométrie de relief à 90° autour de X pour que la tête soit en haut le long de l'axe Z
-          geom.rotateX(Math.PI / 2);
-          geom.computeBoundingBox();
-          // Repositionner au-dessus du socle solide
-          const curMinZ = geom.boundingBox.min.z;
-          geom.translate(0, 0, baseThickness - curMinZ);
+        // Triangulation Face Avant et Face Arrière
+        for (let row = 0; row < h - 1; row++) {
+          for (let col = 0; col < w - 1; col++) {
+            // Face avant
+            const fTL = frontGrid[row * w + col];
+            const fTR = frontGrid[row * w + col + 1];
+            const fBL = frontGrid[(row + 1) * w + col];
+            const fBR = frontGrid[(row + 1) * w + col + 1];
 
-          // Socle cylindrique ou rectangulaire robuste pour adhérence plateau Bambu Lab A1 Mini
-          const baseRadius = Math.max(realW, reliefH) / 2 + 6.0;
-          const standingBase = new THREE.CylinderGeometry(baseRadius, baseRadius + 2.0, baseThickness, 64);
-          standingBase.rotateX(Math.PI / 2);
-          standingBase.translate(0, 0, baseThickness / 2);
+            if (fTL !== -1 && fTR !== -1 && fBL !== -1) indices.push(fTL, fBL, fTR);
+            if (fTR !== -1 && fBL !== -1 && fBR !== -1) indices.push(fTR, fBL, fBR);
 
-          // Fusion du maillage statuette + socle
-          const standingGroup = new THREE.Group();
-          const mSubject = new THREE.Mesh(geom, materials[currentMaterialName]);
-          const mPlinth = new THREE.Mesh(standingBase, materials[currentMaterialName]);
-          standingGroup.add(mSubject);
-          standingGroup.add(mPlinth);
+            // Face arrière (sens horaire inversé pour normale vers l'extérieur)
+            const bTL = backGrid[row * w + col];
+            const bTR = backGrid[row * w + col + 1];
+            const bBL = backGrid[(row + 1) * w + col];
+            const bBR = backGrid[(row + 1) * w + col + 1];
 
-          setActiveMesh(geom);
-        } else {
-          // Mode 1 ou 2 : Plaque / bas-relief à plat sur le plateau
-          geom.computeBoundingBox();
-          const curMinZ = geom.boundingBox.min.z;
-          geom.translate(0, 0, -curMinZ);
-          setActiveMesh(geom);
+            if (bTL !== -1 && bTR !== -1 && bBL !== -1) indices.push(bTL, bTR, bBL);
+            if (bTR !== -1 && bBL !== -1 && bBR !== -1) indices.push(bTR, bBR, bBL);
+          }
         }
+
+        // Scellement des contours pour fermer le volume (Étanchéité Watertight)
+        for (let row = 0; row < h; row++) {
+          for (let col = 0; col < w; col++) {
+            const fCur = frontGrid[row * w + col];
+            const bCur = backGrid[row * w + col];
+            if (fCur === -1) continue;
+
+            // Voisin droit
+            if (col === w - 1 || frontGrid[row * w + col + 1] === -1) {
+              if (row < h - 1 && frontGrid[(row + 1) * w + col] !== -1) {
+                const fNext = frontGrid[(row + 1) * w + col];
+                const bNext = backGrid[(row + 1) * w + col];
+                indices.push(fCur, fNext, bCur);
+                indices.push(bCur, fNext, bNext);
+              }
+            }
+            // Voisin gauche
+            if (col === 0 || frontGrid[row * w + col - 1] === -1) {
+              if (row < h - 1 && frontGrid[(row + 1) * w + col] !== -1) {
+                const fNext = frontGrid[(row + 1) * w + col];
+                const bNext = backGrid[(row + 1) * w + col];
+                indices.push(fCur, bCur, fNext);
+                indices.push(bCur, bNext, fNext);
+              }
+            }
+            // Voisin bas (scellement vers le socle)
+            if (row === h - 1 || frontGrid[(row + 1) * w + col] === -1) {
+              if (col < w - 1 && frontGrid[row * w + col + 1] !== -1) {
+                const fNextCol = frontGrid[row * w + col + 1];
+                const bNextCol = backGrid[row * w + col + 1];
+                indices.push(fCur, bCur, fNextCol);
+                indices.push(bCur, bNextCol, fNextCol);
+              }
+            }
+            // Voisin haut (scellement au sommet de la tête)
+            if (row === 0 || frontGrid[(row - 1) * w + col] === -1) {
+              if (col < w - 1 && frontGrid[row * w + col + 1] !== -1) {
+                const fNextCol = frontGrid[row * w + col + 1];
+                const bNextCol = backGrid[row * w + col + 1];
+                indices.push(fCur, fNextCol, bCur);
+                indices.push(bCur, fNextCol, bNextCol);
+              }
+            }
+          }
+        }
+
+        // Socle d'adhérence stable Bambu Lab A1 Mini (Cylindre biseauté à Z = 0)
+        const baseRadius = Math.max(realW, maxVolThickness) / 2.0 + 7.0;
+        const baseSegments = 64;
+        const baseCenterBottomIdx = vertices.length / 3;
+        vertices.push(0, 0, 0); // Centre fond du socle
+        const baseCenterTopIdx = vertices.length / 3;
+        vertices.push(0, 0, baseThickness); // Centre sommet du socle
+
+        const ringBottomStart = vertices.length / 3;
+        for (let s = 0; s < baseSegments; s++) {
+          const angle = (s / baseSegments) * Math.PI * 2;
+          vertices.push(Math.cos(angle) * (baseRadius + 1.5), Math.sin(angle) * (baseRadius + 1.5), 0);
+        }
+
+        const ringTopStart = vertices.length / 3;
+        for (let s = 0; s < baseSegments; s++) {
+          const angle = (s / baseSegments) * Math.PI * 2;
+          vertices.push(Math.cos(angle) * baseRadius, Math.sin(angle) * baseRadius, baseThickness);
+        }
+
+        // Triangles du socle
+        for (let s = 0; s < baseSegments; s++) {
+          const sNext = (s + 1) % baseSegments;
+          // Bas
+          indices.push(baseCenterBottomIdx, ringBottomStart + sNext, ringBottomStart + s);
+          // Flanc biseauté
+          indices.push(ringBottomStart + s, ringBottomStart + sNext, ringTopStart + s);
+          indices.push(ringBottomStart + sNext, ringTopStart + sNext, ringTopStart + s);
+          // Haut
+          indices.push(baseCenterTopIdx, ringTopStart + s, ringTopStart + sNext);
+        }
+
+        // Assemblage final du BufferGeometry
+        const finalGeom = new THREE.BufferGeometry();
+        finalGeom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        finalGeom.setIndex(indices);
+        finalGeom.computeVertexNormals();
+
+        setActiveMesh(finalGeom);
       } catch (err) {
         console.error("Génération locale:", err);
         alert("Erreur lors de la génération : " + err.message);
