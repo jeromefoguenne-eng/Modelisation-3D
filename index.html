@@ -2,8 +2,11 @@
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Antigravity — PNG to 3D Print (Bambu Lab A1 Mini)</title>
+  <title>Agent Antigravity — PNG to 3D Print (Bambu Lab A1 Mini) v1.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -696,6 +699,26 @@
     const objLoader = new THREE.OBJLoader();
     const stlExporter = new THREE.STLExporter();
 
+    // Clear Active 3D Mesh & Reset Viewport
+    function clearActiveMesh() {
+      if (meshObject) {
+        scene.remove(meshObject);
+        if (meshObject.geometry) meshObject.geometry.dispose();
+        meshObject = null;
+      }
+      if (emptyBedOverlay) emptyBedOverlay.classList.remove("hidden");
+      document.getElementById("statDimX").textContent = "0";
+      document.getElementById("statDimY").textContent = "0";
+      document.getElementById("statDimZ").textContent = "0";
+      document.getElementById("statWeight").textContent = "0";
+      document.getElementById("statTime").textContent = "--";
+      document.getElementById("statWatertight").textContent = "En attente";
+      btnDownloadSTL.classList.add("opacity-50", "pointer-events-none");
+      btnDownload3MF.classList.add("opacity-50", "pointer-events-none");
+      btnDownloadSTL.removeAttribute("href");
+      btnDownload3MF.removeAttribute("href");
+    }
+
     // Set Active 3D Mesh
     function setActiveMesh(geometry, customMaterial = null) {
       if (meshObject) {
@@ -844,13 +867,6 @@
           dropPrompt.classList.add("hidden");
           imagePreviewContainer.classList.remove("hidden");
           loadingOverlay.classList.add("hidden");
-
-          // Silent sync with local server if active (does not block or error)
-          try {
-            const fd = new FormData();
-            fd.append("file", file);
-            fetch("/api/upload", { method: "POST", body: fd }).catch(() => {});
-          } catch (_) {}
         };
         img.onerror = () => {
           loadingOverlay.classList.add("hidden");
@@ -896,7 +912,7 @@
       document.body.removeChild(a);
     });
 
-    // Supprimer l'image (Remise à zéro propre)
+    // Supprimer l'image & le modèle 3D associé (Remise à zéro propre)
     btnDeleteImage.addEventListener("click", (e) => {
       e.stopPropagation();
       currentFilename = null;
@@ -907,6 +923,7 @@
       fileInput.value = "";
       imagePreviewContainer.classList.add("hidden");
       dropPrompt.classList.remove("hidden");
+      clearActiveMesh();
     });
 
     btnRemoveImage.addEventListener("click", (e) => {
