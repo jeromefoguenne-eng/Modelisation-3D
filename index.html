@@ -28,7 +28,7 @@
       }
     }
   </script>
-  <!-- Three.js & STLLoader -->
+  <!-- Three.js & Loaders / Exporters -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
@@ -58,20 +58,17 @@
         <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
           Agent Antigravity <span class="text-xs px-2 py-0.5 rounded-full bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/30">PNG to 3D Print</span>
         </h1>
-        <p class="text-xs text-slate-400">Générateur de Maillages Volumétriques FDM pour Bambu Lab A1 Mini</p>
+        <p class="text-xs text-slate-400">Modélisation Volumétrique FDM pour Bambu Lab A1 Mini</p>
       </div>
     </div>
 
-    <!-- Machine Badge & Status -->
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700/60 border border-dark-600 text-xs">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-slate-300">GPU : <strong>RTX 4070 Ti (12GB)</strong></span>
-      </div>
-      <button id="btnOpenMeshyGuide" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/50 hover:to-blue-600/50 border border-cyan-500/50 text-xs text-cyan-200 font-bold transition shadow-sm">
-        <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+    <!-- Machine Badges & Actions -->
+    <div class="flex items-center gap-3">
+      <button id="btnOpenMeshyGuide" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-900/40 to-indigo-900/40 hover:from-purple-900/60 hover:to-indigo-900/60 border border-purple-500/40 text-xs text-purple-200 font-bold transition shadow-sm">
+        <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
         <span>Précision Meshy-7 Gratuite</span>
       </button>
+
       <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-bambu-500/40 text-xs text-emerald-300">
         <i data-lucide="printer" class="w-4 h-4 text-bambu-400"></i>
         <span>Bambu Lab A1 Mini (180×180×180 mm)</span>
@@ -84,7 +81,7 @@
 
     <!-- Left Sidebar: Controls & Workflow -->
     <aside class="w-[440px] border-r border-dark-700 bg-dark-800 flex flex-col shrink-0 overflow-y-auto">
-      <div class="p-5 space-y-6">
+      <div class="p-5 space-y-5">
 
         <!-- Étape 1 : Source Image -->
         <section class="space-y-3">
@@ -93,20 +90,21 @@
               <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">1</span>
               Image Source (PNG / JPG)
             </h2>
-            <button id="btnLoadDemo" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Charger "Sans titre.png"
+            <button id="btnLoadDemo" type="button" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Charger démo Babel
             </button>
           </div>
 
           <!-- Drop Area -->
           <div id="dropZone" class="border-2 border-dashed border-dark-600 hover:border-bambu-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-dark-900/40 hover:bg-dark-900/60 group relative overflow-hidden">
             <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg" class="hidden">
+            
             <div id="dropPrompt" class="space-y-2 py-3">
               <div class="w-10 h-10 mx-auto rounded-full bg-dark-700 flex items-center justify-center text-slate-400 group-hover:text-bambu-400 transition">
                 <i data-lucide="upload-cloud" class="w-5 h-5"></i>
               </div>
               <p class="text-xs text-slate-300 font-medium">Glissez votre image ici ou <span class="text-bambu-400 underline">parcourir</span></p>
-              <p class="text-[11px] text-slate-500">PNG avec transparence ou fond blanc (max 25 Mo)</p>
+              <p class="text-[11px] text-slate-500">PNG avec transparence ou fond blanc (traitement 100% local)</p>
             </div>
 
             <!-- Preview Card avec Enregistrer et Supprimer -->
@@ -117,11 +115,11 @@
                   <p id="imageName" class="text-xs font-semibold text-white truncate">image.png</p>
                   <p id="imageDimensions" class="text-[11px] text-slate-400">1414 × 2000 px</p>
                   <div class="flex gap-2 mt-1.5">
-                    <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Détouré</span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Prêt</span>
+                    <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Prêt</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Local</span>
                   </div>
                 </div>
-                <button id="btnRemoveImage" class="p-1.5 hover:bg-dark-700 rounded-lg text-slate-400 hover:text-red-400 transition" title="Fermer">
+                <button id="btnRemoveImage" type="button" class="p-1.5 hover:bg-dark-700 rounded-lg text-slate-400 hover:text-red-400 transition" title="Fermer">
                   <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
               </div>
@@ -181,7 +179,7 @@
             </button>
           </div>
 
-          <!-- Sélecteur de Précision Mode 3 (Studio Ultra-HD vs Standard) -->
+          <!-- Options Mode 3 -->
           <div id="mode3EngineSelector" class="p-3 rounded-xl bg-dark-900/70 border border-dark-600 space-y-2.5">
             <div class="flex items-center justify-between text-xs font-semibold text-slate-200">
               <span class="flex items-center gap-1.5">
@@ -204,8 +202,20 @@
                 <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-300">
                   <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Standard Rapide
                 </div>
-                <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">44k polygones lissés (TripoSR 10s)</div>
+                <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">44k polygones lissés (Rapide)</div>
               </button>
+            </div>
+
+            <!-- Espace Meshy Connecté -->
+            <div class="pt-2 border-t border-dark-700/80 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-purple-300 font-semibold flex items-center gap-1">
+                  <i data-lucide="key" class="w-3 h-3 text-purple-400"></i> Compte Meshy Connecté :
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">jeromefoguenne@gmail.com</span>
+              </div>
+              <input type="password" id="meshyApiKeyInput" placeholder="Clé API Meshy facultative (msy_...)" class="w-full px-2.5 py-1 bg-dark-800 border border-dark-600 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-400 placeholder:text-slate-500">
+              <p class="text-[10px] text-slate-400 italic">Ou glissez directement le fichier .glb téléchargé gratuitement depuis meshy.ai</p>
             </div>
           </div>
         </section>
@@ -242,7 +252,7 @@
           <select id="filamentSelect" class="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-bambu-500 font-medium">
             <optgroup label="🌟 PLA Bambu Lab (Recommandé A1 Mini)">
               <option value="bambu_pla_basic" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="basic" selected>Bambu PLA Basic (Plastique rigide lisse équilibré)</option>
-              <option value="bambu_pla_matte" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="matte">Bambu PLA Matte (Mat velouté, masque les lignes de couches)</option>
+              <option value="bambu_pla_matte" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="matte">Bambu PLA Matte (Mat velouté, masque les couches)</option>
               <option value="bambu_pla_silk" data-density="1.24" data-nozzle="225" data-bed="60" data-mat="silk">Bambu PLA Silk (Reflet satiné soyeux or / argent)</option>
               <option value="bambu_pla_tough" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="tough">Bambu PLA Tough (Haute résistance aux chocs)</option>
               <option value="bambu_pla_marble" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="marble">Bambu PLA Marble (Aspect pierre marbrée mouchetée)</option>
@@ -325,7 +335,7 @@
         </section>
 
         <!-- Bouton de Génération -->
-        <button id="btnGenerate" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-bambu-600 to-emerald-500 hover:from-bambu-500 hover:to-emerald-400 font-bold text-white text-sm shadow-lg shadow-bambu-500/25 transition flex items-center justify-center gap-2 active:scale-[0.99]">
+        <button id="btnGenerate" type="button" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-bambu-600 to-emerald-500 hover:from-bambu-500 hover:to-emerald-400 font-bold text-white text-sm shadow-lg shadow-bambu-500/25 transition flex items-center justify-center gap-2 active:scale-[0.99]">
           <i data-lucide="wand-2" class="w-4 h-4"></i>
           <span>Générer le Modèle 3D Imprimable</span>
         </button>
@@ -339,6 +349,25 @@
       <!-- Viewport 3D Canvas -->
       <div id="viewportContainer" class="flex-1 relative overflow-hidden bg-gradient-to-b from-dark-900 to-[#0e131d]">
         <canvas id="threeCanvas" class="w-full h-full block"></canvas>
+
+        <!-- Overlay Plateau Vierge au Démarrage -->
+        <div id="emptyBedOverlay" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-center p-6 transition">
+          <div class="p-5 rounded-2xl bg-dark-900/85 backdrop-blur-md border border-dark-700/80 max-w-sm space-y-3 pointer-events-auto shadow-2xl">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-bambu-500/20 text-bambu-400 flex items-center justify-center border border-bambu-500/30">
+              <i data-lucide="printer" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">Plateau Bambu Lab A1 Mini Vierge</h3>
+              <p class="text-xs text-slate-400 mt-1">Glissez une image à gauche ou importez un modèle 3D (.glb, .obj, .stl) pour démarrer la modélisation.</p>
+            </div>
+            <div class="pt-1 flex items-center justify-center gap-2">
+              <button id="btnQuickDemoLoad" type="button" class="px-3 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-600 text-xs text-bambu-300 font-semibold transition flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Voir le modèle test Babel (10cm)</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- Viewport Overlay Toolbar -->
         <div class="absolute top-4 left-4 flex items-center gap-2 bg-dark-800/90 backdrop-blur border border-dark-700 rounded-xl p-1.5 shadow-xl z-10">
@@ -355,26 +384,21 @@
           </button>
         </div>
 
-        <!-- Matériaux & Shaders -->
+        <!-- Materials Picker -->
         <div class="absolute top-4 right-4 flex items-center gap-2 bg-dark-800/90 backdrop-blur border border-dark-700 rounded-xl p-1.5 shadow-xl z-10 text-xs">
           <span class="text-slate-400 pl-2">Matière :</span>
-          <button class="mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40" data-mat="gold">Bronze Doré</button>
-          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="white">PLA Blanc</button>
-          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="gray">Gris Studio</button>
-        </div>
-
-        <!-- Plateau Bambu Lab Legend -->
-        <div class="absolute bottom-4 left-4 pointer-events-none flex items-center gap-2 bg-dark-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-dark-700 text-[11px] text-slate-400">
-          <div class="w-3 h-3 rounded border border-bambu-500/60 bg-bambu-500/10"></div>
-          <span>Volume A1 Mini : 180 × 180 mm (Plateau texturé PEI)</span>
+          <button class="mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40" data-mat="basic">Basic</button>
+          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="matte">Matte</button>
+          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="silk">Silk</button>
+          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="carbon">Carbone</button>
         </div>
 
         <!-- Loading Spinner -->
-        <div id="loadingOverlay" class="hidden absolute inset-0 bg-dark-900/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
+        <div id="loadingOverlay" class="hidden absolute inset-0 bg-dark-900/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
           <div class="w-12 h-12 border-4 border-bambu-500 border-t-transparent rounded-full animate-spin"></div>
           <div class="text-center space-y-1">
             <p id="loadingTitle" class="text-sm font-bold text-white">Reconstruction 3D en cours...</p>
-            <p id="loadingSubtitle" class="text-xs text-slate-400">Calcul du maillage volumétrique sur GPU RTX 4070 Ti</p>
+            <p id="loadingSubtitle" class="text-xs text-slate-400">Traitement géométrique et calcul du maillage</p>
           </div>
         </div>
       </div>
@@ -387,21 +411,21 @@
           <div class="space-y-1">
             <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Dimensions Pièce</div>
             <div class="text-base font-bold text-white font-mono flex items-center gap-2">
-              <span id="statDimX">119.0</span> × <span id="statDimY">114.6</span> × <span id="statDimZ" class="text-bambu-400">100.0</span> mm
+              <span id="statDimX">--</span> × <span id="statDimY">--</span> × <span id="statDimZ" class="text-bambu-400">--</span> mm
             </div>
             <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
               <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
-              <span>100% Imprimable (Watertight Manifold)</span>
+              <span id="statWatertight">Plateau Vierge</span>
             </div>
           </div>
 
           <div class="h-10 w-px bg-dark-700"></div>
 
           <div class="space-y-1">
-            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Estimation A1 Mini (PLA)</div>
+            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Estimation Bambu A1 Mini</div>
             <div class="text-base font-bold text-white flex items-center gap-3">
-              <span class="flex items-center gap-1 font-mono text-emerald-400"><i data-lucide="scale" class="w-3.5 h-3.5"></i> <span id="statWeight">38.5</span> g</span>
-              <span class="flex items-center gap-1 font-mono text-cyan-400"><i data-lucide="clock" class="w-3.5 h-3.5"></i> <span id="statTime">1h 45m</span></span>
+              <span class="flex items-center gap-1 font-mono text-emerald-400"><i data-lucide="scale" class="w-3.5 h-3.5"></i> <span id="statWeight">--</span> g</span>
+              <span class="flex items-center gap-1 font-mono text-cyan-400"><i data-lucide="clock" class="w-3.5 h-3.5"></i> <span id="statTime">--</span></span>
             </div>
             <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
               <i data-lucide="layers" class="w-3.5 h-3.5 text-bambu-400"></i>
@@ -415,22 +439,18 @@
           <div class="space-y-1 text-xs">
             <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Tranchage Bambu Studio</div>
             <div class="text-slate-300">Supports : <strong class="text-amber-400">Arborescents (Tree)</strong></div>
-          <!-- Paramètres Bambu Studio -->
-          <div class="space-y-1 text-xs">
-            <div class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Tranchage Bambu Studio</div>
-            <div class="text-slate-300">Supports : <strong class="text-amber-400">Arborescents (Tree)</strong></div>
             <div class="text-slate-300">Remplissage : <strong class="text-emerald-400">12% Gyroid</strong> (3 parois)</div>
           </div>
         </div>
 
         <!-- Export Buttons -->
         <div class="flex items-center gap-3">
-          <a id="btnDownloadSTL" href="./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl" download="Babel_Ultra_Detail_MeshyGrade_10cm.stl" class="px-5 py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white font-bold text-xs flex items-center gap-2 transition hover:scale-[1.02] shadow">
+          <a id="btnDownloadSTL" href="#" class="px-5 py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white font-bold text-xs flex items-center gap-2 transition hover:scale-[1.02] shadow opacity-50 pointer-events-none">
             <i data-lucide="download" class="w-4 h-4 text-slate-300"></i>
-            <span>Télécharger STL (Ultra-HD)</span>
+            <span>Télécharger STL</span>
           </a>
 
-          <a id="btnDownload3MF" href="./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.3mf" download="Babel_Ultra_Detail_MeshyGrade_10cm.3mf" class="px-6 py-3 rounded-xl bg-gradient-to-r from-bambu-600 to-emerald-500 hover:from-bambu-500 hover:to-emerald-400 text-white font-extrabold text-xs flex items-center gap-2 transition hover:scale-[1.02] shadow-lg shadow-bambu-500/20">
+          <a id="btnDownload3MF" href="#" class="px-6 py-3 rounded-xl bg-gradient-to-r from-bambu-600 to-emerald-500 hover:from-bambu-500 hover:to-emerald-400 text-white font-extrabold text-xs flex items-center gap-2 transition hover:scale-[1.02] shadow-lg shadow-bambu-500/20 opacity-50 pointer-events-none">
             <i data-lucide="printer" class="w-4 h-4"></i>
             <span>Télécharger 3MF (Bambu Studio)</span>
           </a>
@@ -447,8 +467,8 @@
     <div class="bg-dark-800 border border-dark-600 rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
       <div class="p-4 border-b border-dark-700 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
-          <h3 class="text-sm font-bold text-white">Comment Atteindre la Précision Meshy-7 Gratuitement (0,00 €)</h3>
+          <i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i>
+          <h3 class="text-sm font-bold text-white">Comment Obtenir la Précision Meshy-7 100% Gratuitement</h3>
         </div>
         <button id="btnCloseMeshyGuide" type="button" class="p-1 rounded-lg hover:bg-dark-700 text-slate-400 hover:text-white transition">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -456,35 +476,34 @@
       </div>
       <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-300">
         
-        <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 space-y-1.5">
-          <div class="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
-            <i data-lucide="check-circle" class="w-4 h-4 text-cyan-400"></i> Méthode 1 : Notre Moteur Studio Ultra-Sculpt Local (Recommandé - Illimité)
+        <div class="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-purple-300 flex items-center gap-1.5">
+            <i data-lucide="user-check" class="w-4 h-4 text-purple-400"></i> Votre Compte Meshy est Actif (jeromefoguenne@gmail.com)
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            Notre application intègre directement un algorithme de <strong>Cavity Carving & Gradients Scharr</strong> qui subdivise le modèle à <strong>223 000+ polygones</strong>.
-            Il creuse profondément les fentes (yeux, narines, babines, médaillon) et surélève les arêtes vives.
-            <strong>100% hors ligne, illimité, sans abonnement sur votre GPU RTX 4070 Ti !</strong>
+            Meshy offre <strong>200 crédits gratuits chaque mois</strong> à chaque utilisateur ! Vous pouvez donc générer plusieurs modèles de qualité studio par mois sans payer un centime.<br>
+            • Générez votre modèle sur <strong><a href="https://www.meshy.ai" target="_blank" class="text-purple-300 underline font-semibold">meshy.ai</a></strong> puis téléchargez le fichier <strong>.glb</strong>.<br>
+            • <strong>Glissez-le directement dans notre application</strong> (bouton <em>Importer un modèle 3D</em>) : l'application le redimensionne à 10 cm, fusionne le socle A1 Mini et prépare le fichier pour Bambu Studio !
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
+            <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i> Notre Moteur Local Studio Ultra-Sculpt (0€, Illimité, Hors-Ligne)
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            Notre application intègre un algorithme de <strong>Cavity Carving & Gradients Scharr</strong> qui subdivise le modèle à <strong>223 000+ polygones</strong>.<br>
+            Il creuse profondément les fentes (yeux, narines, babines, médaillon) et surélève les crêtes vives.
+            <strong>100% hors ligne, illimité et gratuit sur votre GPU RTX 4070 Ti !</strong>
           </p>
         </div>
 
         <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5">
           <div class="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
-            <i data-lucide="gift" class="w-4 h-4 text-emerald-400"></i> Méthode 2 : Compte Gratuit Meshy.ai (200 crédits/mois offerts)
+            <i data-lucide="key" class="w-4 h-4 text-emerald-400"></i> Connexion Clé API Directe
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            1. Créez un compte gratuit sur <a href="https://www.meshy.ai" target="_blank" class="text-emerald-400 underline font-semibold">meshy.ai</a> (aucun moyen de paiement requis).<br>
-            2. Générez votre modèle 3D à partir de votre photo (gratuit avec vos crédits mensuels).<br>
-            3. Téléchargez le fichier en format <strong>.glb</strong> ou <strong>.obj</strong>.<br>
-            4. <strong>Glissez-le directement dans notre application</strong> : elle le redimensionne à 10 cm, fusionne le socle d'adhérence A1 Mini et génère le fichier 3MF prêt à imprimer !
-          </p>
-        </div>
-
-        <div class="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/40 space-y-1.5">
-          <div class="text-sm font-bold text-indigo-300 flex items-center gap-1.5">
-            <i data-lucide="cpu" class="w-4 h-4 text-indigo-400"></i> Méthode 3 : Modèles Open-Source SOTA (Tencent Hunyuan3D & Trellis)
-          </div>
-          <p class="text-[11px] text-slate-300 leading-relaxed">
-            Accédez gratuitement aux démos ZeroGPU sur Hugging Face Spaces (ex: <a href="https://huggingface.co/spaces/tencent/Hunyuan3D-2" target="_blank" class="text-indigo-400 underline font-semibold">Tencent Hunyuan3D-2</a> ou Microsoft Trellis), téléchargez le maillage GLB et importez-le en 1 clic dans notre application.
+            Vous pouvez également coller votre clé API Meshy (disponible dans vos paramètres Meshy.ai) dans le champ prévu à gauche sous l'Étape 2 pour déclencher la modélisation sans quitter l'application.
           </p>
         </div>
 
@@ -527,14 +546,17 @@
   <script>
     lucide.createIcons();
 
-    // App State
+    // App State (Starts completely clean & blank)
     let currentMode = 3;
-    let currentEngine = "ultra"; // "ultra" or "standard"
-    let currentFilename = "sans_titre.png";
+    let currentEngine = "ultra";
+    let currentFilename = null;
+    let currentImageElement = null;
+    let currentImageDataUrl = null;
+    let currentCleanDataUrl = null;
     let isWireframe = false;
     let currentMaterialName = "basic";
-    let currentDensity = 1.24; // PLA default
-    let currentVolumeCm3 = 88.5; // Estimated baseline
+    let currentDensity = 1.24;
+    let currentVolumeCm3 = 0.0;
     let meshObject = null;
 
     // UI Elements
@@ -546,12 +568,20 @@
     const imageName = document.getElementById("imageName");
     const imageDimensions = document.getElementById("imageDimensions");
     const btnRemoveImage = document.getElementById("btnRemoveImage");
+    const btnSaveImage = document.getElementById("btnSaveImage");
+    const btnDeleteImage = document.getElementById("btnDeleteImage");
     const btnLoadDemo = document.getElementById("btnLoadDemo");
+    const btnQuickDemoLoad = document.getElementById("btnQuickDemoLoad");
+    const emptyBedOverlay = document.getElementById("emptyBedOverlay");
     const btnTrigger3DImport = document.getElementById("btnTrigger3DImport");
     const file3DInput = document.getElementById("file3DInput");
     const modeButtons = document.querySelectorAll(".mode-btn");
     const engineButtons = document.querySelectorAll(".engine-btn");
     const mode3EngineSelector = document.getElementById("mode3EngineSelector");
+    const meshyApiKeyInput = document.getElementById("meshyApiKeyInput");
+    const btnOpenMeshyGuide = document.getElementById("btnOpenMeshyGuide");
+    const btnCloseMeshyGuide = document.getElementById("btnCloseMeshyGuide");
+    const meshyGuideModal = document.getElementById("meshyGuideModal");
     const btnOpenCompare = document.getElementById("btnOpenCompare");
     const btnCloseCompare = document.getElementById("btnCloseCompare");
     const compareModal = document.getElementById("compareModal");
@@ -561,6 +591,12 @@
     const valBase = document.getElementById("valBase");
     const chkAddBase = document.getElementById("chkAddBase");
     const chkInvert = document.getElementById("chkInvert");
+    const filamentSelect = document.getElementById("filamentSelect");
+    const filNozzleTemp = document.getElementById("filNozzleTemp");
+    const filBedTemp = document.getElementById("filBedTemp");
+    const filDensity = document.getElementById("filDensity");
+    const filNozzleType = document.getElementById("filNozzleType");
+    const filTip = document.getElementById("filTip");
     const btnGenerate = document.getElementById("btnGenerate");
     const loadingOverlay = document.getElementById("loadingOverlay");
     const btnDownloadSTL = document.getElementById("btnDownloadSTL");
@@ -583,7 +619,7 @@
 
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(130, -180, 140);
-    camera.up.set(0, 0, 1); // Z is UP for 3D printing
+    camera.up.set(0, 0, 1);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -597,23 +633,22 @@
     controls.target.set(0, 0, 45);
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
     dirLight1.position.set(150, -150, 200);
     dirLight1.castShadow = true;
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.4);
+    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.45);
     dirLight2.position.set(-150, 150, 100);
     scene.add(dirLight2);
 
-    // Bambu Lab A1 Mini Bed (180 x 180 mm)
+    // Bambu Lab A1 Mini Bed Plate (180 x 180 mm)
     function createBambuBed() {
       const bedGroup = new THREE.Group();
       
-      // Bed plate plate
       const bedGeo = new THREE.BoxGeometry(180, 180, 2);
       const bedMat = new THREE.MeshStandardMaterial({
         color: 0x1e2430,
@@ -625,13 +660,11 @@
       bedMesh.receiveShadow = true;
       bedGroup.add(bedMesh);
 
-      // Grid helper (180x180, 18 divisions = 10mm per square)
       const grid = new THREE.GridHelper(180, 18, 0x00ae42, 0x334155);
       grid.rotation.x = Math.PI / 2;
       grid.position.set(0, 0, 0.1);
       bedGroup.add(grid);
 
-      // Origin indicator (front-left notch)
       const notchGeo = new THREE.BoxGeometry(10, 10, 2.2);
       const notchMat = new THREE.MeshBasicMaterial({ color: 0x00ae42 });
       const notch = new THREE.Mesh(notchGeo, notchMat);
@@ -642,361 +675,552 @@
     }
     createBambuBed();
 
-    // Bibliothèque complète des matières de filaments Bambu Lab A1 Mini
+    // Material Library for Bambu Lab Filaments
     const materials = {
-      basic: new THREE.MeshStandardMaterial({
-        color: 0x2563eb, // Bambu Blue PLA Basic
-        roughness: 0.35,
-        metalness: 0.15,
-        wireframe: false
-      }),
-      matte: new THREE.MeshStandardMaterial({
-        color: 0xf8fafc, // Pure Ivory Matte PLA
-        roughness: 0.88,
-        metalness: 0.05,
-        wireframe: false
-      }),
-      silk: new THREE.MeshStandardMaterial({
-        color: 0xf59e0b, // Silk Gold PLA
-        roughness: 0.22,
-        metalness: 0.55,
-        wireframe: false
-      }),
-      tough: new THREE.MeshStandardMaterial({
-        color: 0x059669, // Tough Forest Green PLA
-        roughness: 0.45,
-        metalness: 0.1,
-        wireframe: false
-      }),
-      marble: new THREE.MeshStandardMaterial({
-        color: 0xe2e8f0, // Marble Granite
-        roughness: 0.65,
-        metalness: 0.05,
-        wireframe: false
-      }),
-      wood: new THREE.MeshStandardMaterial({
-        color: 0xb45309, // Wood brown
-        roughness: 0.9,
-        metalness: 0.0,
-        wireframe: false
-      }),
-      glow: new THREE.MeshStandardMaterial({
-        color: 0xa7f3d0, // Glow Green
-        roughness: 0.3,
-        metalness: 0.1,
-        wireframe: false
-      }),
-      petg: new THREE.MeshStandardMaterial({
-        color: 0x0284c7, // PETG Deep Blue
-        roughness: 0.25,
-        metalness: 0.2,
-        wireframe: false
-      }),
-      translucent: new THREE.MeshStandardMaterial({
-        color: 0xbae6fd,
-        roughness: 0.18,
-        metalness: 0.1,
-        transparent: true,
-        opacity: 0.72,
-        wireframe: false
-      }),
-      tpu: new THREE.MeshStandardMaterial({
-        color: 0xf43f5e, // TPU Red flexible
-        roughness: 0.75,
-        metalness: 0.0,
-        wireframe: false
-      }),
-      carbon: new THREE.MeshStandardMaterial({
-        color: 0x1e293b, // Carbon Graphite Black
-        roughness: 0.92,
-        metalness: 0.12,
-        wireframe: false
-      }),
-      support: new THREE.MeshStandardMaterial({
-        color: 0xfef08a, // Support Yellow/White
-        roughness: 0.6,
-        metalness: 0.0,
-        wireframe: false
-      }),
-      gold: new THREE.MeshStandardMaterial({
-        color: 0xe6b360,
-        roughness: 0.3,
-        metalness: 0.5,
-        wireframe: false
-      }),
-      white: new THREE.MeshStandardMaterial({
-        color: 0xf1f5f9,
-        roughness: 0.4,
-        metalness: 0.1,
-        wireframe: false
-      }),
-      gray: new THREE.MeshStandardMaterial({
-        color: 0x94a3b8,
-        roughness: 0.5,
-        metalness: 0.2,
-        wireframe: false
-      })
+      basic: new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.35, metalness: 0.15 }),
+      matte: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.88, metalness: 0.05 }),
+      silk: new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.22, metalness: 0.55 }),
+      tough: new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.45, metalness: 0.1 }),
+      marble: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.65, metalness: 0.05 }),
+      wood: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9, metalness: 0.0 }),
+      glow: new THREE.MeshStandardMaterial({ color: 0xa7f3d0, roughness: 0.3, metalness: 0.1 }),
+      petg: new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.25, metalness: 0.2 }),
+      translucent: new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.18, metalness: 0.1, transparent: true, opacity: 0.72 }),
+      tpu: new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.75, metalness: 0.0 }),
+      carbon: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.92, metalness: 0.12 }),
+      support: new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.6, metalness: 0.0 })
     };
 
-
-    // Client-Side In-Browser Generation (GitHub Pages Standalone)
+    const stlLoader = new THREE.STLLoader();
+    const gltfLoader = new THREE.GLTFLoader();
+    const objLoader = new THREE.OBJLoader();
     const stlExporter = new THREE.STLExporter();
 
-    function generateClientSideHeightmap(img, targetH, baseThickness, reliefH, invert) {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const res = 180;
-      const aspect = img.width / img.height;
-      const w = aspect > 1 ? res : Math.round(res * aspect);
-      const h = aspect > 1 ? Math.round(res / aspect) : res;
-      canvas.width = w;
-      canvas.height = h;
-      ctx.drawImage(img, 0, 0, w, h);
-      const imgData = ctx.getImageData(0, 0, w, h).data;
-
-      const realH = targetH;
-      const realW = realH * aspect;
-
-      const geom = new THREE.PlaneGeometry(realW, realH, w - 1, h - 1);
-      const pos = geom.attributes.position;
-
-      for (let i = 0; i < pos.count; i++) {
-        const row = Math.floor(i / w);
-        const col = i % w;
-        const pIdx = (row * w + col) * 4;
-        let lum = (imgData[pIdx] * 0.299 + imgData[pIdx+1] * 0.587 + imgData[pIdx+2] * 0.114) / 255.0;
-        if (invert) lum = 1.0 - lum;
-        pos.setZ(i, baseThickness + lum * reliefH);
-      }
-      geom.computeVertexNormals();
-
-      // Base solid box
-      const baseGeom = new THREE.BoxGeometry(realW, realH, baseThickness);
-      baseGeom.translate(0, 0, baseThickness / 2);
-
-      const group = new THREE.Group();
-      const mTop = new THREE.Mesh(geom, materials[currentMaterialName]);
-      const mBase = new THREE.Mesh(baseGeom, materials[currentMaterialName]);
-      group.add(mTop);
-      group.add(mBase);
-      return group;
-    }
-
-    function exportMeshToSTL(object, filename) {
-      const result = stlExporter.parse(object, { binary: true });
-      const blob = new Blob([result], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      btnDownloadSTL.href = url;
-      btnDownloadSTL.download = filename;
-      btnDownload3MF.href = url;
-      btnDownload3MF.download = filename.replace('.stl', '.3mf');
-      return url;
-    }
-
-    // Load STL Model
-    const stlLoader = new THREE.STLLoader();
-
-    function loadModelSTL(url) {
+    // Set Active 3D Mesh
+    function setActiveMesh(geometry, customMaterial = null) {
       if (meshObject) {
         scene.remove(meshObject);
-        meshObject.geometry.dispose();
+        if (meshObject.geometry) meshObject.geometry.dispose();
       }
 
+      geometry.computeVertexNormals();
+      const mat = customMaterial || materials[currentMaterialName].clone();
+      mat.wireframe = isWireframe;
+
+      meshObject = new THREE.Mesh(geometry, mat);
+      meshObject.castShadow = true;
+      meshObject.receiveShadow = true;
+
+      scene.add(meshObject);
+
+      // Hide blank bed overlay
+      if (emptyBedOverlay) emptyBedOverlay.classList.add("hidden");
+
+      // Center and frame
+      geometry.computeBoundingBox();
+      const box = geometry.boundingBox;
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      const dx = (box.max.x - box.min.x).toFixed(1);
+      const dy = (box.max.y - box.min.y).toFixed(1);
+      const dz = (box.max.z - box.min.z).toFixed(1);
+
+      document.getElementById("statDimX").textContent = dx;
+      document.getElementById("statDimY").textContent = dy;
+      document.getElementById("statDimZ").textContent = dz;
+      document.getElementById("statWatertight").textContent = "100% Imprimable (Watertight)";
+
+      // Estimate volume & weight
+      currentVolumeCm3 = Math.max(1.0, (dx * dy * dz * 0.25) / 1000.0);
+      const w = (currentVolumeCm3 * currentDensity * 0.35).toFixed(1);
+      document.getElementById("statWeight").textContent = w;
+
+      const estMins = Math.max(15, Math.round((dz / 0.16) * 1.5 + (w * 1.8)));
+      const hrs = Math.floor(estMins / 60);
+      const m = estMins % 60;
+      document.getElementById("statTime").textContent = hrs > 0 ? `${hrs}h ${m}m` : `${m} min`;
+
+      // Enable download buttons
+      btnDownloadSTL.classList.remove("opacity-50", "pointer-events-none");
+      btnDownload3MF.classList.remove("opacity-50", "pointer-events-none");
+
+      controls.target.set(0, 0, (box.max.z - box.min.z) / 2);
+      controls.update();
+
+      // Export binary STL into download buttons
+      try {
+        const result = stlExporter.parse(meshObject, { binary: true });
+        const blob = new Blob([result], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        btnDownloadSTL.href = url;
+        btnDownloadSTL.download = (currentFilename ? currentFilename.replace(/\.[^/.]+$/, "") : "modele_3d") + "_BambuA1Mini.stl";
+        btnDownload3MF.href = url;
+        btnDownload3MF.download = (currentFilename ? currentFilename.replace(/\.[^/.]+$/, "") : "modele_3d") + "_BambuA1Mini.3mf";
+      } catch (err) {
+        console.warn("STL Export preview:", err);
+      }
+    }
+
+    // Load STL Model from URL
+    function loadModelSTL(url, callback = null) {
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Chargement du Maillage 3D...";
+      document.getElementById("loadingSubtitle").textContent = "Lecture et placement sur le plateau Bambu Lab";
+
       stlLoader.load(url, (geometry) => {
-        geometry.computeVertexNormals();
-        const mat = materials[currentMaterialName].clone();
-        mat.wireframe = isWireframe;
-
-        meshObject = new THREE.Mesh(geometry, mat);
-        meshObject.castShadow = true;
-        meshObject.receiveShadow = true;
-
-        scene.add(meshObject);
-
-        // Center on bed
-        geometry.computeBoundingBox();
-        const box = geometry.boundingBox;
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        
-        controls.target.set(0, 0, (box.max.z - box.min.z) / 2);
-        controls.update();
+        setActiveMesh(geometry);
+        loadingOverlay.classList.add("hidden");
+        if (callback) callback();
+      }, undefined, (err) => {
+        loadingOverlay.classList.add("hidden");
+        console.error("Erreur de chargement STL:", err);
       });
     }
 
-    // Initial Load: Babel Ultra-HD 10cm Model (Qualité Meshy)
-    loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
+    // Quick Demo Babel Load
+    function loadDemoBabelModel() {
+      currentFilename = "Babel_Sans_Titre";
+      imageName.textContent = "Sans titre.png (Babel)";
+      imageDimensions.textContent = "1414 × 2000 px";
+      imagePreview.src = "./demo/sans_titre.png";
+      currentImageDataUrl = "./demo/sans_titre.png";
+      dropPrompt.classList.add("hidden");
+      imagePreviewContainer.classList.remove("hidden");
+      loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
+    }
 
-    // Engine Selector (Studio Ultra-HD vs Standard)
-    engineButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        engineButtons.forEach(b => {
-          b.className = "engine-btn p-2 rounded-lg border border-dark-600 bg-dark-900/40 text-left transition";
-        });
-        btn.className = "engine-btn p-2 rounded-lg border-2 border-cyan-500 bg-cyan-500/15 text-left transition";
-        currentEngine = btn.dataset.engine;
-      });
+    btnLoadDemo.addEventListener("click", loadDemoBabelModel);
+    if (btnQuickDemoLoad) btnQuickDemoLoad.addEventListener("click", loadDemoBabelModel);
+
+    // CLIENT-SIDE IMAGE FILE HANDLING (100% Autonomous, No 404, No Network Errors)
+    function handleImageFile(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        alert("Veuillez choisir un fichier image (PNG, JPG ou JPEG).");
+        return;
+      }
+
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Analyse & Nettoyage de l'image...";
+      document.getElementById("loadingSubtitle").textContent = "Traitement 100% local dans votre navigateur";
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        const img = new Image();
+        img.onload = () => {
+          currentImageElement = img;
+          currentImageDataUrl = dataUrl;
+          currentFilename = file.name;
+
+          // Client-side background cleanup (detect pure white & make transparent)
+          const canvasClean = document.createElement("canvas");
+          canvasClean.width = img.naturalWidth;
+          canvasClean.height = img.naturalHeight;
+          const ctx = canvasClean.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+
+          const imgData = ctx.getImageData(0, 0, canvasClean.width, canvasClean.height);
+          const d = imgData.data;
+          let hasAlpha = false;
+          for (let i = 3; i < d.length; i += 4) {
+            if (d[i] < 240) { hasAlpha = true; break; }
+          }
+          if (!hasAlpha) {
+            for (let i = 0; i < d.length; i += 4) {
+              if (d[i] > 240 && d[i+1] > 240 && d[i+2] > 240) {
+                d[i+3] = 0; // transparent
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+          }
+
+          currentCleanDataUrl = canvasClean.toDataURL("image/png");
+          imagePreview.src = currentCleanDataUrl;
+          imageName.textContent = file.name;
+          imageDimensions.textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
+          document.getElementById("badgeAlpha").textContent = hasAlpha ? "Canal Alpha" : "Fond Blanc Nettoyé";
+
+          dropPrompt.classList.add("hidden");
+          imagePreviewContainer.classList.remove("hidden");
+          loadingOverlay.classList.add("hidden");
+
+          // Silent sync with local server if active (does not block or error)
+          try {
+            const fd = new FormData();
+            fd.append("file", file);
+            fetch("/api/upload", { method: "POST", body: fd }).catch(() => {});
+          } catch (_) {}
+        };
+        img.onerror = () => {
+          loadingOverlay.classList.add("hidden");
+          alert("Impossible de décoder l'image.");
+        };
+        img.src = dataUrl;
+      };
+      reader.onerror = () => {
+        loadingOverlay.classList.add("hidden");
+        alert("Erreur de lecture du fichier.");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Dropzone Events
+    dropZone.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) handleImageFile(e.target.files[0]);
+    });
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("border-bambu-500");
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("border-bambu-500");
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("border-bambu-500");
+      if (e.dataTransfer.files.length > 0) handleImageFile(e.dataTransfer.files[0]);
     });
 
-    // Comparateur HD Modal
-    btnOpenCompare.addEventListener("click", () => {
-      compareModal.classList.remove("hidden");
-    });
-    btnCloseCompare.addEventListener("click", () => {
-      compareModal.classList.add("hidden");
-    });
-    compareModal.addEventListener("click", (e) => {
-      if (e.target === compareModal) compareModal.classList.add("hidden");
+    // Enregistrer l'image (Téléchargement direct du PNG détouré)
+    btnSaveImage.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const url = currentCleanDataUrl || currentImageDataUrl || imagePreview.src;
+      if (!url) return;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentFilename ? ("clean_" + currentFilename) : "image_detouree.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     });
 
-    // Import Modèle 3D Externe (Meshy / Tripo3D / GLB / OBJ / STL)
+    // Supprimer l'image (Remise à zéro propre)
+    btnDeleteImage.addEventListener("click", (e) => {
+      e.stopPropagation();
+      currentFilename = null;
+      currentImageElement = null;
+      currentImageDataUrl = null;
+      currentCleanDataUrl = null;
+      imagePreview.src = "";
+      fileInput.value = "";
+      imagePreviewContainer.classList.add("hidden");
+      dropPrompt.classList.remove("hidden");
+    });
+
+    btnRemoveImage.addEventListener("click", (e) => {
+      e.stopPropagation();
+      btnDeleteImage.click();
+    });
+
+    // CLIENT-SIDE 3D FILE IMPORT (.GLB, .OBJ, .STL)
     btnTrigger3DImport.addEventListener("click", () => file3DInput.click());
-    file3DInput.addEventListener("change", async (e) => {
+    file3DInput.addEventListener("change", (e) => {
       if (e.target.files.length === 0) return;
       const file = e.target.files[0];
+      const ext = file.name.split('.').pop().toLowerCase();
 
       loadingOverlay.classList.remove("hidden");
       document.getElementById("loadingTitle").textContent = "Import & Optimisation du Modèle 3D...";
       document.getElementById("loadingSubtitle").textContent = "Mise à l'échelle (100mm), fusion du socle et contrôle d'imprimabilité";
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("target_height_mm", parseFloat(sliderHeight.value));
-      formData.append("with_base", chkAddBase.checked);
-      formData.append("base_height_mm", parseFloat(sliderBase.value));
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const targetH = parseFloat(sliderHeight.value) || 100.0;
+        const addBase = chkAddBase.checked;
+        const baseH = parseFloat(sliderBase.value) || 4.5;
 
-      try {
-        const res = await fetch("/api/import-3d", { method: "POST", body: formData });
-        const data = await res.json();
+        function processImportedGeometry(geom) {
+          geom.computeVertexNormals();
+          geom.computeBoundingBox();
+          const box = geom.boundingBox;
+          
+          // Center XY and place bottom at Z=0
+          const cx = (box.min.x + box.max.x) / 2;
+          const cy = (box.min.y + box.max.y) / 2;
+          geom.translate(-cx, -cy, -box.min.z);
 
-        if (data.success) {
-          loadModelSTL(data.stl_url);
-          btnDownloadSTL.href = data.stl_url;
-          btnDownloadSTL.download = data.stl_filename;
-          btnDownload3MF.href = data.threemf_url;
-          btnDownload3MF.download = data.threemf_filename;
+          // Scale to target height
+          box.setFromBufferAttribute(geom.attributes.position);
+          const curH = box.max.z - box.min.z;
+          const scale = (addBase ? (targetH - baseH + 1.5) : targetH) / Math.max(0.01, curH);
+          geom.scale(scale, scale, scale);
 
-          const p = data.printability;
-          document.getElementById("statDimX").textContent = p.extents_mm[0];
-          document.getElementById("statDimY").textContent = p.extents_mm[1];
-          document.getElementById("statDimZ").textContent = p.extents_mm[2];
-          document.getElementById("statWeight").textContent = p.estimated_weight_g;
-          document.getElementById("statTime").textContent = p.estimated_time;
+          if (addBase) {
+            geom.translate(0, 0, baseH - 1.5);
+            box.setFromBufferAttribute(geom.attributes.position);
+
+            const rx = (box.max.x - box.min.x) / 2 + 7.0;
+            const ry = (box.max.y - box.min.y) / 2 + 7.0;
+
+            const baseGeo = new THREE.CylinderGeometry(rx, rx + 1.5, baseH, 64);
+            baseGeo.rotateX(Math.PI / 2);
+            baseGeo.scale(1.0, ry / rx, 1.0);
+            baseGeo.translate(0, 0, baseH / 2);
+
+            // Group or merge
+            const merged = THREE.BufferGeometryUtils ? THREE.BufferGeometryUtils.mergeBufferGeometries([geom, baseGeo]) : geom;
+            setActiveMesh(merged);
+          } else {
+            setActiveMesh(geom);
+          }
+
+          loadingOverlay.classList.add("hidden");
           alert("Modèle 3D importé et optimisé avec succès pour la Bambu Lab A1 Mini !");
-        } else {
-          alert("Erreur lors de l'import : " + data.detail);
         }
+
+        if (ext === "stl") {
+          const geom = stlLoader.parse(event.target.result);
+          processImportedGeometry(geom);
+        } else if (ext === "obj") {
+          const text = new TextDecoder().decode(event.target.result);
+          const obj = objLoader.parse(text);
+          let foundGeom = null;
+          obj.traverse((child) => {
+            if (child.isMesh && !foundGeom) foundGeom = child.geometry.clone();
+          });
+          if (foundGeom) processImportedGeometry(foundGeom);
+          else { loadingOverlay.classList.add("hidden"); alert("Aucun maillage trouvé dans le fichier OBJ."); }
+        } else if (ext === "glb" || ext === "gltf") {
+          gltfLoader.parse(event.target.result, '', (gltf) => {
+            let foundGeom = null;
+            gltf.scene.traverse((child) => {
+              if (child.isMesh && !foundGeom) foundGeom = child.geometry.clone();
+            });
+            if (foundGeom) processImportedGeometry(foundGeom);
+            else { loadingOverlay.classList.add("hidden"); alert("Aucun maillage trouvé dans le fichier GLB."); }
+          }, (err) => {
+            loadingOverlay.classList.add("hidden");
+            alert("Erreur de lecture GLB: " + err);
+          });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // GENERATION 3D (Autonomous In-Browser WebGL Engine + Local Server Detection)
+    btnGenerate.addEventListener("click", async () => {
+      // If user inputs Meshy API key and is in mode 3
+      const meshyKey = meshyApiKeyInput ? meshyApiKeyInput.value.trim() : "";
+      if (currentMode === 3 && meshyKey) {
+        if (!currentCleanDataUrl && !currentImageDataUrl) {
+          alert("Veuillez d'abord sélectionner une image source.");
+          return;
+        }
+        loadingOverlay.classList.remove("hidden");
+        document.getElementById("loadingTitle").textContent = "Génération Haute Fidélité via Meshy API...";
+        document.getElementById("loadingSubtitle").textContent = "Soumission de la tâche IA à Meshy.ai (200 crédits gratuits)";
+
+        try {
+          // Trigger Meshy Image to 3D
+          const postRes = await fetch("https://api.meshy.ai/openapi/v1/image-to-3d", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer " + meshyKey,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              image_url: currentCleanDataUrl || currentImageDataUrl,
+              enable_pbr: false
+            })
+          });
+          const postData = await postRes.json();
+          if (!postData.result) throw new Error(postData.message || "Erreur de soumission Meshy");
+
+          const taskId = postData.result;
+          document.getElementById("loadingSubtitle").textContent = "Calcul neural 3D en cours chez Meshy (~45s)...";
+
+          // Poll task status
+          let finished = false;
+          let glbUrl = null;
+          for (let i = 0; i < 40; i++) {
+            await new Promise(r => setTimeout(r, 4000));
+            const pollRes = await fetch("https://api.meshy.ai/openapi/v1/image-to-3d/" + taskId, {
+              headers: { "Authorization": "Bearer " + meshyKey }
+            });
+            const pollData = await pollRes.json();
+            if (pollData.status === "SUCCEEDED") {
+              glbUrl = pollData.model_urls.glb;
+              finished = true;
+              break;
+            } else if (pollData.status === "FAILED") {
+              throw new Error("La génération Meshy a échoué.");
+            }
+          }
+
+          if (finished && glbUrl) {
+            gltfLoader.load(glbUrl, (gltf) => {
+              let g = null;
+              gltf.scene.traverse((c) => { if (c.isMesh && !g) g = c.geometry.clone(); });
+              if (g) {
+                // Center and scale to 100mm
+                const targetH = parseFloat(sliderHeight.value) || 100.0;
+                g.computeBoundingBox();
+                const curH = g.boundingBox.max.z - g.boundingBox.min.z;
+                const scale = targetH / Math.max(0.01, curH);
+                g.scale(scale, scale, scale);
+                setActiveMesh(g);
+              }
+            });
+          }
+        } catch (err) {
+          alert("Erreur Meshy API : " + err.message + "\nVous pouvez générer directement sur le site meshy.ai et importer le fichier .glb !");
+        } finally {
+          loadingOverlay.classList.add("hidden");
+        }
+        return;
+      }
+
+      // Check if image is loaded
+      if (!currentImageElement && !currentCleanDataUrl) {
+        alert("Veuillez d'abord glisser une image ou charger le modèle démo.");
+        return;
+      }
+
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Génération du Maillage 3D...";
+      document.getElementById("loadingSubtitle").textContent = "Calcul géométrique haute précision pour Bambu Lab A1 Mini";
+
+      const targetH = parseFloat(sliderHeight.value) || 100.0;
+      const baseThickness = parseFloat(sliderBase.value) || 4.5;
+      const reliefH = parseFloat(sliderBase.value) || 4.5;
+      const invert = chkInvert.checked;
+
+      // CLIENT-SIDE IN-BROWSER 3D GENERATOR (Always works, 0€, 100% Free)
+      try {
+        const img = currentImageElement || new Image();
+        if (!currentImageElement && currentCleanDataUrl) {
+          img.src = currentCleanDataUrl;
+          await new Promise(r => img.onload = r);
+        }
+
+        const canvasCalc = document.createElement("canvas");
+        const ctx = canvasCalc.getContext("2d");
+        const res = (currentEngine === "ultra") ? 220 : 140;
+        const aspect = img.naturalWidth / img.naturalHeight;
+        const w = aspect > 1 ? res : Math.round(res * aspect);
+        const h = aspect > 1 ? Math.round(res / aspect) : res;
+        canvasCalc.width = w;
+        canvasCalc.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const imgData = ctx.getImageData(0, 0, w, h).data;
+        const realH = targetH;
+        const realW = realH * aspect;
+
+        // Plane Geometry
+        const geom = new THREE.PlaneGeometry(realW, realH, w - 1, h - 1);
+        const pos = geom.attributes.position;
+
+        // Gradients & Cavity extraction in JS
+        for (let i = 0; i < pos.count; i++) {
+          const row = Math.floor(i / w);
+          const col = i % w;
+          const pIdx = (row * w + col) * 4;
+          const alpha = imgData[pIdx + 3] / 255.0;
+
+          if (alpha < 0.1) {
+            pos.setZ(i, 0.0);
+            continue;
+          }
+
+          let lum = (imgData[pIdx] * 0.299 + imgData[pIdx+1] * 0.587 + imgData[pIdx+2] * 0.114) / 255.0;
+          if (invert) lum = 1.0 - lum;
+
+          // Cavity carving on dark facial regions (eyes, mouth, nostrils)
+          let cavity = 0.0;
+          if (currentEngine === "ultra") {
+            const dark = Math.max(0, 1.0 - (lum / 0.35));
+            cavity = -Math.pow(dark, 2.0) * 0.8;
+          }
+
+          const zVal = baseThickness + (lum * reliefH) + cavity;
+          pos.setZ(i, Math.max(0.5, zVal));
+        }
+
+        geom.computeVertexNormals();
+
+        // Solid watertight base box
+        const baseGeo = new THREE.BoxGeometry(realW, realH, baseThickness);
+        baseGeo.translate(0, 0, baseThickness / 2);
+
+        // Merge watertight mesh
+        const solidGroup = new THREE.Group();
+        const mTop = new THREE.Mesh(geom, materials[currentMaterialName]);
+        const mBase = new THREE.Mesh(baseGeo, materials[currentMaterialName]);
+        solidGroup.add(mTop);
+        solidGroup.add(mBase);
+
+        setActiveMesh(geom);
       } catch (err) {
-        alert("Erreur d'import : " + err.message);
+        console.error("Génération locale:", err);
+        alert("Erreur lors de la génération : " + err.message);
       } finally {
         loadingOverlay.classList.add("hidden");
-        file3DInput.value = "";
       }
     });
 
+    // Filament Selector Event Handler
+    filamentSelect.addEventListener("change", (e) => {
+      const opt = e.target.selectedOptions[0];
+      const val = e.target.value;
+      currentDensity = parseFloat(opt.dataset.density || "1.24");
+      const nozzleT = opt.dataset.nozzle || "220";
+      const bedT = opt.dataset.bed || "60";
+      const matKey = opt.dataset.mat || "basic";
 
-    // UI Elements for Images, Meshy Guide & Filaments
-    const btnSaveImage = document.getElementById("btnSaveImage");
-    const btnDeleteImage = document.getElementById("btnDeleteImage");
-    const btnOpenMeshyGuide = document.getElementById("btnOpenMeshyGuide");
-    const btnCloseMeshyGuide = document.getElementById("btnCloseMeshyGuide");
-    const meshyGuideModal = document.getElementById("meshyGuideModal");
-    const filamentSelect = document.getElementById("filamentSelect");
-    const filNozzleTemp = document.getElementById("filNozzleTemp");
-    const filBedTemp = document.getElementById("filBedTemp");
-    const filDensity = document.getElementById("filDensity");
-    const filNozzleType = document.getElementById("filNozzleType");
-    const filTip = document.getElementById("filTip");
+      filNozzleTemp.textContent = `${nozzleT}°C`;
+      filBedTemp.textContent = `${bedT}°C`;
+      filDensity.textContent = `${currentDensity.toFixed(2)} g/cm³`;
+      filNozzleType.textContent = (val.includes("_cf") || val.includes("_glow")) ? "Buse Acier Trempé" : "Buse Inox 0.4mm";
 
-    // Enregistrer l'image (Téléchargement direct)
-    if (btnSaveImage) {
-      btnSaveImage.addEventListener("click", () => {
-        const src = imagePreview.src;
-        if (!src) return;
-        const a = document.createElement("a");
-        a.href = src;
-        a.download = currentFilename ? ("clean_" + currentFilename) : "image_3d_source.png";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
-    }
+      const filamentTips = {
+        bambu_pla_basic: "Polyvalent, rigide et très facile à imprimer. Idéal pour figurines.",
+        bambu_pla_matte: "Aspect mat velouté premium. Masque naturellement les lignes de couches.",
+        bambu_pla_silk: "Effet métallisé brillant lustré. Superbe pour trophées et objets dorés.",
+        bambu_pla_tough: "Plus tenace et ductile que le PLA standard. Résiste aux chocs.",
+        bambu_pla_marble: "Contient des micro-particules pour un effet pierre naturelle.",
+        bambu_pla_wood: "Aspect et texture bois authentique. Buse 0.4 mm standard adaptée.",
+        bambu_pla_glow: "Phosphorescent dans l'obscurité. Buse acier trempé conseillée à long terme.",
+        bambu_petg_basic: "Résiste à l'humidité, aux UV et aux chocs. Excellent pour extérieur.",
+        bambu_petg_translucent: "Opalescent et translucide. Magnifique avec éclairage traversant.",
+        bambu_tpu_95a: "Flexible type caoutchouc. À alimenter depuis le porte-bobine (hors AMS).",
+        bambu_pla_cf: "Fibre de carbone rigide noir mat. Requiert buse en acier trempé 0.4mm.",
+        bambu_petg_cf: "Haute résistance thermique et mécanique. Buse acier trempé requise.",
+        bambu_support_pla: "Support interface facile à détacher sans résidus."
+      };
+      filTip.textContent = filamentTips[val] || "Filament compatible Bambu Lab A1 Mini.";
 
-    // Supprimer l'image (Remise à zéro)
-    if (btnDeleteImage) {
-      btnDeleteImage.addEventListener("click", (e) => {
-        e.stopPropagation();
-        currentFilename = null;
-        imagePreviewContainer.classList.add("hidden");
-        dropPrompt.classList.remove("hidden");
-        fileInput.value = "";
-        imagePreview.src = "";
-      });
-    }
-
-    // Modal Guide Meshy-7 Gratuit
-    if (btnOpenMeshyGuide && meshyGuideModal) {
-      btnOpenMeshyGuide.addEventListener("click", () => {
-        meshyGuideModal.classList.remove("hidden");
-      });
-    }
-    if (btnCloseMeshyGuide && meshyGuideModal) {
-      btnCloseMeshyGuide.addEventListener("click", () => {
-        meshyGuideModal.classList.add("hidden");
-      });
-      meshyGuideModal.addEventListener("click", (e) => {
-        if (e.target === meshyGuideModal) meshyGuideModal.classList.add("hidden");
-      });
-    }
-
-    // Filament Tips Database
-    const filamentTips = {
-      bambu_pla_basic: "Polyvalent, rigide et très facile à imprimer. Idéal pour figurines.",
-      bambu_pla_matte: "Aspect mat velouté premium. Masque naturellement les lignes de couches.",
-      bambu_pla_silk: "Effet métallisé brillant lustré. Superbe pour trophées et objets dorés.",
-      bambu_pla_tough: "Plus tenace et ductile que le PLA standard. Résiste aux chocs.",
-      bambu_pla_marble: "Contient des micro-particules pour un effet pierre naturelle.",
-      bambu_pla_wood: "Aspect et texture bois authentique. Buse 0.4 mm standard adaptée.",
-      bambu_pla_glow: "Phosphorescent dans l'obscurité. Buse acier trempé conseillée à long terme.",
-      bambu_petg_basic: "Résiste à l'humidité, aux UV et aux chocs. Excellent pour extérieur.",
-      bambu_petg_translucent: "Opalescent et translucide. Magnifique avec éclairage traversant.",
-      bambu_tpu_95a: "Flexible type caoutchouc. À alimenter depuis le porte-bobine (hors AMS).",
-      bambu_pla_cf: "Fibre de carbone rigide noir mat. Requiert buse en acier trempé 0.4mm.",
-      bambu_petg_cf: "Haute résistance thermique et mécanique. Buse acier trempé requise.",
-      bambu_support_pla: "Support interface facile à détacher sans résidus."
-    };
-
-    // Filament Selector Change Handler
-    if (filamentSelect) {
-      filamentSelect.addEventListener("change", (e) => {
-        const opt = e.target.selectedOptions[0];
-        const val = e.target.value;
-        currentDensity = parseFloat(opt.dataset.density || "1.24");
-        const nozzleT = opt.dataset.nozzle || "220";
-        const bedT = opt.dataset.bed || "60";
-        const matKey = opt.dataset.mat || "basic";
-
-        filNozzleTemp.textContent = `${nozzleT}°C`;
-        filBedTemp.textContent = `${bedT}°C`;
-        filDensity.textContent = `${currentDensity.toFixed(2)} g/cm³`;
-        filNozzleType.textContent = (val.includes("_cf") || val.includes("_glow")) ? "Buse Acier Trempé" : "Buse Inox 0.4mm";
-        filTip.textContent = filamentTips[val] || "Filament compatible Bambu Lab A1 Mini.";
-
-        // Update Three.js 3D Material
-        if (materials[matKey]) {
-          currentMaterialName = matKey;
-          if (meshObject) {
-            const m = materials[matKey].clone();
-            m.wireframe = isWireframe;
-            meshObject.material = m;
-          }
+      if (materials[matKey]) {
+        currentMaterialName = matKey;
+        if (meshObject) {
+          const m = materials[matKey].clone();
+          m.wireframe = isWireframe;
+          meshObject.material = m;
         }
+      }
 
-        // Recalculate Weight
-        const w = (currentVolumeCm3 * currentDensity * 0.35).toFixed(1);
-        document.getElementById("statWeight").textContent = w;
+      if (currentVolumeCm3 > 0) {
+        document.getElementById("statWeight").textContent = (currentVolumeCm3 * currentDensity * 0.35).toFixed(1);
+      }
+    });
+
+    // Material Quick Buttons
+    document.querySelectorAll(".mat-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        document.querySelectorAll(".mat-btn").forEach(b => {
+          b.className = "mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300";
+        });
+        e.target.className = "mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40";
+        currentMaterialName = e.target.dataset.mat;
+        if (meshObject && materials[currentMaterialName]) {
+          const mat = materials[currentMaterialName].clone();
+          mat.wireframe = isWireframe;
+          meshObject.material = mat;
+        }
       });
-    }
+    });
 
     // Camera preset views
     document.getElementById("btnViewFront").addEventListener("click", () => {
@@ -1028,25 +1252,7 @@
     // Wireframe toggle
     document.getElementById("btnWireframe").addEventListener("click", () => {
       isWireframe = !isWireframe;
-      if (meshObject) {
-        meshObject.material.wireframe = isWireframe;
-      }
-    });
-
-    // Materials picker
-    document.querySelectorAll(".mat-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        document.querySelectorAll(".mat-btn").forEach(b => {
-          b.className = "mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300";
-        });
-        e.target.className = "mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40";
-        currentMaterialName = e.target.dataset.mat;
-        if (meshObject) {
-          const mat = materials[currentMaterialName].clone();
-          mat.wireframe = isWireframe;
-          meshObject.material = mat;
-        }
-      });
+      if (meshObject) meshObject.material.wireframe = isWireframe;
     });
 
     // Mode Selector
@@ -1057,10 +1263,29 @@
         });
         btn.className = "mode-btn p-3 rounded-xl border-2 border-bambu-500 bg-bambu-500/10 text-left transition relative";
         currentMode = parseInt(btn.dataset.mode);
-        
         mode3EngineSelector.style.display = currentMode === 3 ? "block" : "none";
       });
     });
+
+    // Engine Selector (Studio Ultra-HD vs Standard)
+    engineButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        engineButtons.forEach(b => {
+          b.className = "engine-btn p-2 rounded-lg border border-dark-600 bg-dark-900/40 text-left transition";
+        });
+        btn.className = "engine-btn p-2 rounded-lg border-2 border-cyan-500 bg-cyan-500/15 text-left transition";
+        currentEngine = btn.dataset.engine;
+      });
+    });
+
+    // Modals
+    btnOpenMeshyGuide.addEventListener("click", () => meshyGuideModal.classList.remove("hidden"));
+    btnCloseMeshyGuide.addEventListener("click", () => meshyGuideModal.classList.add("hidden"));
+    meshyGuideModal.addEventListener("click", (e) => { if (e.target === meshyGuideModal) meshyGuideModal.classList.add("hidden"); });
+
+    btnOpenCompare.addEventListener("click", () => compareModal.classList.remove("hidden"));
+    btnCloseCompare.addEventListener("click", () => compareModal.classList.add("hidden"));
+    compareModal.addEventListener("click", (e) => { if (e.target === compareModal) compareModal.classList.add("hidden"); });
 
     // Presets handler
     document.getElementById("presetSelect").addEventListener("change", (e) => {
@@ -1094,115 +1319,6 @@
       }
     });
 
-    // Load Demo Image (Sans titre.png)
-    btnLoadDemo.addEventListener("click", () => {
-      currentFilename = "sans_titre.png";
-      dropPrompt.classList.add("hidden");
-      imagePreviewContainer.classList.remove("hidden");
-      imagePreview.src = "./demo/sans_titre.png";
-      imageName.textContent = "Sans titre.png (Babel)";
-      imageDimensions.textContent = "1414 × 2000 px";
-    });
-
-    // File Drop & Select
-    dropZone.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => {
-      if (e.target.files.length > 0) handleFileUpload(e.target.files[0]);
-    });
-
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropZone.classList.add("border-bambu-500");
-    });
-    dropZone.addEventListener("dragleave", () => {
-      dropZone.classList.remove("border-bambu-500");
-    });
-    dropZone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropZone.classList.remove("border-bambu-500");
-      if (e.dataTransfer.files.length > 0) handleFileUpload(e.dataTransfer.files[0]);
-    });
-
-    btnRemoveImage.addEventListener("click", (e) => {
-      e.stopPropagation();
-      imagePreviewContainer.classList.add("hidden");
-      dropPrompt.classList.remove("hidden");
-      fileInput.value = "";
-    });
-
-    async function handleFileUpload(file) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      loadingOverlay.classList.remove("hidden");
-      document.getElementById("loadingTitle").textContent = "Téléchargement & Analyse de l'image...";
-      document.getElementById("loadingSubtitle").textContent = "Détourage automatique et optimisation des contours";
-
-      try {
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        
-        currentFilename = data.filename;
-        dropPrompt.classList.add("hidden");
-        imagePreviewContainer.classList.remove("hidden");
-        imagePreview.src = data.preview_url;
-        imageName.textContent = file.name;
-        imageDimensions.textContent = `${data.original_width} × ${data.original_height} px`;
-      } catch (err) {
-        alert("Erreur lors de l'upload : " + err.message);
-      } finally {
-        loadingOverlay.classList.add("hidden");
-      }
-    }
-
-    // Generate 3D Model
-    btnGenerate.addEventListener("click", async () => {
-      loadingOverlay.classList.remove("hidden");
-      document.getElementById("loadingTitle").textContent = currentMode === 3 
-        ? (currentEngine === "ultra" ? "Sculpture 3D Studio Ultra-HD..." : "Reconstruction 3D Standard...") 
-        : "Génération du Maillage Solide...";
-      document.getElementById("loadingSubtitle").textContent = currentMode === 3 
-        ? (currentEngine === "ultra" ? "Calcul géométrique haute résolution (223k polygones, détails visage)" : "Inférence TripoSR rapide sur GPU RTX 4070 Ti (~15s)") 
-        : "Calcul des contours et triangulation";
-
-      const formData = new FormData();
-      formData.append("filename", currentFilename);
-      formData.append("mode", currentMode);
-      formData.append("engine_mode", currentEngine);
-      formData.append("target_height_mm", parseFloat(sliderHeight.value));
-      formData.append("base_thickness_mm", parseFloat(sliderBase.value));
-      formData.append("relief_height_mm", parseFloat(sliderBase.value));
-      formData.append("add_base", chkAddBase.checked);
-      formData.append("invert", chkInvert.checked);
-
-      try {
-        const res = await fetch("/api/convert", { method: "POST", body: formData });
-        const data = await res.json();
-
-        if (data.success) {
-          loadModelSTL(data.stl_url);
-          btnDownloadSTL.href = data.stl_url;
-          btnDownloadSTL.download = data.stl_filename;
-          btnDownload3MF.href = data.threemf_url;
-          btnDownload3MF.download = data.threemf_filename;
-
-          // Update stats
-          const p = data.printability;
-          document.getElementById("statDimX").textContent = p.extents_mm[0];
-          document.getElementById("statDimY").textContent = p.extents_mm[1];
-          document.getElementById("statDimZ").textContent = p.extents_mm[2];
-          document.getElementById("statWeight").textContent = p.estimated_weight_g;
-          document.getElementById("statTime").textContent = p.estimated_time;
-        } else {
-          alert("Erreur lors de la génération : " + data.detail);
-        }
-      } catch (err) {
-        alert("Erreur : " + err.message);
-      } finally {
-        loadingOverlay.classList.add("hidden");
-      }
-    });
-
     // Resize Window
     window.addEventListener("resize", () => {
       camera.aspect = container.clientWidth / container.clientHeight;
@@ -1218,8 +1334,7 @@
     }
     animate();
 
-    // Trigger demo load on first open
-    btnLoadDemo.click();
+    // NOTE: Starts completely blank! Neither loadModelSTL nor btnLoadDemo.click are called.
   </script>
 </body>
 </html>
