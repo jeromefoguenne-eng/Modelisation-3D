@@ -426,7 +426,7 @@ def generate_mode3_ultra_sculpted(
     with_base: bool = True,
     base_height_mm: float = 4.5
 ) -> trimesh.Trimesh:
-    """Mode 3 Ultra-Précis (Qualité Studio / Meshy) : Reconstruction volumétrique avec subdivision géométrique fine (223k polygones) et micro-sculpture photographique."""
+    """Mode 3 Ultra-Précis (Qualité Studio / Meshy-7) : Reconstruction volumétrique avec subdivision géométrique fine (223k+ polygones), Scharr edge highlighting et Cavity Carving des traits faciaux."""
     # 1. Base volumétrique
     m_base = generate_mode3_volumetric(image, target_height_mm=target_height_mm, with_base=with_base, base_height_mm=base_height_mm)
     
@@ -435,7 +435,7 @@ def generate_mode3_ultra_sculpted(
     mesh_hd = trimesh.Trimesh(vertices=v, faces=f)
     mesh_hd.fix_normals()
     
-    # 3. Extraction du champ de détails photographiques multi-fréquences
+    # 3. Extraction avancée du champ de détails morphologiques & cavités
     im_rgb = image.convert("RGB")
     arr = np.array(im_rgb)
     gray = (0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]) / 255.0
@@ -444,11 +444,24 @@ def generate_mode3_ultra_sculpted(
     blur_mid = ndi.gaussian_filter(gray, 12.0)
     mid_freq = (gray - blur_mid)
     
-    # Hautes fréquences (yeux, truffe, plis, babines, médaillon, pelage)
+    # Hautes fréquences (micro-textures, plis, babines, médaillon, pelage)
     blur_fine = ndi.gaussian_filter(gray, 2.5)
     fine_freq = (gray - blur_fine)
     
-    disp_map = mid_freq * 0.7 + fine_freq * 1.2
+    # Gradients de Scharr pour arêtes nettes (contours des yeux, truffe, anneaux)
+    scharr_x = np.array([[-3, 0, 3], [-10, 0, 10], [-3, 0, 3]], dtype=float) / 32.0
+    scharr_y = np.array([[-3, -10, -3], [0, 0, 0], [3, 10, 3]], dtype=float) / 32.0
+    gx = ndi.convolve(gray, scharr_x)
+    gy = ndi.convolve(gray, scharr_y)
+    edge_sharp = np.sqrt(gx**2 + gy**2)
+    edge_sharp = (edge_sharp - edge_sharp.min()) / max(0.001, (edge_sharp.max() - edge_sharp.min()))
+    
+    # Cavity Carving (creusement géométrique franc des narines, yeux, fentes)
+    dark_cavities = np.clip(1.0 - (gray / 0.4), 0.0, 1.0) ** 1.8
+    cavity_carve = -dark_cavities * 0.8
+    
+    # Carte globale de déplacement morphologique (Qualité Meshy-7)
+    disp_map = (mid_freq * 0.6) + (fine_freq * 1.1) + (edge_sharp * 0.4) + cavity_carve
     
     verts = mesh_hd.vertices.copy()
     normals = mesh_hd.vertex_normals
@@ -472,7 +485,7 @@ def generate_mode3_ultra_sculpted(
         cols = np.clip(((verts[:, 0] - x_min) / max(0.001, x_max - x_min) * (cw - 1)), 0, cw - 1).astype(int)
         rows = np.clip(((z_max - verts[:, 2]) / max(0.001, z_max - z_min) * (ch - 1)), 0, ch - 1).astype(int)
         
-        disp_values = np.clip(cropped_disp[rows, cols] * 1.2, -1.0, 1.2)
+        disp_values = np.clip(cropped_disp[rows, cols] * 1.3, -1.2, 1.4)
         weight = np.clip(-normals[:, 1], 0, 1) ** 1.5
         
         verts[front_mask] += normals[front_mask] * (disp_values[front_mask] * weight[front_mask])[:, None]

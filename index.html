@@ -68,6 +68,10 @@
         <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
         <span class="text-slate-300">GPU : <strong>RTX 4070 Ti (12GB)</strong></span>
       </div>
+      <button id="btnOpenMeshyGuide" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/50 hover:to-blue-600/50 border border-cyan-500/50 text-xs text-cyan-200 font-bold transition shadow-sm">
+        <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+        <span>Précision Meshy-7 Gratuite</span>
+      </button>
       <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-bambu-500/40 text-xs text-emerald-300">
         <i data-lucide="printer" class="w-4 h-4 text-bambu-400"></i>
         <span>Bambu Lab A1 Mini (180×180×180 mm)</span>
@@ -105,20 +109,34 @@
               <p class="text-[11px] text-slate-500">PNG avec transparence ou fond blanc (max 25 Mo)</p>
             </div>
 
-            <!-- Preview Card -->
-            <div id="imagePreviewContainer" class="hidden flex items-center gap-3 text-left">
-              <img id="imagePreview" src="" class="w-16 h-16 object-contain rounded-lg bg-dark-700 border border-dark-600 shrink-0">
-              <div class="flex-1 min-w-0">
-                <p id="imageName" class="text-xs font-semibold text-white truncate">image.png</p>
-                <p id="imageDimensions" class="text-[11px] text-slate-400">1414 × 2000 px</p>
-                <div class="flex gap-2 mt-1.5">
-                  <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Détouré</span>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Prêt</span>
+            <!-- Preview Card avec Enregistrer et Supprimer -->
+            <div id="imagePreviewContainer" class="hidden space-y-2.5 text-left">
+              <div class="flex items-center gap-3">
+                <img id="imagePreview" src="" class="w-16 h-16 object-contain rounded-lg bg-dark-700 border border-dark-600 shrink-0">
+                <div class="flex-1 min-w-0">
+                  <p id="imageName" class="text-xs font-semibold text-white truncate">image.png</p>
+                  <p id="imageDimensions" class="text-[11px] text-slate-400">1414 × 2000 px</p>
+                  <div class="flex gap-2 mt-1.5">
+                    <span id="badgeAlpha" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Détouré</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Prêt</span>
+                  </div>
                 </div>
+                <button id="btnRemoveImage" class="p-1.5 hover:bg-dark-700 rounded-lg text-slate-400 hover:text-red-400 transition" title="Fermer">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
               </div>
-              <button id="btnRemoveImage" class="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-red-400 transition">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
+
+              <!-- Boutons Dédiés : Supprimer et Enregistrer l'image -->
+              <div class="pt-2 border-t border-dark-700/80 flex items-center gap-2">
+                <button id="btnSaveImage" type="button" class="flex-1 py-1.5 px-2.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 font-semibold transition flex items-center justify-center gap-1.5 border border-dark-600 shadow-sm hover:text-white">
+                  <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+                  <span>Enregistrer l'image</span>
+                </button>
+                <button id="btnDeleteImage" type="button" class="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-500/40 text-xs text-red-300 font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span>Supprimer</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -211,10 +229,62 @@
           </select>
         </section>
 
-        <!-- Étape 4 : Paramètres de Fabrication FDM -->
+        <!-- Étape 4 : Filament Bambu Lab (Matière & Densité FDM) -->
+        <section class="space-y-3 pt-2 border-t border-dark-700">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">4</span>
+              Filaments Bambu Lab A1 Mini
+            </h2>
+            <span class="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30 font-medium">Buse 300°C Max</span>
+          </div>
+
+          <select id="filamentSelect" class="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-bambu-500 font-medium">
+            <optgroup label="🌟 PLA Bambu Lab (Recommandé A1 Mini)">
+              <option value="bambu_pla_basic" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="basic" selected>Bambu PLA Basic (Plastique rigide lisse équilibré)</option>
+              <option value="bambu_pla_matte" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="matte">Bambu PLA Matte (Mat velouté, masque les lignes de couches)</option>
+              <option value="bambu_pla_silk" data-density="1.24" data-nozzle="225" data-bed="60" data-mat="silk">Bambu PLA Silk (Reflet satiné soyeux or / argent)</option>
+              <option value="bambu_pla_tough" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="tough">Bambu PLA Tough (Haute résistance aux chocs)</option>
+              <option value="bambu_pla_marble" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="marble">Bambu PLA Marble (Aspect pierre marbrée mouchetée)</option>
+              <option value="bambu_pla_wood" data-density="1.20" data-nozzle="215" data-bed="55" data-mat="wood">Bambu PLA Wood (Toucher fibre de bois naturel)</option>
+              <option value="bambu_pla_glow" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="glow">Bambu PLA Glow (Phosphorescent dans le noir)</option>
+            </optgroup>
+            <optgroup label="🛡️ PETG Bambu Lab (Extérieur & Résistance UV)">
+              <option value="bambu_petg_basic" data-density="1.27" data-nozzle="255" data-bed="70" data-mat="petg">Bambu PETG Basic (Haute ténacité, résistant eau & UV)</option>
+              <option value="bambu_petg_translucent" data-density="1.27" data-nozzle="250" data-bed="70" data-mat="translucent">Bambu PETG Translucent (Semi-transparent opalescent)</option>
+            </optgroup>
+            <optgroup label="🤸 TPU Bambu Lab (Flexible Élastique)">
+              <option value="bambu_tpu_95a" data-density="1.21" data-nozzle="230" data-bed="35" data-mat="tpu">Bambu TPU 95A / HF (Caoutchouc souple, bobine externe)</option>
+            </optgroup>
+            <optgroup label="⚡ Filaments Renforcés (Buse Acier Trempé Requise)">
+              <option value="bambu_pla_cf" data-density="1.29" data-nozzle="220" data-bed="60" data-mat="carbon">Bambu PLA-CF Carbone (Rigidité accrue, noir mat graphite)</option>
+              <option value="bambu_petg_cf" data-density="1.29" data-nozzle="255" data-bed="70" data-mat="carbon">Bambu PETG-CF Carbone (Haute tenue thermique et mécanique)</option>
+            </optgroup>
+            <optgroup label="💧 Supports Spéciaux">
+              <option value="bambu_support_pla" data-density="1.23" data-nozzle="220" data-bed="60" data-mat="support">Bambu Support for PLA / PVA (Support soluble / détachable)</option>
+            </optgroup>
+          </select>
+
+          <!-- Fiche Paramètres Impression Bambu Studio pour ce filament -->
+          <div id="filamentInfoCard" class="p-2.5 rounded-lg bg-dark-900/60 border border-dark-600/80 text-[11px] space-y-1.5">
+            <div class="flex items-center justify-between text-slate-300">
+              <span>Buse conseillée : <strong id="filNozzleTemp" class="text-amber-400">220°C</strong></span>
+              <span>Plateau : <strong id="filBedTemp" class="text-cyan-400">60°C</strong></span>
+            </div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span>Densité matière : <strong id="filDensity" class="text-emerald-400">1.24 g/cm³</strong></span>
+              <span id="filNozzleType" class="text-slate-300">Buse Inox 0.4mm</span>
+            </div>
+            <div id="filTip" class="text-[10px] text-slate-400 italic pt-1 border-t border-dark-700/80">
+              Polyvalent et simple. Parfait pour les statuettes et décors de table.
+            </div>
+          </div>
+        </section>
+
+        <!-- Étape 5 : Paramètres de Fabrication FDM -->
         <section class="space-y-4 pt-2 border-t border-dark-700">
           <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">4</span>
+            <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">5</span>
             Dimensions & Géométrie
           </h2>
 
@@ -372,6 +442,56 @@
 
   </div>
 
+  <!-- Modal Précision Meshy-7 Gratuite -->
+  <div id="meshyGuideModal" class="hidden fixed inset-0 bg-dark-900/90 backdrop-blur-md flex items-center justify-center p-6 z-50">
+    <div class="bg-dark-800 border border-dark-600 rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
+      <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
+          <h3 class="text-sm font-bold text-white">Comment Atteindre la Précision Meshy-7 Gratuitement (0,00 €)</h3>
+        </div>
+        <button id="btnCloseMeshyGuide" type="button" class="p-1 rounded-lg hover:bg-dark-700 text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-300">
+        
+        <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4 text-cyan-400"></i> Méthode 1 : Notre Moteur Studio Ultra-Sculpt Local (Recommandé - Illimité)
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            Notre application intègre directement un algorithme de <strong>Cavity Carving & Gradients Scharr</strong> qui subdivise le modèle à <strong>223 000+ polygones</strong>.
+            Il creuse profondément les fentes (yeux, narines, babines, médaillon) et surélève les arêtes vives.
+            <strong>100% hors ligne, illimité, sans abonnement sur votre GPU RTX 4070 Ti !</strong>
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
+            <i data-lucide="gift" class="w-4 h-4 text-emerald-400"></i> Méthode 2 : Compte Gratuit Meshy.ai (200 crédits/mois offerts)
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            1. Créez un compte gratuit sur <a href="https://www.meshy.ai" target="_blank" class="text-emerald-400 underline font-semibold">meshy.ai</a> (aucun moyen de paiement requis).<br>
+            2. Générez votre modèle 3D à partir de votre photo (gratuit avec vos crédits mensuels).<br>
+            3. Téléchargez le fichier en format <strong>.glb</strong> ou <strong>.obj</strong>.<br>
+            4. <strong>Glissez-le directement dans notre application</strong> : elle le redimensionne à 10 cm, fusionne le socle d'adhérence A1 Mini et génère le fichier 3MF prêt à imprimer !
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-indigo-300 flex items-center gap-1.5">
+            <i data-lucide="cpu" class="w-4 h-4 text-indigo-400"></i> Méthode 3 : Modèles Open-Source SOTA (Tencent Hunyuan3D & Trellis)
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            Accédez gratuitement aux démos ZeroGPU sur Hugging Face Spaces (ex: <a href="https://huggingface.co/spaces/tencent/Hunyuan3D-2" target="_blank" class="text-indigo-400 underline font-semibold">Tencent Hunyuan3D-2</a> ou Microsoft Trellis), téléchargez le maillage GLB et importez-le en 1 clic dans notre application.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Comparatif HD -->
   <div id="compareModal" class="hidden fixed inset-0 bg-dark-900/90 backdrop-blur-md flex items-center justify-center p-6 z-50">
     <div class="bg-dark-800 border border-dark-600 rounded-2xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
@@ -412,7 +532,9 @@
     let currentEngine = "ultra"; // "ultra" or "standard"
     let currentFilename = "sans_titre.png";
     let isWireframe = false;
-    let currentMaterialName = "gold";
+    let currentMaterialName = "basic";
+    let currentDensity = 1.24; // PLA default
+    let currentVolumeCm3 = 88.5; // Estimated baseline
     let meshObject = null;
 
     // UI Elements
@@ -520,12 +642,86 @@
     }
     createBambuBed();
 
-    // Material library
+    // Bibliothèque complète des matières de filaments Bambu Lab A1 Mini
     const materials = {
+      basic: new THREE.MeshStandardMaterial({
+        color: 0x2563eb, // Bambu Blue PLA Basic
+        roughness: 0.35,
+        metalness: 0.15,
+        wireframe: false
+      }),
+      matte: new THREE.MeshStandardMaterial({
+        color: 0xf8fafc, // Pure Ivory Matte PLA
+        roughness: 0.88,
+        metalness: 0.05,
+        wireframe: false
+      }),
+      silk: new THREE.MeshStandardMaterial({
+        color: 0xf59e0b, // Silk Gold PLA
+        roughness: 0.22,
+        metalness: 0.55,
+        wireframe: false
+      }),
+      tough: new THREE.MeshStandardMaterial({
+        color: 0x059669, // Tough Forest Green PLA
+        roughness: 0.45,
+        metalness: 0.1,
+        wireframe: false
+      }),
+      marble: new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0, // Marble Granite
+        roughness: 0.65,
+        metalness: 0.05,
+        wireframe: false
+      }),
+      wood: new THREE.MeshStandardMaterial({
+        color: 0xb45309, // Wood brown
+        roughness: 0.9,
+        metalness: 0.0,
+        wireframe: false
+      }),
+      glow: new THREE.MeshStandardMaterial({
+        color: 0xa7f3d0, // Glow Green
+        roughness: 0.3,
+        metalness: 0.1,
+        wireframe: false
+      }),
+      petg: new THREE.MeshStandardMaterial({
+        color: 0x0284c7, // PETG Deep Blue
+        roughness: 0.25,
+        metalness: 0.2,
+        wireframe: false
+      }),
+      translucent: new THREE.MeshStandardMaterial({
+        color: 0xbae6fd,
+        roughness: 0.18,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.72,
+        wireframe: false
+      }),
+      tpu: new THREE.MeshStandardMaterial({
+        color: 0xf43f5e, // TPU Red flexible
+        roughness: 0.75,
+        metalness: 0.0,
+        wireframe: false
+      }),
+      carbon: new THREE.MeshStandardMaterial({
+        color: 0x1e293b, // Carbon Graphite Black
+        roughness: 0.92,
+        metalness: 0.12,
+        wireframe: false
+      }),
+      support: new THREE.MeshStandardMaterial({
+        color: 0xfef08a, // Support Yellow/White
+        roughness: 0.6,
+        metalness: 0.0,
+        wireframe: false
+      }),
       gold: new THREE.MeshStandardMaterial({
         color: 0xe6b360,
-        roughness: 0.35,
-        metalness: 0.45,
+        roughness: 0.3,
+        metalness: 0.5,
         wireframe: false
       }),
       white: new THREE.MeshStandardMaterial({
@@ -697,6 +893,110 @@
         file3DInput.value = "";
       }
     });
+
+
+    // UI Elements for Images, Meshy Guide & Filaments
+    const btnSaveImage = document.getElementById("btnSaveImage");
+    const btnDeleteImage = document.getElementById("btnDeleteImage");
+    const btnOpenMeshyGuide = document.getElementById("btnOpenMeshyGuide");
+    const btnCloseMeshyGuide = document.getElementById("btnCloseMeshyGuide");
+    const meshyGuideModal = document.getElementById("meshyGuideModal");
+    const filamentSelect = document.getElementById("filamentSelect");
+    const filNozzleTemp = document.getElementById("filNozzleTemp");
+    const filBedTemp = document.getElementById("filBedTemp");
+    const filDensity = document.getElementById("filDensity");
+    const filNozzleType = document.getElementById("filNozzleType");
+    const filTip = document.getElementById("filTip");
+
+    // Enregistrer l'image (Téléchargement direct)
+    if (btnSaveImage) {
+      btnSaveImage.addEventListener("click", () => {
+        const src = imagePreview.src;
+        if (!src) return;
+        const a = document.createElement("a");
+        a.href = src;
+        a.download = currentFilename ? ("clean_" + currentFilename) : "image_3d_source.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    }
+
+    // Supprimer l'image (Remise à zéro)
+    if (btnDeleteImage) {
+      btnDeleteImage.addEventListener("click", (e) => {
+        e.stopPropagation();
+        currentFilename = null;
+        imagePreviewContainer.classList.add("hidden");
+        dropPrompt.classList.remove("hidden");
+        fileInput.value = "";
+        imagePreview.src = "";
+      });
+    }
+
+    // Modal Guide Meshy-7 Gratuit
+    if (btnOpenMeshyGuide && meshyGuideModal) {
+      btnOpenMeshyGuide.addEventListener("click", () => {
+        meshyGuideModal.classList.remove("hidden");
+      });
+    }
+    if (btnCloseMeshyGuide && meshyGuideModal) {
+      btnCloseMeshyGuide.addEventListener("click", () => {
+        meshyGuideModal.classList.add("hidden");
+      });
+      meshyGuideModal.addEventListener("click", (e) => {
+        if (e.target === meshyGuideModal) meshyGuideModal.classList.add("hidden");
+      });
+    }
+
+    // Filament Tips Database
+    const filamentTips = {
+      bambu_pla_basic: "Polyvalent, rigide et très facile à imprimer. Idéal pour figurines.",
+      bambu_pla_matte: "Aspect mat velouté premium. Masque naturellement les lignes de couches.",
+      bambu_pla_silk: "Effet métallisé brillant lustré. Superbe pour trophées et objets dorés.",
+      bambu_pla_tough: "Plus tenace et ductile que le PLA standard. Résiste aux chocs.",
+      bambu_pla_marble: "Contient des micro-particules pour un effet pierre naturelle.",
+      bambu_pla_wood: "Aspect et texture bois authentique. Buse 0.4 mm standard adaptée.",
+      bambu_pla_glow: "Phosphorescent dans l'obscurité. Buse acier trempé conseillée à long terme.",
+      bambu_petg_basic: "Résiste à l'humidité, aux UV et aux chocs. Excellent pour extérieur.",
+      bambu_petg_translucent: "Opalescent et translucide. Magnifique avec éclairage traversant.",
+      bambu_tpu_95a: "Flexible type caoutchouc. À alimenter depuis le porte-bobine (hors AMS).",
+      bambu_pla_cf: "Fibre de carbone rigide noir mat. Requiert buse en acier trempé 0.4mm.",
+      bambu_petg_cf: "Haute résistance thermique et mécanique. Buse acier trempé requise.",
+      bambu_support_pla: "Support interface facile à détacher sans résidus."
+    };
+
+    // Filament Selector Change Handler
+    if (filamentSelect) {
+      filamentSelect.addEventListener("change", (e) => {
+        const opt = e.target.selectedOptions[0];
+        const val = e.target.value;
+        currentDensity = parseFloat(opt.dataset.density || "1.24");
+        const nozzleT = opt.dataset.nozzle || "220";
+        const bedT = opt.dataset.bed || "60";
+        const matKey = opt.dataset.mat || "basic";
+
+        filNozzleTemp.textContent = `${nozzleT}°C`;
+        filBedTemp.textContent = `${bedT}°C`;
+        filDensity.textContent = `${currentDensity.toFixed(2)} g/cm³`;
+        filNozzleType.textContent = (val.includes("_cf") || val.includes("_glow")) ? "Buse Acier Trempé" : "Buse Inox 0.4mm";
+        filTip.textContent = filamentTips[val] || "Filament compatible Bambu Lab A1 Mini.";
+
+        // Update Three.js 3D Material
+        if (materials[matKey]) {
+          currentMaterialName = matKey;
+          if (meshObject) {
+            const m = materials[matKey].clone();
+            m.wireframe = isWireframe;
+            meshObject.material = m;
+          }
+        }
+
+        // Recalculate Weight
+        const w = (currentVolumeCm3 * currentDensity * 0.35).toFixed(1);
+        document.getElementById("statWeight").textContent = w;
+      });
+    }
 
     // Camera preset views
     document.getElementById("btnViewFront").addEventListener("click", () => {

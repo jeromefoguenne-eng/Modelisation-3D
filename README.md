@@ -44,19 +44,37 @@ Vous pouvez concevoir vos modèles sur les plateformes IA cloud :
    - Contrôle d'épaisseur minimale et des surplombs pour la Bambu Lab A1 Mini.
    - Téléchargement du fichier `.3mf` prêt pour Bambu Studio !
 
+### 3. Gestion Complète des Images
+- **Bouton Enregistrer l'image** : Sauvegardez l'image courante nettoyée et détourée en format PNG haute résolution en 1 clic.
+- **Bouton Supprimer l'image** : Réinitialisez l'espace de travail pour importer une nouvelle image sans recharger la page.
+
+### 4. Prise en Charge de Tous les Filaments Bambu Lab A1 Mini
+Le sélecteur de filament adapte automatiquement **le rendu matière 3D (couleur, brillance, transparence)**, **la densité** pour le calcul du poids et **les températures d'extrusion** :
+
+- **PLA** : Bambu PLA Basic (lisse), PLA Matte (velouté), PLA Silk (doré satiné), PLA Tough, PLA Marble (pierre), PLA Wood (bois), PLA Glow (phosphorescent).
+- **PETG** : Bambu PETG Basic (extérieur / UV), PETG Translucent (semi-transparent).
+- **TPU** : Bambu TPU 95A / HF (élastique souple, impression sur bobine externe).
+- **Renforcés Carbone** : Bambu PLA-CF et PETG-CF (noir mat graphite, requiert buse en acier trempé 0.4mm).
+- **Supports** : Bambu Support for PLA / PVA (support soluble).
+
+### 5. Comment Égaller la Précision Meshy-7 Gratuitement (0,00 €)
+1. **Moteur Local Studio Ultra-Sculpt (Illimité & Hors-Ligne)** : Notre algorithme décompose l'image 2D en gradients de Scharr et applique un *Cavity Carving* (creusement accentué des cavités des yeux, narines, commissures et arêtes vives) sur un maillage de 223 000+ polygones.
+2. **Meshy.ai Free Tier (200 crédits/mois gratuits)** : Créez un compte gratuit sur [Meshy.ai](https://www.meshy.ai), téléchargez le fichier `.glb` ou `.obj` et glissez-le directement dans notre application pour l'adapter instantanément à la Bambu Lab A1 Mini.
+3. **Modèles Open-Source SOTA (Tencent Hunyuan3D-2 & Trellis)** : Utilisez les espaces gratuits Hugging Face Spaces et importez les maillages directement dans l'application.
+
 ---
 
 ## ⚙️ Paramètres Recommandés Bambu Studio (A1 Mini — Monochrome)
 
 Pour une statuette volumétrique de 10 cm (ex. Babel le chien) en PLA :
 
-- **Buse** : 0.4 mm Stainless Steel
+- **Buse** : 0.4 mm Stainless Steel (ou Acier Trempé si filament -CF)
 - **Hauteur de couche** : `0.12 mm High Quality` (ou `0.08 mm Extra Fine` pour le visage)
 - **Remplissage (Infill)** : `12% Gyroid` (3 parois / murs pour une excellente solidité)
 - **Supports** : `Supports Arborescents (Tree Supports)` avec style *Tree Slim*
 - **Adhérence au plateau** : Le socle biseauté intégré à la pièce assure un maintien parfait sans décollement.
 - **Temps d'impression estimé** : ~1h 50min
-- **Poids de filament PLA** : ~39 g
+- **Poids de filament PLA** : ~39 g (calculé précisément selon la densité du filament choisi)
 
 ---
 
