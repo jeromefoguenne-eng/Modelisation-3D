@@ -2,6 +2,9 @@ __pycache__/
 *.pyc
 *.pyo
 uploads/
+outputs/
+test_*.py
+render_*.py
 build_index.py
 .DS_Store
 Thumbs.db

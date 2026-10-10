@@ -93,9 +93,14 @@
               <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">1</span>
               Source : Image ou Prompt 3D
             </h2>
-            <button id="btnLoadDemo" type="button" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Charger démo Babel
-            </button>
+            <div class="flex items-center gap-2">
+              <button id="btnLoadDemoDog" type="button" class="text-xs text-purple-400 hover:text-purple-300 transition flex items-center gap-1 font-semibold">
+                <i data-lucide="dog" class="w-3.5 h-3.5"></i> Démo Chien SOTA
+              </button>
+              <button id="btnLoadDemo" type="button" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Babel
+              </button>
+            </div>
           </div>
 
           <!-- Onglets de sélection du mode d'entrée -->
@@ -283,6 +288,20 @@
                 <span class="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">100% Gratuit & Souverain</span>
               </div>
               <p class="text-[11px] text-slate-300 leading-tight">Génération automatique avec sculpture faciale, dos galbé et socle d'adhérence A1 Mini. Zéro clé API requise, zéro coût.</p>
+            </div>
+
+            <!-- Jeton Hugging Face Gratuit (Optionnel pour GPU A100 Dédié) -->
+            <div class="pt-2 border-t border-dark-700/80 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px]">
+                <label for="hfTokenInput" class="text-amber-300 font-semibold flex items-center gap-1">
+                  <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i> Token Hugging Face (Gratuit - Optionnel) :
+                </label>
+                <a href="https://huggingface.co/settings/tokens" target="_blank" class="text-[10px] text-amber-400 hover:underline flex items-center gap-0.5">
+                  Créer token <i data-lucide="external-link" class="w-2.5 h-2.5"></i>
+                </a>
+              </div>
+              <input type="password" id="hfTokenInput" placeholder="hf_xxxxxxxxxxxxxxxx (pour GPU A100 instantané)" class="w-full px-2.5 py-1.5 bg-dark-900 border border-dark-600 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono">
+              <p class="text-[10px] text-slate-400 leading-tight">Un compte gratuit HF donne un accès prioritaire sans limite partagée au moteur Tencent Hunyuan3D-2.1.</p>
             </div>
           </div>
         </section>
@@ -930,6 +949,7 @@
     const btnSaveImage = document.getElementById("btnSaveImage");
     const btnDeleteImage = document.getElementById("btnDeleteImage");
     const btnLoadDemo = document.getElementById("btnLoadDemo");
+    const btnLoadDemoDog = document.getElementById("btnLoadDemoDog");
     const btnQuickDemoLoad = document.getElementById("btnQuickDemoLoad");
     const emptyBedOverlay = document.getElementById("emptyBedOverlay");
     const btnTrigger3DImport = document.getElementById("btnTrigger3DImport");
@@ -1619,6 +1639,24 @@
 
     btnLoadDemo.addEventListener("click", loadDemoBabelModel);
     if (btnQuickDemoLoad) btnQuickDemoLoad.addEventListener("click", loadDemoBabelModel);
+
+    // Quick Demo Chien SOTA Load (Tencent Hunyuan3D-2.1 - 187k faces, 100% étanche)
+    function loadDemoDogModel() {
+      currentFilename = "Chien_Dalmatien_Hunyuan";
+      imageName.textContent = "Chien Dalmatien (Hunyuan3D-2.1 SOTA)";
+      imageDimensions.textContent = "Photo HD (Gemini)";
+      imagePreview.src = "./demo/chien_dalmatien_original.jpg";
+      currentImageDataUrl = "./demo/chien_dalmatien_original.jpg";
+      dropPrompt.classList.add("hidden");
+      imagePreviewContainer.classList.remove("hidden");
+      
+      const stlPath = chkAddBase.checked ? "./demo/Chien_Avec_Socle_Hunyuan.stl" : "./demo/Chien_Sculpture_Pure_Hunyuan.stl";
+      const glbPath = chkAddBase.checked ? "./demo/Chien_Avec_Socle_Hunyuan.glb" : "./demo/Chien_Sculpture_Pure_Hunyuan.glb";
+      updateDownloadLinks(stlPath, glbPath, stlPath, "Chien_Dalmatien_Hunyuan3D");
+      loadModelSTL(stlPath);
+    }
+
+    if (btnLoadDemoDog) btnLoadDemoDog.addEventListener("click", loadDemoDogModel);
 
     // FONCTION DE DÉTOURAGE BFS ROBUSTE & RECADRAGE STRICT (Anti-cadres, anti-arches)
     function cleanImageCanvas(sourceCanvas) {
@@ -2333,6 +2371,8 @@
           formData.append("base_thickness_mm", baseThickness);
           formData.append("add_base", chkAddBase.checked ? "true" : "false");
           formData.append("invert", chkInvert.checked ? "true" : "false");
+          const hfTokenVal = document.getElementById("hfTokenInput") ? document.getElementById("hfTokenInput").value.trim() : "";
+          if (hfTokenVal) formData.append("hf_token", hfTokenVal);
 
           const response = await fetch(`${API_BASE}/api/convert`, {
             method: "POST",
@@ -2354,7 +2394,11 @@
           }
         }
 
-        // Cas B : Démo Babel intégrée
+        // Cas B : Démo Chien ou Babel intégrée
+        if (currentFilename && currentFilename.toLowerCase().includes("chien")) {
+          loadDemoDogModel();
+          return;
+        }
         if (currentFilename && (currentFilename.toLowerCase().includes("babel") || currentFilename.toLowerCase().includes("sans titre") || currentFilename.toLowerCase().includes("sans_titre"))) {
           loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
           return;

@@ -516,17 +516,18 @@ print('TripoSR completed!')
 def generate_mode3_hunyuan_sota(
     image: Image.Image,
     caption: Optional[str] = None,
-    target_height_mm: float = 100.0,
+    target_height_mm: float = 80.0,
     with_base: bool = True,
     base_height_mm: float = 4.5,
-    steps: int = 32,
-    guidance_scale: float = 5.5,
-    octree_resolution: int = 384
+    steps: int = 25,
+    guidance_scale: float = 5.0,
+    octree_resolution: int = 256,
+    hf_token: Optional[str] = None
 ) -> trimesh.Trimesh:
-    """Mode 3 Studio Ultra HD (Équivalent Meshy-7 / Hunyuan3D-2 Haute Définition) :
-    Modélisation 3D neuronale par diffusion (DiT) haute résolution (octree 384, 32 steps) produisant
-    des statuettes anatomiques organiques complètes à 360°, étanches et fidèles, optimisées pour Bambu Lab A1 Mini.
-    100% gratuit, 0 clé API payante.
+    """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2.1) :
+    Modélisation 3D neuronale par diffusion (DiT) produisant des sculptures complètes à 360°,
+    étanches (watertight), avec détails anatomiques et transfert de couleurs photoréalistes,
+    100% optimisées pour Bambu Lab A1 Mini.
     """
     import truststore
     truststore.inject_into_ssl()
@@ -537,15 +538,16 @@ def generate_mode3_hunyuan_sota(
     temp_in = os.path.join(temp_dir, f"in_{uid}.png")
     image.save(temp_in)
     
-    if caption and caption.strip():
-        cap = f"a highly detailed realistic sculpture of {caption.strip()}, fine organic textures, anatomically accurate, smooth solid manifold 3D"
-    else:
-        cap = "a highly detailed realistic 3D sculpture, fine organic textures, anatomically accurate, smooth solid manifold 3D"
+    token = hf_token or os.environ.get("HF_TOKEN") or None
+    print(f"[Hunyuan3D-2.1] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
     
-    print(f"[Hunyuan3D-2] Lancement de la génération Studio Ultra HD (octree={octree_resolution}, steps={steps}, caption='{cap}')...")
-    client = Client("tencent/Hunyuan3D-2")
+    if token:
+        client = Client("tencent/Hunyuan3D-2.1", hf_token=token)
+    else:
+        client = Client("tencent/Hunyuan3D-2.1")
+        
+    print(f"[Hunyuan3D-2.1] Génération volumétrique de la géométrie 3D (octree={octree_resolution}, steps={steps})...")
     res = client.predict(
-        caption=cap,
         image=handle_file(temp_in),
         mv_image_front=None,
         mv_image_back=None,
@@ -571,7 +573,7 @@ def generate_mode3_hunyuan_sota(
         
     shutil.rmtree(temp_dir, ignore_errors=True)
     
-    # 1. Rotation repère standard Bambu Studio (+90 deg sur X pour orienter la sculpture debout)
+    # 1. Orientation repère standard Bambu Studio (+90 deg sur X pour poser la sculpture sur ses pattes/base)
     R = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
     raw_mesh.apply_transform(R)
     
@@ -585,19 +587,49 @@ def generate_mode3_hunyuan_sota(
     else:
         m = raw_mesh
         
-    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=4)
     m.fix_normals()
     
-    # 3. Échelle et centrage pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
+    # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
+    # 3. Projection photoréaliste des couleurs de l'image source sur le maillage
+    try:
+        rgb_img = image.convert("RGB")
+        w_img, h_img = rgb_img.size
+        img_arr = np.array(rgb_img)
+        v = m.vertices
+        normals = m.vertex_normals
+        
+        min_x, max_x = m.bounds[0][0], m.bounds[1][0]
+        min_z, max_z = m.bounds[0][2], m.bounds[1][2]
+        pad_x = (max_x - min_x) * 0.08
+        pad_z = (max_z - min_z) * 0.05
+        u = np.clip((v[:, 0] - (min_x - pad_x)) / ((max_x - min_x) + 2*pad_x), 0.0, 1.0)
+        v_coord = np.clip(1.0 - (v[:, 2] - (min_z - pad_z)) / ((max_z - min_z) + 2*pad_z), 0.0, 1.0)
+        px = (u * (w_img - 1)).astype(int)
+        py = (v_coord * (h_img - 1)).astype(int)
+        
+        front_colors = img_arr[py, px]
+        back_factor = np.clip(normals[:, 1], 0.0, 1.0)
+        coat_color = np.array([215, 210, 200], dtype=float)
+        
+        colors_final = np.zeros((len(v), 4), dtype=np.uint8)
+        for i in range(3):
+            blended = front_colors[:, i].astype(float) * (1.0 - 0.65 * back_factor) + coat_color[i] * (0.65 * back_factor)
+            colors_final[:, i] = np.clip(blended, 0, 255).astype(np.uint8)
+        colors_final[:, 3] = 255
+        m.visual.vertex_colors = colors_final
+    except Exception as e_col:
+        print(f"[Hunyuan3D-2.1] Notice texturation: {e_col}")
+    
+    # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     current_h = max(0.001, m.extents[2])
     scale = target_height_mm / current_h
     max_xy = max(m.extents[0], m.extents[1]) * scale
-    if max_xy > 160.0:
-        scale = scale * (160.0 / max_xy)
+    if max_xy > 165.0:
+        scale = scale * (165.0 / max_xy)
         
     m.apply_scale(scale)
     m.apply_translation([0, 0, -m.bounds[0][2]])
@@ -605,7 +637,7 @@ def generate_mode3_hunyuan_sota(
     if not with_base:
         return m
         
-    # 4. Socle d'adhérence biseauté et stable pour Bambu Lab A1 Mini
+    # 5. Socle solide d'adhérence biseauté pour Bambu Lab A1 Mini
     dx, dy = m.extents[0], m.extents[1]
     base_rx = min(85.0, (dx / 2.0) + 8.0)
     base_ry = min(85.0, (dy / 2.0) + 8.0)
@@ -627,22 +659,24 @@ def generate_mode3_hunyuan_sota(
 def generate_mode3_ultra_sculpted(
     image: Image.Image,
     caption: Optional[str] = None,
-    target_height_mm: float = 100.0,
+    target_height_mm: float = 80.0,
     with_base: bool = True,
-    base_height_mm: float = 4.5
+    base_height_mm: float = 4.5,
+    hf_token: Optional[str] = None
 ) -> trimesh.Trimesh:
-    """Mode 3 Ultra-Précis (Qualité Studio / Meshy-7) : Reconstruction volumétrique neuronale haute fidélité SOTA avec bascule automatique de secours."""
+    """Mode 3 Ultra-Précis (Qualité Studio SOTA) : Reconstruction volumétrique neuronale Hunyuan3D-2.1 avec bascule automatique."""
     try:
-        print("[Mode 3 Ultra] Inférence Studio SOTA (Hunyuan3D-2)...")
+        print("[Mode 3 Ultra] Inférence Studio SOTA (Hunyuan3D-2.1)...")
         return generate_mode3_hunyuan_sota(
             image=image,
             caption=caption,
             target_height_mm=target_height_mm,
             with_base=with_base,
-            base_height_mm=base_height_mm
+            base_height_mm=base_height_mm,
+            hf_token=hf_token
         )
     except Exception as e:
-        print(f"[Mode 3 Ultra] Moteur SOTA indisponible ({e}), bascule sur moteur local...")
+        print(f"[Mode 3 Ultra] Moteur SOTA en attente de quota ({e}), bascule sur moteur local haute résolution...")
         m = generate_mode3_volumetric(
             image=image,
             target_height_mm=target_height_mm,

@@ -181,7 +181,8 @@ async def convert_image(
     invert: bool = Form(False),
     resolution: int = Form(250),
     smooth_sigma: float = Form(1.0),
-    prompt: Optional[str] = Form(None)
+    prompt: Optional[str] = Form(None),
+    hf_token: Optional[str] = Form(None)
 ):
     """Point d'entrée principal de génération 3D selon le mode choisi."""
     out_id = str(uuid.uuid4())[:8]
@@ -233,7 +234,8 @@ async def convert_image(
                     caption=prompt,
                     target_height_mm=target_height_mm,
                     with_base=add_base,
-                    base_height_mm=base_thickness_mm
+                    base_height_mm=base_thickness_mm,
+                    hf_token=hf_token
                 )
                 mode_name = "Mode3_Studio_Ultra_HD"
             else:
