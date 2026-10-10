@@ -519,13 +519,13 @@ def generate_mode3_hunyuan_sota(
     target_height_mm: float = 100.0,
     with_base: bool = True,
     base_height_mm: float = 4.5,
-    steps: int = 20,
-    guidance_scale: float = 5.0,
-    octree_resolution: int = 256
+    steps: int = 32,
+    guidance_scale: float = 5.5,
+    octree_resolution: int = 384
 ) -> trimesh.Trimesh:
-    """Mode 3 Studio Ultra HD (Équivalent Meshy-7 / Hunyuan3D-2) :
-    Modélisation 3D neuronale par diffusion (DiT) produisant des statuettes anatomiques
-    organiques complètes à 360°, étanches et fidèles, optimisées pour Bambu Lab A1 Mini.
+    """Mode 3 Studio Ultra HD (Équivalent Meshy-7 / Hunyuan3D-2 Haute Définition) :
+    Modélisation 3D neuronale par diffusion (DiT) haute résolution (octree 384, 32 steps) produisant
+    des statuettes anatomiques organiques complètes à 360°, étanches et fidèles, optimisées pour Bambu Lab A1 Mini.
     100% gratuit, 0 clé API payante.
     """
     import truststore
@@ -537,9 +537,12 @@ def generate_mode3_hunyuan_sota(
     temp_in = os.path.join(temp_dir, f"in_{uid}.png")
     image.save(temp_in)
     
-    cap = caption or "a realistic 3D sculpture, detailed, solid, manifold"
+    if caption and caption.strip():
+        cap = f"a highly detailed realistic sculpture of {caption.strip()}, fine organic textures, anatomically accurate, smooth solid manifold 3D"
+    else:
+        cap = "a highly detailed realistic 3D sculpture, fine organic textures, anatomically accurate, smooth solid manifold 3D"
     
-    print(f"[Hunyuan3D-2] Lancement de la génération Studio Ultra HD (caption='{cap}')...")
+    print(f"[Hunyuan3D-2] Lancement de la génération Studio Ultra HD (octree={octree_resolution}, steps={steps}, caption='{cap}')...")
     client = Client("tencent/Hunyuan3D-2")
     res = client.predict(
         caption=cap,
@@ -582,6 +585,7 @@ def generate_mode3_hunyuan_sota(
     else:
         m = raw_mesh
         
+    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=4)
     m.fix_normals()
     
     # 3. Échelle et centrage pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
