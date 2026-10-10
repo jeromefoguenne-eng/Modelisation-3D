@@ -8,6 +8,10 @@ import sys
 import io
 import time
 import subprocess
+import uuid
+import shutil
+import tempfile
+from typing import Optional, List, Dict, Any
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
 import scipy.ndimage as ndi
@@ -467,6 +471,16 @@ print('TripoSR completed!')
     
     m = trimesh.Trimesh(vertices=verts_bambu, faces=faces_bambu)
     m.fix_normals()
+
+    # Nettoyage des éclats et floaters isolés
+    components = m.split(only_watertight=False)
+    if len(components) > 1:
+        components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
+        max_faces = len(components_sorted[0].faces)
+        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.05]
+        m = trimesh.util.concatenate(kept)
+        m.fix_normals()
+
     smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=8)
     
     # Mise à l'échelle pour Bambu Lab A1 Mini (plateau 180x180 mm)
@@ -499,26 +513,142 @@ print('TripoSR completed!')
     return combined
 
 
+def generate_mode3_hunyuan_sota(
+    image: Image.Image,
+    caption: Optional[str] = None,
+    target_height_mm: float = 100.0,
+    with_base: bool = True,
+    base_height_mm: float = 4.5,
+    steps: int = 20,
+    guidance_scale: float = 5.0,
+    octree_resolution: int = 256
+) -> trimesh.Trimesh:
+    """Mode 3 Studio Ultra HD (Équivalent Meshy-7 / Hunyuan3D-2) :
+    Modélisation 3D neuronale par diffusion (DiT) produisant des statuettes anatomiques
+    organiques complètes à 360°, étanches et fidèles, optimisées pour Bambu Lab A1 Mini.
+    100% gratuit, 0 clé API payante.
+    """
+    import truststore
+    truststore.inject_into_ssl()
+    from gradio_client import Client, handle_file
+    
+    uid = str(uuid.uuid4())[:8]
+    temp_dir = tempfile.mkdtemp(prefix="hunyuan3d_")
+    temp_in = os.path.join(temp_dir, f"in_{uid}.png")
+    image.save(temp_in)
+    
+    cap = caption or "a realistic 3D sculpture, detailed, solid, manifold"
+    
+    print(f"[Hunyuan3D-2] Lancement de la génération Studio Ultra HD (caption='{cap}')...")
+    client = Client("tencent/Hunyuan3D-2")
+    res = client.predict(
+        caption=cap,
+        image=handle_file(temp_in),
+        mv_image_front=None,
+        mv_image_back=None,
+        mv_image_left=None,
+        mv_image_right=None,
+        steps=steps,
+        guidance_scale=guidance_scale,
+        seed=1234,
+        octree_resolution=octree_resolution,
+        check_box_rembg=True,
+        num_chunks=8000,
+        randomize_seed=True,
+        api_name="/shape_generation"
+    )
+    
+    raw_glb_path = res[0]["value"]
+    scene = trimesh.load(raw_glb_path, force="mesh")
+    if isinstance(scene, trimesh.Scene):
+        mesh_list = [g for g in scene.geometry.values() if isinstance(g, trimesh.Trimesh)]
+        raw_mesh = trimesh.util.concatenate(mesh_list)
+    else:
+        raw_mesh = scene
+        
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    # 1. Rotation repère standard Bambu Studio (+90 deg sur X pour orienter la sculpture debout)
+    R = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
+    raw_mesh.apply_transform(R)
+    
+    # 2. Nettoyage des éventuels éclats et floaters isolés
+    components = raw_mesh.split(only_watertight=False)
+    if len(components) > 1:
+        components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
+        max_faces = len(components_sorted[0].faces)
+        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.03]
+        m = trimesh.util.concatenate(kept)
+    else:
+        m = raw_mesh
+        
+    m.fix_normals()
+    
+    # 3. Échelle et centrage pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
+    m.apply_translation([0, 0, -m.bounds[0][2]])
+    center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
+    m.apply_translation([-center_xy[0], -center_xy[1], 0])
+    
+    current_h = max(0.001, m.extents[2])
+    scale = target_height_mm / current_h
+    max_xy = max(m.extents[0], m.extents[1]) * scale
+    if max_xy > 160.0:
+        scale = scale * (160.0 / max_xy)
+        
+    m.apply_scale(scale)
+    m.apply_translation([0, 0, -m.bounds[0][2]])
+    
+    if not with_base:
+        return m
+        
+    # 4. Socle d'adhérence biseauté et stable pour Bambu Lab A1 Mini
+    dx, dy = m.extents[0], m.extents[1]
+    base_rx = min(85.0, (dx / 2.0) + 8.0)
+    base_ry = min(85.0, (dy / 2.0) + 8.0)
+    
+    base_mesh = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=64)
+    base_mesh.apply_scale([base_rx, base_ry, 1.0])
+    base_mesh.apply_translation([0, 0, base_height_mm / 2.0])
+    
+    # Encastrement de 1.2 mm dans le socle
+    m.apply_translation([0, 0, base_height_mm - 1.2])
+    
+    combined = trimesh.util.concatenate([m, base_mesh])
+    combined.fix_normals()
+    combined.apply_translation([0, 0, -combined.bounds[0][2]])
+    
+    return combined
+
+
 def generate_mode3_ultra_sculpted(
     image: Image.Image,
+    caption: Optional[str] = None,
     target_height_mm: float = 100.0,
     with_base: bool = True,
     base_height_mm: float = 4.5
 ) -> trimesh.Trimesh:
-    """Mode 3 Ultra-Précis (Qualité Studio / Meshy-7) : Reconstruction volumétrique neuronale 360° haute résolution (288 voxels, 200k+ faces) avec préservation anatomique Taubin et socle Manifold étanche."""
-    # 1. Base volumétrique haute résolution (288 voxel Marching Cubes)
-    m = generate_mode3_volumetric(
-        image=image,
-        target_height_mm=target_height_mm,
-        with_base=with_base,
-        base_height_mm=base_height_mm,
-        resolution=288
-    )
-    
-    # 2. Lissage Taubin de précision pour éliminer tout effet d'escalier sans aplatir les arêtes vives
-    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
-    m.fix_normals()
-    return m
+    """Mode 3 Ultra-Précis (Qualité Studio / Meshy-7) : Reconstruction volumétrique neuronale haute fidélité SOTA avec bascule automatique de secours."""
+    try:
+        print("[Mode 3 Ultra] Inférence Studio SOTA (Hunyuan3D-2)...")
+        return generate_mode3_hunyuan_sota(
+            image=image,
+            caption=caption,
+            target_height_mm=target_height_mm,
+            with_base=with_base,
+            base_height_mm=base_height_mm
+        )
+    except Exception as e:
+        print(f"[Mode 3 Ultra] Moteur SOTA indisponible ({e}), bascule sur moteur local...")
+        m = generate_mode3_volumetric(
+            image=image,
+            target_height_mm=target_height_mm,
+            with_base=with_base,
+            base_height_mm=base_height_mm,
+            resolution=288
+        )
+        smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
+        m.fix_normals()
+        return m
 
 
 def process_external_3d_file(

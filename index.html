@@ -1662,9 +1662,9 @@
       try {
         await checkBackendAvailable();
 
-        // Cas A : Serveur local GPU RTX 4070 Ti actif
+        // Cas A : Serveur local actif (Moteur SOTA Studio HD / Meshy-Grade)
         if (isBackendConnected && currentRawFile) {
-          document.getElementById("loadingSubtitle").textContent = "Inférence IA TripoSR sur GPU RTX 4070 Ti en cours (~15s)...";
+          document.getElementById("loadingSubtitle").textContent = "Génération neuronale SOTA (Qualité Studio / Meshy) en cours (~15s)...";
           const formData = new FormData();
           formData.append("file", currentRawFile);
           formData.append("mode", currentMode);

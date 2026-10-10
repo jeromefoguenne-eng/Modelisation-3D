@@ -180,7 +180,8 @@ async def convert_image(
     add_base: bool = Form(True),
     invert: bool = Form(False),
     resolution: int = Form(250),
-    smooth_sigma: float = Form(1.0)
+    smooth_sigma: float = Form(1.0),
+    prompt: Optional[str] = Form(None)
 ):
     """Point d'entrée principal de génération 3D selon le mode choisi."""
     out_id = str(uuid.uuid4())[:8]
@@ -229,6 +230,7 @@ async def convert_image(
             if engine_mode == "ultra":
                 mesh = engine.generate_mode3_ultra_sculpted(
                     image=im,
+                    caption=prompt,
                     target_height_mm=target_height_mm,
                     with_base=add_base,
                     base_height_mm=base_thickness_mm
@@ -363,6 +365,7 @@ async def generate_from_prompt(
             if engine_mode == "ultra":
                 mesh = engine.generate_mode3_ultra_sculpted(
                     image=im,
+                    caption=prompt_clean,
                     target_height_mm=target_height_mm,
                     with_base=add_base,
                     base_height_mm=base_thickness_mm
