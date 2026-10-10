@@ -311,34 +311,50 @@
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-500/30">4</span>
-              Filaments Bambu Lab A1 Mini
+              Filaments Bambu Lab & eSun (PLA & PLA+)
             </h2>
             <span class="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30 font-medium">Buse 300°C Max</span>
           </div>
 
           <select id="filamentSelect" class="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-bambu-500 font-medium">
-            <optgroup label="🌟 PLA Bambu Lab (Recommandé A1 Mini)">
-              <option value="bambu_pla_basic" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="basic" selected>Bambu PLA Basic (Plastique rigide lisse équilibré)</option>
+            <optgroup label="🚀 eSun PLA+ (Haute Résistance & Vitesse)">
+              <option value="esun_pla_plus" data-density="1.23" data-nozzle="215" data-bed="60" data-mat="tough" selected>eSun PLA+ (Standard Tenace, 2x plus résistant aux chocs)</option>
+              <option value="esun_pla_plus_hs" data-density="1.23" data-nozzle="220" data-bed="60" data-mat="tough">eSun PLA+ HS (High Speed, optimisé 250-500 mm/s A1 Mini)</option>
+              <option value="esun_pla_st" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="tough">eSun ePLA-ST (Super Tough, résistance extrême supérieure à l'ABS)</option>
+              <option value="esun_pla_standard" data-density="1.24" data-nozzle="210" data-bed="55" data-mat="basic">eSun PLA Standard (Économique, fluidité & prototypage rapide)</option>
+              <option value="esun_pla_lw" data-density="0.60" data-nozzle="225" data-bed="55" data-mat="matte">eSun ePLA-LW (Lightweight Moussant, -50% de poids)</option>
+            </optgroup>
+
+            <optgroup label="🎨 eSun Spéciaux & Finitions Artistiques (PLA & PLA+)">
+              <option value="esun_pla_matte" data-density="1.23" data-nozzle="215" data-bed="60" data-mat="matte">eSun ePLA-Matte (Mat velouté soyeux, masque les stries)</option>
+              <option value="esun_esilk_pla" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="silk">eSun eSilk-PLA (Reflet soyeux métallisé brillant or/argent)</option>
+              <option value="esun_esilk_rainbow" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="silk">eSun eSilk-PLA Rainbow (Dégradé arc-en-ciel multicouleur)</option>
+              <option value="esun_emarble_pla" data-density="1.24" data-nozzle="215" data-bed="60" data-mat="marble">eSun eMarble PLA (Aspect pierre de marbre avec micro-mouchetures)</option>
+              <option value="esun_wood_pla" data-density="1.20" data-nozzle="215" data-bed="55" data-mat="wood">eSun Wood PLA (Fibres de bois authentique, ponçable & peignable)</option>
+              <option value="esun_epla_magic" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="silk">eSun ePLA-Magic (Bicolore co-extrudé dichromatique)</option>
+              <option value="esun_epla_chameleon" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="silk">eSun ePLA-Chameleon (Trichromatique 3 couleurs selon l'angle)</option>
+              <option value="esun_etwinkling_pla" data-density="1.24" data-nozzle="215" data-bed="60" data-mat="basic">eSun eTwinkling PLA (Paillettes étoilées scintillantes)</option>
+              <option value="esun_epla_glow" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="glow">eSun ePLA-Glow (Phosphorescent dans le noir, buse acier conseillée)</option>
+              <option value="esun_epla_cf" data-density="1.28" data-nozzle="220" data-bed="60" data-mat="carbon">eSun ePLA-CF Carbone (Rigidité carbone mat, buse acier requise)</option>
+            </optgroup>
+
+            <optgroup label="🌟 PLA Bambu Lab Officiel">
+              <option value="bambu_pla_basic" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="basic">Bambu PLA Basic (Plastique rigide lisse équilibré)</option>
               <option value="bambu_pla_matte" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="matte">Bambu PLA Matte (Mat velouté, masque les couches)</option>
               <option value="bambu_pla_silk" data-density="1.24" data-nozzle="225" data-bed="60" data-mat="silk">Bambu PLA Silk (Reflet satiné soyeux or / argent)</option>
               <option value="bambu_pla_tough" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="tough">Bambu PLA Tough (Haute résistance aux chocs)</option>
               <option value="bambu_pla_marble" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="marble">Bambu PLA Marble (Aspect pierre marbrée mouchetée)</option>
               <option value="bambu_pla_wood" data-density="1.20" data-nozzle="215" data-bed="55" data-mat="wood">Bambu PLA Wood (Toucher fibre de bois naturel)</option>
               <option value="bambu_pla_glow" data-density="1.24" data-nozzle="220" data-bed="60" data-mat="glow">Bambu PLA Glow (Phosphorescent dans le noir)</option>
+              <option value="bambu_pla_cf" data-density="1.29" data-nozzle="220" data-bed="60" data-mat="carbon">Bambu PLA-CF Carbone (Rigidité accrue, noir mat graphite)</option>
             </optgroup>
-            <optgroup label="🛡️ PETG Bambu Lab (Extérieur & Résistance UV)">
+
+            <optgroup label="🛡️ PETG & Spéciaux Bambu Lab">
               <option value="bambu_petg_basic" data-density="1.27" data-nozzle="255" data-bed="70" data-mat="petg">Bambu PETG Basic (Haute ténacité, résistant eau & UV)</option>
               <option value="bambu_petg_translucent" data-density="1.27" data-nozzle="250" data-bed="70" data-mat="translucent">Bambu PETG Translucent (Semi-transparent opalescent)</option>
-            </optgroup>
-            <optgroup label="🤸 TPU Bambu Lab (Flexible Élastique)">
-              <option value="bambu_tpu_95a" data-density="1.21" data-nozzle="230" data-bed="35" data-mat="tpu">Bambu TPU 95A / HF (Caoutchouc souple, bobine externe)</option>
-            </optgroup>
-            <optgroup label="⚡ Filaments Renforcés (Buse Acier Trempé Requise)">
-              <option value="bambu_pla_cf" data-density="1.29" data-nozzle="220" data-bed="60" data-mat="carbon">Bambu PLA-CF Carbone (Rigidité accrue, noir mat graphite)</option>
               <option value="bambu_petg_cf" data-density="1.29" data-nozzle="255" data-bed="70" data-mat="carbon">Bambu PETG-CF Carbone (Haute tenue thermique et mécanique)</option>
-            </optgroup>
-            <optgroup label="💧 Supports Spéciaux">
-              <option value="bambu_support_pla" data-density="1.23" data-nozzle="220" data-bed="60" data-mat="support">Bambu Support for PLA / PVA (Support soluble / détachable)</option>
+              <option value="bambu_tpu_95a" data-density="1.21" data-nozzle="230" data-bed="35" data-mat="tpu">Bambu TPU 95A / HF (Caoutchouc souple élastique)</option>
+              <option value="bambu_support_pla" data-density="1.23" data-nozzle="220" data-bed="60" data-mat="support">Bambu Support for PLA / PVA (Support détachable)</option>
             </optgroup>
           </select>
 
@@ -2378,19 +2394,34 @@
       filNozzleType.textContent = (val.includes("_cf") || val.includes("_glow")) ? "Buse Acier Trempé" : "Buse Inox 0.4mm";
 
       const filamentTips = {
-        bambu_pla_basic: "Polyvalent, rigide et très facile à imprimer. Idéal pour figurines.",
-        bambu_pla_matte: "Aspect mat velouté premium. Masque naturellement les lignes de couches.",
-        bambu_pla_silk: "Effet métallisé brillant lustré. Superbe pour trophées et objets dorés.",
-        bambu_pla_tough: "Plus tenace et ductile que le PLA standard. Résiste aux chocs.",
-        bambu_pla_marble: "Contient des micro-particules pour un effet pierre naturelle.",
-        bambu_pla_wood: "Aspect et texture bois authentique. Buse 0.4 mm standard adaptée.",
-        bambu_pla_glow: "Phosphorescent dans l'obscurité. Buse acier trempé conseillée à long terme.",
-        bambu_petg_basic: "Résiste à l'humidité, aux UV et aux chocs. Excellent pour extérieur.",
-        bambu_petg_translucent: "Opalescent et translucide. Magnifique avec éclairage traversant.",
-        bambu_tpu_95a: "Flexible type caoutchouc. À alimenter depuis le porte-bobine (hors AMS).",
-        bambu_pla_cf: "Fibre de carbone rigide noir mat. Requiert buse en acier trempé 0.4mm.",
-        bambu_petg_cf: "Haute résistance thermique et mécanique. Buse acier trempé requise.",
-        bambu_support_pla: "Support interface facile à détacher sans résidus."
+        esun_pla_plus: "eSun PLA+ : 2x plus tenace que le PLA standard, excellente adhésion inter-couches. Référence n°1 pour figurines et pièces durables.",
+        esun_pla_plus_hs: "eSun PLA+ High Speed : Fluidité accélérée pour préserver une qualité de surface parfaite aux vitesses élevées de l'A1 Mini (300+ mm/s).",
+        esun_pla_st: "eSun Super Tough : Résistance extrême aux chocs et impacts répétés, surpasse l'ABS sans déformation ni odeur.",
+        esun_pla_standard: "eSun PLA Standard : Formule éco polyvalente, très facile à extruder, idéale pour le prototypage rapide.",
+        esun_pla_lw: "eSun Lightweight : Mousse active expansive à la buse, allège les statuettes de 50%. Superbe finition mate.",
+        esun_pla_matte: "eSun ePLA-Matte : Rendu mat velouté anti-reflets. Masque parfaitement les micro-stries d'impression FDM.",
+        esun_esilk_pla: "eSun eSilk-PLA : Finition brillante satinée miroir type métal précieux. Idéal pour trophées, statuettes et dorures.",
+        esun_esilk_rainbow: "eSun eSilk Rainbow : Soie multicolore changeante en continu. Transition chromatique fluide sur la hauteur.",
+        esun_emarble_pla: "eSun eMarble : Composite effet marbre avec micro-mouchetures sombres. Rendu sculpture et statuaire antique.",
+        esun_wood_pla: "eSun Wood : Composite bois véritable avec odeur et texture naturelle. Ponçage et lasure possibles.",
+        esun_epla_magic: "eSun ePLA-Magic : Co-extrusion bicolore. L'objet change de teinte selon l'angle de vue et d'éclairage.",
+        esun_epla_chameleon: "eSun ePLA-Chameleon : Co-extrusion 3 couleurs à 120°. Effet chromatique rotatif spectaculaire.",
+        esun_etwinkling_pla: "eSun eTwinkling : Paillettes scintillantes dispersées dans la matrice PLA. Effet ciel étoilé étincelant.",
+        esun_epla_glow: "eSun ePLA-Glow : Phosphorescent haute intensité. Buse en acier trempé conseillée à long terme.",
+        esun_epla_cf: "eSun ePLA-CF : Chargé en micro-fibres de carbone. Rigidité maximale et aspect graphite mat. Buse acier trempé requise.",
+        bambu_pla_basic: "Bambu PLA Basic : Polyvalent, rigide et très facile à imprimer. Idéal pour figurines.",
+        bambu_pla_matte: "Bambu PLA Matte : Aspect mat velouté premium. Masque naturellement les lignes de couches.",
+        bambu_pla_silk: "Bambu PLA Silk : Effet métallisé brillant lustré. Superbe pour trophées et objets dorés.",
+        bambu_pla_tough: "Bambu PLA Tough : Plus tenace et ductile que le PLA standard. Résiste aux chocs.",
+        bambu_pla_marble: "Bambu PLA Marble : Contient des micro-particules pour un effet pierre naturelle.",
+        bambu_pla_wood: "Bambu PLA Wood : Aspect et texture bois authentique. Buse 0.4 mm standard adaptée.",
+        bambu_pla_glow: "Bambu PLA Glow : Phosphorescent dans l'obscurité. Buse acier trempé conseillée à long terme.",
+        bambu_pla_cf: "Bambu PLA-CF : Fibre de carbone rigide noir mat. Requiert buse en acier trempé 0.4mm.",
+        bambu_petg_basic: "Bambu PETG : Résiste à l'humidité, aux UV et aux chocs. Excellent pour extérieur.",
+        bambu_petg_translucent: "Bambu PETG Translucent : Opalescent et translucide. Magnifique avec éclairage traversant.",
+        bambu_petg_cf: "Bambu PETG-CF : Haute résistance thermique et mécanique. Buse acier trempé requise.",
+        bambu_tpu_95a: "Bambu TPU : Flexible type caoutchouc. À alimenter depuis le porte-bobine (hors AMS).",
+        bambu_support_pla: "Bambu Support PLA : Support interface facile à détacher sans résidus."
       };
       filTip.textContent = filamentTips[val] || "Filament compatible Bambu Lab A1 Mini.";
 
