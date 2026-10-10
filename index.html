@@ -38,6 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -1079,9 +1080,21 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    if (THREE.sRGBEncoding) {
+      renderer.outputEncoding = THREE.sRGBEncoding;
+    }
+    if (THREE.SRGBColorSpace) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    }
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Générateur d'Environnement Studio PBR (Reflets Réalistes Métal, Vernis & Verre)
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    if (THREE.RoomEnvironment) {
+      scene.environment = pmremGenerator.fromScene(new THREE.RoomEnvironment()).texture;
+    }
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -1227,7 +1240,7 @@
       return fineNoiseNormalMap;
     }
 
-    // Gradient Map pour Ombrage Manga / Cel-Shading
+    // Gradient Map pour Ombrage Manga / Cel-Shading Steppé Haute Lisibilité
     let toonGradientMap = null;
     function getToonGradientMap() {
       if (toonGradientMap) return toonGradientMap;
@@ -1235,14 +1248,157 @@
       c.width = 4;
       c.height = 1;
       const ctx = c.getContext("2d");
-      ctx.fillStyle = "#3b4252"; ctx.fillRect(0, 0, 1, 1);
-      ctx.fillStyle = "#6b7280"; ctx.fillRect(1, 0, 1, 1);
-      ctx.fillStyle = "#d1d5db"; ctx.fillRect(2, 0, 1, 1);
+      // Échelons de contraste anime : Ombre sombre, Ombre moyenne, Teinte de base, Hautes lumières
+      ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 1, 1);
+      ctx.fillStyle = "#64748b"; ctx.fillRect(1, 0, 1, 1);
+      ctx.fillStyle = "#cbd5e1"; ctx.fillRect(2, 0, 1, 1);
       ctx.fillStyle = "#ffffff"; ctx.fillRect(3, 0, 1, 1);
       toonGradientMap = new THREE.CanvasTexture(c);
       toonGradientMap.minFilter = THREE.NearestFilter;
       toonGradientMap.magFilter = THREE.NearestFilter;
       return toonGradientMap;
+    }
+
+    // Algorithme de Décimation Polygonale Voxel pour Vrai Style Low Poly Géométrique
+    function generateLowPolyGeometry(sourceGeom, voxelCount = 36) {
+      if (!sourceGeom || !sourceGeom.attributes || !sourceGeom.attributes.position) return sourceGeom;
+      const posAttr = sourceGeom.attributes.position;
+      const colAttr = sourceGeom.attributes.color;
+      const hasColors = !!(colAttr && colAttr.count > 0);
+      const numVerts = posAttr.count;
+
+      let minX = Infinity, minY = Infinity, minZ = Infinity;
+      let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+      for (let i = 0; i < numVerts; i++) {
+        const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+      }
+
+      const dx = maxX - minX || 1;
+      const dy = maxY - minY || 1;
+      const dz = maxZ - minZ || 1;
+      const maxDim = Math.max(dx, dy, dz);
+      const cellSize = maxDim / voxelCount;
+
+      const grid = new Map();
+      const vertToCluster = new Int32Array(numVerts);
+      let clusterCount = 0;
+
+      for (let i = 0; i < numVerts; i++) {
+        const px = posAttr.getX(i), py = posAttr.getY(i), pz = posAttr.getZ(i);
+        const gx = Math.floor((px - minX) / cellSize);
+        const gy = Math.floor((py - minY) / cellSize);
+        const gz = Math.floor((pz - minZ) / cellSize);
+        const key = gx + '_' + gy + '_' + gz;
+
+        let cell = grid.get(key);
+        if (!cell) {
+          cell = {
+            id: clusterCount++,
+            count: 0,
+            sumX: 0, sumY: 0, sumZ: 0,
+            sumR: 0, sumG: 0, sumB: 0
+          };
+          grid.set(key, cell);
+        }
+
+        cell.count++;
+        cell.sumX += px;
+        cell.sumY += py;
+        cell.sumZ += pz;
+        if (hasColors) {
+          cell.sumR += colAttr.getX(i);
+          cell.sumG += colAttr.getY(i);
+          cell.sumB += colAttr.getZ(i);
+        }
+        vertToCluster[i] = cell.id;
+      }
+
+      const clusterPos = new Float32Array(clusterCount * 3);
+      const clusterCol = hasColors ? new Float32Array(clusterCount * 3) : null;
+
+      for (const cell of grid.values()) {
+        const cid = cell.id;
+        const inv = 1.0 / cell.count;
+        clusterPos[cid * 3] = cell.sumX * inv;
+        clusterPos[cid * 3 + 1] = cell.sumY * inv;
+        clusterPos[cid * 3 + 2] = cell.sumZ * inv;
+        if (clusterCol) {
+          clusterCol[cid * 3] = cell.sumR * inv;
+          clusterCol[cid * 3 + 1] = cell.sumG * inv;
+          clusterCol[cid * 3 + 2] = cell.sumB * inv;
+        }
+      }
+
+      const isIndexed = !!sourceGeom.index;
+      const numTris = isIndexed ? Math.floor(sourceGeom.index.count / 3) : Math.floor(numVerts / 3);
+      const outPositions = [];
+      const outColors = clusterCol ? [] : null;
+
+      for (let t = 0; t < numTris; t++) {
+        const v0 = isIndexed ? sourceGeom.index.getX(t * 3) : t * 3;
+        const v1 = isIndexed ? sourceGeom.index.getX(t * 3 + 1) : t * 3 + 1;
+        const v2 = isIndexed ? sourceGeom.index.getX(t * 3 + 2) : t * 3 + 2;
+
+        const c0 = vertToCluster[v0];
+        const c1 = vertToCluster[v1];
+        const c2 = vertToCluster[v2];
+
+        // Élimination des triangles dégénérés (au sein d'un même voxel)
+        if (c0 === c1 || c1 === c2 || c0 === c2) continue;
+
+        outPositions.push(
+          clusterPos[c0 * 3], clusterPos[c0 * 3 + 1], clusterPos[c0 * 3 + 2],
+          clusterPos[c1 * 3], clusterPos[c1 * 3 + 1], clusterPos[c1 * 3 + 2],
+          clusterPos[c2 * 3], clusterPos[c2 * 3 + 1], clusterPos[c2 * 3 + 2]
+        );
+
+        if (outColors) {
+          // Coloration unie de chaque facette polygonale pour un rendu origami net
+          const r = (clusterCol[c0 * 3] + clusterCol[c1 * 3] + clusterCol[c2 * 3]) / 3;
+          const g = (clusterCol[c0 * 3 + 1] + clusterCol[c1 * 3 + 1] + clusterCol[c2 * 3 + 1]) / 3;
+          const b = (clusterCol[c0 * 3 + 2] + clusterCol[c1 * 3 + 2] + clusterCol[c2 * 3 + 2]) / 3;
+          outColors.push(r, g, b,  r, g, b,  r, g, b);
+        }
+      }
+
+      const lp = new THREE.BufferGeometry();
+      lp.setAttribute('position', new THREE.BufferAttribute(new Float32Array(outPositions), 3));
+      if (outColors) {
+        lp.setAttribute('color', new THREE.BufferAttribute(new Float32Array(outColors), 3));
+      }
+      lp.computeVertexNormals();
+      return lp;
+    }
+
+    // Contour d'Encrage Manga par Inversion de Coque Extrudée le long des Normales
+    function createOutlineMesh(sourceMesh, thickness = 0.75) {
+      if (!sourceMesh || !sourceMesh.geometry) return null;
+      const baseGeom = sourceMesh.userData && sourceMesh.userData.baseGeometry ? sourceMesh.userData.baseGeometry : sourceMesh.geometry;
+      const geom = baseGeom.clone();
+      geom.computeVertexNormals();
+      const posAttr = geom.attributes.position;
+      const normAttr = geom.attributes.normal;
+      if (!normAttr) return null;
+
+      const newPositions = new Float32Array(posAttr.count * 3);
+      for (let i = 0; i < posAttr.count; i++) {
+        const px = posAttr.getX(i), py = posAttr.getY(i), pz = posAttr.getZ(i);
+        const nx = normAttr.getX(i), ny = normAttr.getY(i), nz = normAttr.getZ(i);
+        newPositions[i * 3] = px + nx * thickness;
+        newPositions[i * 3 + 1] = py + ny * thickness;
+        newPositions[i * 3 + 2] = pz + nz * thickness;
+      }
+      geom.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0x05070d,
+        side: THREE.BackSide
+      });
+      return new THREE.Mesh(geom, mat);
     }
 
     // Nettoyage des sous-maillages d'effets visuels (Contour Manga, Wireframe Cyberpunk)
@@ -1283,10 +1439,17 @@
       clearStyleOverlays();
       const normMap = getFineNoiseNormalMap();
 
-      // Restaurer la géométrie originale si on quitte le mode Low Poly
-      if (meshObject.userData && meshObject.userData.baseGeometry && styleKey !== "lowpoly") {
-        if (meshObject.geometry !== meshObject.userData.baseGeometry) {
-          meshObject.geometry = meshObject.userData.baseGeometry;
+      // Gestion Géométrique pour Low Poly vs Reste des Styles
+      if (meshObject.userData && meshObject.userData.baseGeometry) {
+        if (styleKey === "lowpoly") {
+          if (!meshObject.userData.lowPolyGeometry) {
+            meshObject.userData.lowPolyGeometry = generateLowPolyGeometry(meshObject.userData.baseGeometry, 36);
+          }
+          meshObject.geometry = meshObject.userData.lowPolyGeometry;
+        } else {
+          if (meshObject.geometry !== meshObject.userData.baseGeometry) {
+            meshObject.geometry = meshObject.userData.baseGeometry;
+          }
         }
       }
 
@@ -1296,8 +1459,12 @@
 
       switch(styleKey) {
         case "original":
-          // Couleurs Photo Photoréaliste PBR
-          if (hasColors) {
+          // Couleurs Photo Photoréaliste PBR Fidèles
+          if (meshObject.userData && meshObject.userData.originalMaterial && meshObject.userData.originalMaterial.map) {
+            newMat = meshObject.userData.originalMaterial.clone();
+            newMat.roughness = 0.35;
+            newMat.metalness = 0.05;
+          } else if (hasColors) {
             newMat = new THREE.MeshStandardMaterial({
               vertexColors: true,
               color: 0xffffff,
@@ -1310,174 +1477,158 @@
           break;
 
         case "figurine":
-          // Figurine Vinyle Studio avec micro-textures de pelage/peau & vernis brillant
+          // Figurine Vinyle Collector : Vernis Brillant Haute Réflectivité & Couleurs Vives
           newMat = new THREE.MeshPhysicalMaterial({
             vertexColors: hasColors,
             color: hasColors ? 0xffffff : filColor,
-            roughness: 0.20,
+            roughness: 0.15,
             metalness: 0.05,
-            clearcoat: 0.88,
-            clearcoatRoughness: 0.10,
-            reflectivity: 0.65,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.25, 0.25)
-          });
-          break;
-
-        case "lowpoly":
-          // Low Poly Art : facettes polygonales planes et arêtes vives
-          if (meshObject.userData && meshObject.userData.baseGeometry) {
-            let lpGeom = meshObject.userData.baseGeometry;
-            if (lpGeom.index) {
-              lpGeom = lpGeom.toNonIndexed();
-            } else {
-              lpGeom = lpGeom.clone();
-            }
-            lpGeom.computeVertexNormals();
-            meshObject.geometry = lpGeom;
-          }
-          newMat = new THREE.MeshStandardMaterial({
-            vertexColors: hasColors,
-            color: hasColors ? 0xffffff : 0x38bdf8,
-            roughness: 0.45,
-            metalness: 0.10,
-            flatShading: true
-          });
-          break;
-
-        case "manga":
-          // Cel-Shading Toon anime 3-tons + Contour d'encre noir
-          newMat = new THREE.MeshToonMaterial({
-            vertexColors: hasColors,
-            color: hasColors ? 0xffffff : filColor,
-            gradientMap: getToonGradientMap()
-          });
-          if (meshObject.geometry) {
-            const outlineMat = new THREE.MeshBasicMaterial({
-              color: 0x05070d,
-              side: THREE.BackSide
-            });
-            const outlineGeo = meshObject.geometry.clone();
-            styleOverlayMesh = new THREE.Mesh(outlineGeo, outlineMat);
-            styleOverlayMesh.scale.set(1.018, 1.018, 1.018);
-            meshObject.add(styleOverlayMesh);
-          }
-          break;
-
-        case "clay":
-          // Terre cuite sculpteur ZBrush Matte
-          newMat = new THREE.MeshStandardMaterial({
-            color: 0xc87d55,
-            roughness: 0.95,
-            metalness: 0.0,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.55, 0.55)
-          });
-          break;
-
-        case "marble":
-          // Marbre Antique Carrara avec translucidité noble
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: 0xf8fafc,
-            roughness: 0.28,
-            metalness: 0.05,
-            transmission: 0.15,
-            thickness: 1.5,
-            clearcoat: 0.65,
-            clearcoatRoughness: 0.18,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.03,
+            reflectivity: 0.95,
             normalMap: normMap,
             normalScale: new THREE.Vector2(0.20, 0.20)
           });
           break;
 
-        case "bronze":
-          // Bronze antique patiné
+        case "lowpoly":
+          // Low Poly Art : Facettes Triangulaires Plans Géométriques Nettes
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x854d0e,
-            roughness: 0.35,
-            metalness: 0.92,
+            vertexColors: hasColors,
+            color: hasColors ? 0xffffff : 0x38bdf8,
+            roughness: 0.40,
+            metalness: 0.08,
+            flatShading: true
+          });
+          break;
+
+        case "manga":
+          // Cel-Shading Toon Manga Contrasté + Encrage Noir Extrudé
+          newMat = new THREE.MeshToonMaterial({
+            vertexColors: hasColors,
+            color: hasColors ? 0xffffff : filColor,
+            gradientMap: getToonGradientMap()
+          });
+          styleOverlayMesh = createOutlineMesh(meshObject, 0.75);
+          if (styleOverlayMesh) {
+            meshObject.add(styleOverlayMesh);
+          }
+          break;
+
+        case "clay":
+          // Cire Rouge / Terre Cuite ZBrush Sculpteur (MatCap Red Wax)
+          newMat = new THREE.MeshStandardMaterial({
+            color: 0xbf5032,
+            roughness: 0.92,
+            metalness: 0.0,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
+            normalScale: new THREE.Vector2(0.85, 0.85)
+          });
+          break;
+
+        case "marble":
+          // Marbre de Carrare Antique : Blanc Sculpté Pur Translucide
+          newMat = new THREE.MeshPhysicalMaterial({
+            color: 0xfcfcfc,
+            roughness: 0.18,
+            clearcoat: 0.85,
+            clearcoatRoughness: 0.12,
+            transmission: 0.26,
+            thickness: 2.2,
+            normalMap: normMap,
+            normalScale: new THREE.Vector2(0.25, 0.25)
+          });
+          break;
+
+        case "bronze":
+          // Bronze Antique de Musée Patiné
+          newMat = new THREE.MeshStandardMaterial({
+            color: 0x6e4722,
+            metalness: 0.92,
+            roughness: 0.30,
+            normalMap: normMap,
+            normalScale: new THREE.Vector2(0.60, 0.60)
           });
           break;
 
         case "gold":
-          // Or Pur 24K poli miroir
+          // Or Pur 24K Poli Miroir Haute Réflectance
           newMat = new THREE.MeshStandardMaterial({
-            color: 0xfbbf24,
-            roughness: 0.14,
-            metalness: 0.98,
+            color: 0xffd700,
+            metalness: 1.0,
+            roughness: 0.08,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.15, 0.15)
+            normalScale: new THREE.Vector2(0.12, 0.12)
           });
           break;
 
         case "wood":
-          // Bois naturel sculpté
+          // Bois Naturel Sculpté (Noyer / Chêne Artisanal)
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x78350f,
-            roughness: 0.85,
+            color: 0x6d3e1d,
+            roughness: 0.88,
             metalness: 0.0,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.50, 0.50)
+            normalScale: new THREE.Vector2(0.85, 0.85)
           });
           break;
 
         case "cyberpunk":
-          // Base sombre furtive + liserés néon cyan holographiques
+          // Armure Stealth Obsidian Sombre + Maillage Néon Cyan Électrique
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x090d16,
-            roughness: 0.25,
-            metalness: 0.92
+            color: 0x050811,
+            roughness: 0.16,
+            metalness: 0.96
           });
           if (meshObject.geometry) {
             const wireMat = new THREE.MeshBasicMaterial({
-              color: 0x06b6d4,
+              color: 0x00f0ff,
               wireframe: true,
               transparent: true,
-              opacity: 0.70
+              opacity: 0.85
             });
-            const wireGeo = meshObject.geometry.clone();
+            const baseGeom = meshObject.userData && meshObject.userData.baseGeometry ? meshObject.userData.baseGeometry : meshObject.geometry;
+            const wireGeo = baseGeom.clone();
             styleOverlayMesh = new THREE.Mesh(wireGeo, wireMat);
             meshObject.add(styleOverlayMesh);
           }
           break;
 
         case "silk":
-          // Bambu PLA Silk vert émeraude / or soyeux
+          // Bambu Lab PLA Silk Vert Émeraude / Éclat Soyeux Liquide
           newMat = new THREE.MeshPhysicalMaterial({
-            color: hasColors ? filColor : 0x10b981,
-            roughness: 0.12,
-            metalness: 0.72,
-            clearcoat: 0.95,
-            clearcoatRoughness: 0.08,
-            reflectivity: 0.90,
+            color: 0x059669,
+            metalness: 0.88,
+            roughness: 0.10,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.04,
+            reflectivity: 0.95,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.40, 0.40)
+            normalScale: new THREE.Vector2(0.35, 0.35)
           });
           break;
 
         case "carbon":
-          // Carbone mat furtif
+          // Fibre de Carbone Mat Furtif Aéronautique
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x18202c,
-            roughness: 0.95,
-            metalness: 0.20,
+            color: 0x14171d,
+            roughness: 0.92,
+            metalness: 0.28,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.65, 0.65)
+            normalScale: new THREE.Vector2(0.80, 0.80)
           });
           break;
 
         case "crystal":
-          // Résine / Cristal transparent opalescent
+          // Saphir / Cristal Optique Réfractif Translucide
           newMat = new THREE.MeshPhysicalMaterial({
             color: 0x38bdf8,
-            roughness: 0.08,
-            transmission: 0.90,
-            thickness: 3.0,
-            ior: 1.52,
+            roughness: 0.03,
+            transmission: 0.96,
+            thickness: 3.5,
+            ior: 1.55,
             transparent: true,
-            opacity: 0.92
+            opacity: 0.95
           });
           break;
 

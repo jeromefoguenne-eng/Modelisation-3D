@@ -615,29 +615,40 @@ def generate_mode3_hunyuan_sota(
     
     # 3. Projection photoréaliste des couleurs de l'image source sur le maillage
     try:
-        rgb_img = image.convert("RGB")
+        img_w, img_h = image.size
+        if image.mode == "RGBA":
+            alpha_arr = np.array(image)[:, :, 3]
+            y_idx, x_idx = np.where(alpha_arr > 20)
+            if len(x_idx) > 0 and len(y_idx) > 0:
+                crop_x0, crop_x1 = int(x_idx.min()), int(x_idx.max())
+                crop_y0, crop_y1 = int(y_idx.min()), int(y_idx.max())
+                pad_x = int((crop_x1 - crop_x0) * 0.015)
+                pad_y = int((crop_y1 - crop_y0) * 0.015)
+                crop_x0 = max(0, crop_x0 - pad_x)
+                crop_x1 = min(img_w - 1, crop_x1 + pad_x)
+                crop_y0 = max(0, crop_y0 - pad_y)
+                crop_y1 = min(img_h - 1, crop_y1 + pad_y)
+                cropped_img = image.crop((crop_x0, crop_y0, crop_x1, crop_y1))
+            else:
+                cropped_img = image
+        else:
+            cropped_img = image
+
+        rgb_img = cropped_img.convert("RGB")
         w_img, h_img = rgb_img.size
         img_arr = np.array(rgb_img)
         v = m.vertices
-        normals = m.vertex_normals
         
         min_x, max_x = m.bounds[0][0], m.bounds[1][0]
         min_z, max_z = m.bounds[0][2], m.bounds[1][2]
-        pad_x = (max_x - min_x) * 0.08
-        pad_z = (max_z - min_z) * 0.05
-        u = np.clip((v[:, 0] - (min_x - pad_x)) / ((max_x - min_x) + 2*pad_x), 0.0, 1.0)
-        v_coord = np.clip(1.0 - (v[:, 2] - (min_z - pad_z)) / ((max_z - min_z) + 2*pad_z), 0.0, 1.0)
-        px = (u * (w_img - 1)).astype(int)
-        py = (v_coord * (h_img - 1)).astype(int)
+        u = np.clip((v[:, 0] - min_x) / max(0.001, (max_x - min_x)), 0.0, 1.0)
+        v_coord = np.clip(1.0 - (v[:, 2] - min_z) / max(0.001, (max_z - min_z)), 0.0, 1.0)
+        px = np.clip((u * (w_img - 1)).astype(int), 0, w_img - 1)
+        py = np.clip((v_coord * (h_img - 1)).astype(int), 0, h_img - 1)
         
         front_colors = img_arr[py, px]
-        back_factor = np.clip(normals[:, 1], 0.0, 1.0)
-        coat_color = np.array([215, 210, 200], dtype=float)
-        
         colors_final = np.zeros((len(v), 4), dtype=np.uint8)
-        for i in range(3):
-            blended = front_colors[:, i].astype(float) * (1.0 - 0.65 * back_factor) + coat_color[i] * (0.65 * back_factor)
-            colors_final[:, i] = np.clip(blended, 0, 255).astype(np.uint8)
+        colors_final[:, :3] = front_colors
         colors_final[:, 3] = 255
         m.visual.vertex_colors = colors_final
     except Exception as e_col:
