@@ -198,10 +198,11 @@
             <div>
               <span class="text-[10px] text-slate-400 block mb-1">Idées prêtes à l'emploi (1 clic) :</span>
               <div class="flex flex-wrap gap-1">
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Pion en forme de chat assis mignon pour jeu de société, statuette miniature avec socle">🐱 Pion Chat de Jeu</button>
                 <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Figurine de chien bouledogue assis Babel avec collier">🐶 Chien Babel</button>
                 <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Petit robot rétro steampunk mignon aux formes douces">🤖 Robot Rétro</button>
-                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Bébé dragon féerique miniature aux ailes déployées">🐉 Dragon Mignon</button>
-                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Chat astronaute en combinaison spatiale avec casque">🐱 Chat Astronaute</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Bébé dragon féerique miniature aux ailes repliées">🐉 Dragon Mignon</button>
+                <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Chat astronaute en combinaison spatiale avec casque">👨‍🚀 Chat Astronaute</button>
                 <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Chevalier médiéval avec armure et épée sur socle">⚔️ Chevalier</button>
                 <button type="button" class="prompt-chip px-2 py-0.8 rounded-md bg-dark-800 hover:bg-dark-700 border border-dark-600 text-[10px] text-slate-300 hover:text-white transition" data-prompt="Pion d'échecs royal avec couronne ornée">♟️ Fou d'Échecs</button>
               </div>
@@ -544,32 +545,34 @@
         
         <div class="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/40 space-y-1.5">
           <div class="text-sm font-bold text-purple-300 flex items-center gap-1.5">
-            <i data-lucide="user-check" class="w-4 h-4 text-purple-400"></i> Votre Compte Meshy est Actif (jeromefoguenne@gmail.com)
+            <i data-lucide="user-check" class="w-4 h-4 text-purple-400"></i> Option 1 : Compte Meshy Gratuit (jeromefoguenne@gmail.com)
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            Meshy offre <strong>200 crédits gratuits chaque mois</strong> à chaque utilisateur ! Vous pouvez donc générer plusieurs modèles de qualité studio par mois sans payer un centime.<br>
+            Meshy offre <strong>200 crédits gratuits chaque mois</strong> ! Vous pouvez générer des figurines de qualité studio sans payer.<br>
             • Générez votre modèle sur <strong><a href="https://www.meshy.ai" target="_blank" class="text-purple-300 underline font-semibold">meshy.ai</a></strong> puis téléchargez le fichier <strong>.glb</strong>.<br>
             • <strong>Glissez-le directement dans notre application</strong> (bouton <em>Importer un modèle 3D</em>) : l'application le redimensionne à 10 cm, fusionne le socle A1 Mini et prépare le fichier pour Bambu Studio !
           </p>
         </div>
 
-        <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 space-y-1.5">
-          <div class="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
-            <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i> Notre Moteur Local Studio Ultra-Sculpt (0€, Illimité, Hors-Ligne)
+        <div class="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-indigo-300 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i> Option 2 : Trellis SOTA (100% Gratuit & Illimité, Sans Compte)</span>
+            <a href="https://huggingface.co/spaces/JeffreyXiang/TRELLIS" target="_blank" class="px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-[10px] text-white font-bold transition">Ouvrir Trellis ↗</a>
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            Notre application intègre un algorithme de <strong>Cavity Carving & Gradients Scharr</strong> qui subdivise le modèle à <strong>223 000+ polygones</strong>.<br>
-            Il creuse profondément les fentes (yeux, narines, babines, médaillon) et surélève les crêtes vives.
-            <strong>100% hors ligne, illimité et gratuit sur votre GPU RTX 4070 Ti !</strong>
+            <strong>Trellis</strong> est le modèle de recherche 3D le plus puissant du monde open-source (qualité équivalente ou supérieure à Meshy 7).<br>
+            • Ouvrez l'espace officiel gratuit HuggingFace : <a href="https://huggingface.co/spaces/JeffreyXiang/TRELLIS" target="_blank" class="text-indigo-300 underline font-semibold">TRELLIS Space</a>.<br>
+            • Uploadez n'importe quelle image ou prompt, téléchargez le fichier <strong>.glb</strong> en 30 secondes, et glissez-le dans cette application pour trancher sur Bambu Lab A1 Mini !
           </p>
         </div>
 
-        <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5">
-          <div class="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
-            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Traitement 100% Gratuit & Sans Clé
+        <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 space-y-1.5">
+          <div class="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
+            <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i> Option 3 : Notre Moteur Local Studio Ultra-Sculpt (RTX 4070 Ti)
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            Aucune clé API ni carte bancaire requise. Vous pouvez utiliser le moteur de statuette volumétrique direct de l'application ou glisser un fichier .glb exporté gratuitement.
+            Notre application intègre un algorithme de <strong>Cavity Carving & Gradients Scharr</strong> qui subdivise le modèle à <strong>223 000+ polygones</strong> avec segmentation neuronale IA sans aucun cadre parasite.<br>
+            <strong>100% hors ligne, illimité et instantané sur votre GPU local !</strong>
           </p>
         </div>
 
@@ -739,9 +742,12 @@
     camera.position.set(130, -180, 140);
     camera.up.set(0, 0, 1);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -750,20 +756,36 @@
     controls.dampingFactor = 0.05;
     controls.target.set(0, 0, 45);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    // Éclairage Studio Haute Fidélité (3-Point Lighting & Rim Light)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
-    dirLight1.position.set(150, -150, 200);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e2430, 0.55);
+    scene.add(hemiLight);
+
+    // Key Light (Lumière principale chaude avec ombres douces haute résolution)
+    const dirLight1 = new THREE.DirectionalLight(0xfff5ea, 1.6);
+    dirLight1.position.set(150, -150, 220);
     dirLight1.castShadow = true;
+    dirLight1.shadow.mapSize.width = 2048;
+    dirLight1.shadow.mapSize.height = 2048;
+    dirLight1.shadow.camera.near = 10;
+    dirLight1.shadow.camera.far = 700;
+    dirLight1.shadow.bias = -0.0001;
+    dirLight1.shadow.radius = 2.5;
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.45);
-    dirLight2.position.set(-150, 150, 100);
+    // Fill Light (Débouchage des ombres doux)
+    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.7);
+    dirLight2.position.set(-150, 150, 120);
     scene.add(dirLight2);
 
-    // Bambu Lab A1 Mini Bed Plate (180 x 180 mm)
+    // Rim Light (Détachement net du contour de la figurine)
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    rimLight.position.set(0, 180, -80);
+    scene.add(rimLight);
+
+    // Bambu Lab A1 Mini Bed Plate (180 x 180 mm) avec Ombre de Contact
     function createBambuBed() {
       const bedGroup = new THREE.Group();
       
@@ -777,6 +799,15 @@
       bedMesh.position.set(0, 0, -1);
       bedMesh.receiveShadow = true;
       bedGroup.add(bedMesh);
+
+      // Plan d'ombre de contact douce au sol sur le plateau PEI
+      const shadowPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(180, 180),
+        new THREE.ShadowMaterial({ opacity: 0.35 })
+      );
+      shadowPlane.position.set(0, 0, 0.05);
+      shadowPlane.receiveShadow = true;
+      bedGroup.add(shadowPlane);
 
       const grid = new THREE.GridHelper(180, 18, 0x00ae42, 0x334155);
       grid.rotation.x = Math.PI / 2;
@@ -793,19 +824,19 @@
     }
     createBambuBed();
 
-    // Material Library for Bambu Lab Filaments
+    // Material Library pour Filaments Bambu Lab (PBR MeshPhysicalMaterial Haute Fidélité)
     const materials = {
-      basic: new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.35, metalness: 0.15 }),
-      matte: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.88, metalness: 0.05 }),
-      silk: new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.22, metalness: 0.55 }),
-      tough: new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.45, metalness: 0.1 }),
-      marble: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.65, metalness: 0.05 }),
-      wood: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9, metalness: 0.0 }),
-      glow: new THREE.MeshStandardMaterial({ color: 0xa7f3d0, roughness: 0.3, metalness: 0.1 }),
-      petg: new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.25, metalness: 0.2 }),
-      translucent: new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.18, metalness: 0.1, transparent: true, opacity: 0.72 }),
+      basic: new THREE.MeshPhysicalMaterial({ color: 0x2563eb, roughness: 0.32, metalness: 0.08, clearcoat: 0.25, clearcoatRoughness: 0.15 }),
+      matte: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.92, metalness: 0.02 }),
+      silk: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.16, metalness: 0.65, clearcoat: 0.85, clearcoatRoughness: 0.12, reflectivity: 0.6 }),
+      tough: new THREE.MeshPhysicalMaterial({ color: 0x059669, roughness: 0.42, metalness: 0.08, clearcoat: 0.3 }),
+      marble: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.68, metalness: 0.04 }),
+      wood: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.88, metalness: 0.0 }),
+      glow: new THREE.MeshStandardMaterial({ color: 0xa7f3d0, emissive: 0x34d399, emissiveIntensity: 0.35, roughness: 0.35, metalness: 0.05 }),
+      petg: new THREE.MeshPhysicalMaterial({ color: 0x0284c7, roughness: 0.24, metalness: 0.18, clearcoat: 0.45 }),
+      translucent: new THREE.MeshPhysicalMaterial({ color: 0xbae6fd, roughness: 0.14, transmission: 0.82, thickness: 1.5, ior: 1.52, transparent: true, opacity: 0.95 }),
       tpu: new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.75, metalness: 0.0 }),
-      carbon: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.92, metalness: 0.12 }),
+      carbon: new THREE.MeshStandardMaterial({ color: 0x18202c, roughness: 0.94, metalness: 0.15 }),
       support: new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.6, metalness: 0.0 })
     };
 
@@ -936,6 +967,136 @@
     btnLoadDemo.addEventListener("click", loadDemoBabelModel);
     if (btnQuickDemoLoad) btnQuickDemoLoad.addEventListener("click", loadDemoBabelModel);
 
+    // FONCTION DE DÉTOURAGE BFS ROBUSTE & RECADRAGE STRICT (Anti-cadres, anti-arches)
+    function cleanImageCanvas(sourceCanvas) {
+      const w = sourceCanvas.width;
+      const h = sourceCanvas.height;
+      const ctx = sourceCanvas.getContext("2d");
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const d = imgData.data;
+
+      // 1. Détecter si l'image possède déjà un vrai canal alpha transparent
+      let transparentPixels = 0;
+      for (let i = 3; i < d.length; i += 4) {
+        if (d[i] < 30) transparentPixels++;
+      }
+      const alreadyAlpha = (transparentPixels / (w * h)) > 0.05;
+
+      if (!alreadyAlpha) {
+        // Échantillonnage étendu des 4 coins (5x5 px chacun)
+        let sumR = 0, sumG = 0, sumB = 0, count = 0;
+        const corners = [[0, 0], [Math.max(0, w - 5), 0], [0, Math.max(0, h - 5)], [Math.max(0, w - 5), Math.max(0, h - 5)]];
+        for (const [cx, cy] of corners) {
+          for (let dy = 0; dy < 5; dy++) {
+            for (let dx = 0; dx < 5; dx++) {
+              const px = Math.min(w - 1, cx + dx);
+              const py = Math.min(h - 1, cy + dy);
+              const idx = (py * w + px) * 4;
+              sumR += d[idx]; sumG += d[idx + 1]; sumB += d[idx + 2];
+              count++;
+            }
+          }
+        }
+        const bgR = count ? sumR / count : 255;
+        const bgG = count ? sumG / count : 255;
+        const bgB = count ? sumB / count : 255;
+
+        // BFS Flood-Fill depuis TOUS les pixels des 4 bordures extérieures
+        const visited = new Uint8Array(w * h);
+        const queue = [];
+
+        function isBgCandidate(idx) {
+          const r = d[idx], g = d[idx + 1], b = d[idx + 2];
+          // Fond blanc/très clair OU couleur identique aux 4 coins (ex: gris ardoise Pollinations)
+          if (r > 220 && g > 220 && b > 220) return true;
+          const dist = Math.hypot(r - bgR, g - bgG, b - bgB);
+          return dist < 65;
+        }
+
+        // Ensemencer les 4 bordures de l'image
+        for (let x = 0; x < w; x++) {
+          const top = x;
+          const bot = (h - 1) * w + x;
+          if (isBgCandidate(top * 4)) { visited[top] = 1; queue.push(top); }
+          if (isBgCandidate(bot * 4) && !visited[bot]) { visited[bot] = 1; queue.push(bot); }
+        }
+        for (let y = 0; y < h; y++) {
+          const left = y * w;
+          const right = y * w + (w - 1);
+          if (isBgCandidate(left * 4) && !visited[left]) { visited[left] = 1; queue.push(left); }
+          if (isBgCandidate(right * 4) && !visited[right]) { visited[right] = 1; queue.push(right); }
+        }
+
+        // Élimination par inondation de tout ce qui touche les bordures
+        let head = 0;
+        while (head < queue.length) {
+          const curr = queue[head++];
+          const cx = curr % w;
+          const cy = Math.floor(curr / w);
+
+          d[curr * 4 + 3] = 0; // Transparent
+
+          if (cx > 0) {
+            const nb = curr - 1;
+            if (!visited[nb] && isBgCandidate(nb * 4)) { visited[nb] = 1; queue.push(nb); }
+          }
+          if (cx < w - 1) {
+            const nb = curr + 1;
+            if (!visited[nb] && isBgCandidate(nb * 4)) { visited[nb] = 1; queue.push(nb); }
+          }
+          if (cy > 0) {
+            const nb = curr - w;
+            if (!visited[nb] && isBgCandidate(nb * 4)) { visited[nb] = 1; queue.push(nb); }
+          }
+          if (cy < h - 1) {
+            const nb = curr + w;
+            if (!visited[nb] && isBgCandidate(nb * 4)) { visited[nb] = 1; queue.push(nb); }
+          }
+        }
+
+        // Nettoyage de sécurité résiduel des pixels ultra-clairs
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] > 235 && d[i + 1] > 235 && d[i + 2] > 235) {
+            d[i + 3] = 0;
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+
+      // 2. Détection du Bounding Box strict du sujet central
+      let minX = w, maxX = 0, minY = h, maxY = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (d[(y * w + x) * 4 + 3] > 30) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (minX < maxX && minY < maxY) {
+        const pad = 10;
+        minX = Math.max(0, minX - pad);
+        minY = Math.max(0, minY - pad);
+        maxX = Math.min(w - 1, maxX + pad);
+        maxY = Math.min(h - 1, maxY + pad);
+        const cropW = maxX - minX + 1;
+        const cropH = maxY - minY + 1;
+
+        const canvasCrop = document.createElement("canvas");
+        canvasCrop.width = cropW;
+        canvasCrop.height = cropH;
+        const ctxCrop = canvasCrop.getContext("2d");
+        ctxCrop.drawImage(sourceCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+        return canvasCrop;
+      }
+
+      return sourceCanvas;
+    }
+
     // CLIENT-SIDE IMAGE FILE HANDLING (100% Autonomous, No 404, No Network Errors)
     function handleImageFile(file) {
       if (!file || !file.type.startsWith("image/")) {
@@ -957,89 +1118,24 @@
           currentImageDataUrl = dataUrl;
           currentFilename = file.name;
 
-          // Nettoyage intelligent du fond par seuillage chroma et détection des 4 coins
+          // Traitement et détourage BFS
           const canvasRaw = document.createElement("canvas");
           canvasRaw.width = img.naturalWidth;
           canvasRaw.height = img.naturalHeight;
           const ctxRaw = canvasRaw.getContext("2d");
           ctxRaw.drawImage(img, 0, 0);
 
-          const imgData = ctxRaw.getImageData(0, 0, canvasRaw.width, canvasRaw.height);
-          const d = imgData.data;
-          const w = canvasRaw.width;
-          const h = canvasRaw.height;
+          const cleanedCanvas = cleanImageCanvas(canvasRaw);
+          currentCleanDataUrl = cleanedCanvas.toDataURL("image/png");
 
-          // Détecter si l'image a déjà une vraie transparence
-          let hasAlpha = false;
-          for (let i = 3; i < d.length; i += 4) {
-            if (d[i] < 200) { hasAlpha = true; break; }
-          }
-
-          if (!hasAlpha) {
-            // Échantillonnage de la couleur du fond aux 4 coins
-            const sampleCorners = [
-              [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]
-            ];
-            let avgR = 0, avgG = 0, avgB = 0;
-            sampleCorners.forEach(([cx, cy]) => {
-              const idx = (cy * w + cx) * 4;
-              avgR += d[idx]; avgG += d[idx + 1]; avgB += d[idx + 2];
-            });
-            avgR /= 4.0; avgG /= 4.0; avgB /= 4.0;
-
-            // Seuil de distance chromatique
-            for (let i = 0; i < d.length; i += 4) {
-              const dr = Math.abs(d[i] - avgR);
-              const dg = Math.abs(d[i+1] - avgG);
-              const db = Math.abs(d[i+2] - avgB);
-              // Si le pixel est proche de la couleur du fond (fond blanc ou gris très clair)
-              if ((dr < 30 && dg < 30 && db < 30) || (d[i] > 235 && d[i+1] > 235 && d[i+2] > 235)) {
-                d[i+3] = 0; // Transparence complète
-              }
-            }
-            ctxRaw.putImageData(imgData, 0, 0);
-          }
-
-          // Détection automatique du Bounding Box du sujet (rogner l'espace vide)
-          let minX = w, maxX = 0, minY = h, maxY = 0;
-          for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-              if (d[(y * w + x) * 4 + 3] > 30) {
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-              }
-            }
-          }
-
-          if (minX < maxX && minY < maxY) {
-            const pad = 10;
-            minX = Math.max(0, minX - pad);
-            minY = Math.max(0, minY - pad);
-            maxX = Math.min(w - 1, maxX + pad);
-            maxY = Math.min(h - 1, maxY + pad);
-            const cropW = maxX - minX + 1;
-            const cropH = maxY - minY + 1;
-
-            const canvasCrop = document.createElement("canvas");
-            canvasCrop.width = cropW;
-            canvasCrop.height = cropH;
-            const ctxCrop = canvasCrop.getContext("2d");
-            ctxCrop.drawImage(canvasRaw, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
-
-            currentCleanDataUrl = canvasCrop.toDataURL("image/png");
-            const croppedImg = new Image();
-            croppedImg.src = currentCleanDataUrl;
-            currentImageElement = croppedImg;
-          } else {
-            currentCleanDataUrl = canvasRaw.toDataURL("image/png");
-          }
+          const croppedImg = new Image();
+          croppedImg.src = currentCleanDataUrl;
+          currentImageElement = croppedImg;
 
           imagePreview.src = currentCleanDataUrl;
           imageName.textContent = file.name;
-          imageDimensions.textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
-          document.getElementById("badgeAlpha").textContent = hasAlpha ? "Canal Alpha" : "Fond Détouré & Cadré";
+          imageDimensions.textContent = `${cleanedCanvas.width} × ${cleanedCanvas.height} px`;
+          document.getElementById("badgeAlpha").textContent = "Fond Détouré & Cadré";
 
           // Vérifier si le serveur local RTX 4070 Ti est actif
           checkBackendAvailable();
@@ -1505,7 +1601,7 @@
         }
 
         // Génération de l'image via Pollinations.ai (0€, 0 clé API)
-        const enhancedPrompt = `full 3D collectible figurine statue of ${promptText}, standing upright, centered, clean sharp silhouette, isolated on pure solid white background, high detail, studio lighting`;
+        const enhancedPrompt = `full 3D collectible figurine statue of ${promptText}, standing upright, centered, clean sharp silhouette, isolated on pure solid white background, high detail, studio lighting, no frame, no borders, no arch, tabletop gaming miniature`;
         const seed = Math.floor(Math.random() * 999999);
         const imgApiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=768&nologo=true&seed=${seed}`;
 
@@ -1517,31 +1613,28 @@
           img.src = imgApiUrl;
         });
 
-        // Nettoyage et cadrage automatique du sujet
+        // Nettoyage et cadrage automatique strict du sujet (anti-cadres & anti-arches)
         const canvasTemp = document.createElement("canvas");
         canvasTemp.width = img.width;
         canvasTemp.height = img.height;
         const ctxTemp = canvasTemp.getContext("2d");
         ctxTemp.drawImage(img, 0, 0);
 
-        const imgData = ctxTemp.getImageData(0, 0, img.width, img.height);
-        const d = imgData.data;
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i] > 235 && d[i+1] > 235 && d[i+2] > 235) {
-            d[i+3] = 0; // Transparence
-          }
-        }
-        ctxTemp.putImageData(imgData, 0, 0);
+        const cleanedCanvas = cleanImageCanvas(canvasTemp);
 
-        currentCleanDataUrl = canvasTemp.toDataURL("image/png");
+        currentCleanDataUrl = cleanedCanvas.toDataURL("image/png");
         imagePreview.src = currentCleanDataUrl;
         imageName.textContent = `Prompt : ${promptText.slice(0, 24)}...`;
-        imageDimensions.textContent = `${img.width} × ${img.height} px`;
+        imageDimensions.textContent = `${cleanedCanvas.width} × ${cleanedCanvas.height} px`;
         dropPrompt.classList.add("hidden");
         imagePreviewContainer.classList.remove("hidden");
 
+        const croppedImg = new Image();
+        croppedImg.src = currentCleanDataUrl;
+        currentImageElement = croppedImg;
+
         // Génération géométrique volumétrique organique
-        const geom = generateClientOrganicFigurine(canvasTemp, targetH, baseThickness);
+        const geom = generateClientOrganicFigurine(cleanedCanvas, targetH, baseThickness);
         setActiveMesh(geom);
 
       } catch (err) {

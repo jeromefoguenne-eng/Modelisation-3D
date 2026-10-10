@@ -23,35 +23,84 @@ NOZZLE_DIAMETER = 0.4
 MIN_RECOMMENDED_WALL = 0.8  # 2 perimeters of 0.4mm nozzle
 
 
-def process_image_cleanup(image: Image.Image, remove_bg: bool = True, bg_threshold: int = 245, contrast_factor: float = 1.0) -> Image.Image:
-    """Nettoyage de l'image, détourage automatique du fond blanc/clair et rehaussement de contraste."""
+def process_image_cleanup(image: Image.Image, remove_bg: bool = True, bg_threshold: int = 240, contrast_factor: float = 1.0) -> Image.Image:
+    """Nettoyage professionnel de l'image, détourage automatique par rembg IA ou inondation connectée des 4 bords."""
     im = image.convert("RGBA")
-    arr = np.array(im)
     
-    # Rehaussement contraste si demandé
     if contrast_factor != 1.0:
         enhancer = ImageEnhance.Contrast(image.convert("RGB"))
-        rgb_enhanced = np.array(enhancer.enhance(contrast_factor))
-        arr[:, :, :3] = rgb_enhanced
-    
-    if remove_bg:
-        # Si l'image a déjà un canal alpha significatif
-        existing_alpha = arr[:, :, 3]
-        if np.mean(existing_alpha < 255) > 0.05:
-            # Fond déjà transparent
-            alpha = existing_alpha
-        else:
-            # Détection automatique du fond blanc ou presque blanc
-            is_bg = (arr[:, :, 0] >= bg_threshold) & (arr[:, :, 1] >= bg_threshold) & (arr[:, :, 2] >= bg_threshold)
-            alpha = np.where(is_bg, 0, 255).astype(np.uint8)
-            # Nettoyage morphologique
-            alpha = ndi.binary_fill_holes(alpha > 128).astype(np.uint8) * 255
-            alpha = ndi.gaussian_filter(alpha.astype(float), 1.0)
-            alpha = (alpha > 50).astype(np.uint8) * 255
+        rgb_enh = enhancer.enhance(contrast_factor)
+        r, g, b = rgb_enh.split()
+        im = Image.merge("RGBA", (r, g, b, im.getchannel("A")))
         
-        arr[:, :, 3] = alpha
-    
-    return Image.fromarray(arr, "RGBA")
+    if remove_bg:
+        arr = np.array(im)
+        has_clean_alpha = (arr[:, :, 3] < 200).sum() > (arr.shape[0] * arr.shape[1] * 0.05)
+        
+        if not has_clean_alpha:
+            # 1. Tenter le détourage neural rembg pour un résultat studio parfait sans aucun cadre
+            rembg_done = False
+            try:
+                import rembg
+                im_rembg = rembg.remove(im)
+                arr_rembg = np.array(im_rembg)
+                if (arr_rembg[:, :, 3] > 30).sum() > 500:
+                    arr = arr_rembg
+                    rembg_done = True
+            except Exception as e:
+                rembg_done = False
+                
+            # 2. Si rembg échoue ou indisponible, inondation connectée depuis les 4 bords
+            if not rembg_done:
+                h, w = arr.shape[:2]
+                edge_pixels = np.concatenate([arr[0, :, :3], arr[-1, :, :3], arr[:, 0, :3], arr[:, -1, :3]], axis=0)
+                bg_color = np.median(edge_pixels, axis=0)
+                
+                dist_to_bg = np.sqrt(np.sum((arr[:, :, :3].astype(float) - bg_color) ** 2, axis=2))
+                is_bg_candidate = (dist_to_bg < 55.0) | ((arr[:, :, 0] > 220) & (arr[:, :, 1] > 220) & (arr[:, :, 2] > 220))
+                
+                from scipy.ndimage import binary_dilation
+                border_seed = np.zeros((h, w), dtype=bool)
+                border_seed[0, :] = is_bg_candidate[0, :]
+                border_seed[-1, :] = is_bg_candidate[-1, :]
+                border_seed[:, 0] = is_bg_candidate[:, 0]
+                border_seed[:, -1] = is_bg_candidate[:, -1]
+                
+                connected_bg = border_seed.copy()
+                struct = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=bool)
+                for _ in range(max(h, w)):
+                    dilated = binary_dilation(connected_bg, structure=struct) & is_bg_candidate
+                    if np.array_equal(dilated, connected_bg):
+                        break
+                    connected_bg = dilated
+                    
+                fg_mask = ~connected_bg
+                fg_mask = ndi.binary_fill_holes(fg_mask)
+                
+                # Conserver uniquement la plus grande composante connectée (le sujet central)
+                labels, num_features = ndi.label(fg_mask)
+                if num_features > 1:
+                    sizes = ndi.sum(fg_mask, labels, range(1, num_features + 1))
+                    largest_label = np.argmax(sizes) + 1
+                    fg_mask = (labels == largest_label)
+                    
+                alpha = np.where(fg_mask, 255, 0).astype(np.uint8)
+                alpha = ndi.gaussian_filter(alpha.astype(float), 0.8)
+                arr[:, :, 3] = (alpha > 80).astype(np.uint8) * 255
+
+        # 3. Cadrage strict (crop) sur le sujet avec marge de 6 px
+        y_idx, x_idx = np.where(arr[:, :, 3] > 30)
+        if len(y_idx) > 0:
+            h, w = arr.shape[:2]
+            y1 = max(0, y_idx.min() - 6)
+            y2 = min(h, y_idx.max() + 7)
+            x1 = max(0, x_idx.min() - 6)
+            x2 = min(w, x_idx.max() + 7)
+            arr = arr[y1:y2, x1:x2]
+
+        im = Image.fromarray(arr, "RGBA")
+        
+    return im
 
 
 def check_bambu_printability(mesh: trimesh.Trimesh) -> dict:
@@ -323,10 +372,26 @@ def generate_mode3_volumetric(
     
     clean_im.save(temp_in)
     
-    # Script d'inférence TripoSR exécuté avec l'environnement PyTorch CUDA 11.8
+    # Détection de l'environnement Python optimisé pour TripoSR sur GPU RTX 4070 Ti
+    python_candidates = [
+        r"E:\ComfyUI\venv\Scripts\python.exe",
+        r"C:\Users\TrendingPC\stable-diffusion-webui\venv\Scripts\python.exe"
+    ]
+    python_exe = next((p for p in python_candidates if os.path.exists(p)), sys.executable)
+    
+    temp_in_clean = temp_in.replace('\\', '/')
+    temp_out_clean = temp_out.replace('\\', '/')
+    
     py_script = f"""
 import sys, os
-sys.path.append('C:/Users/TrendingPC/TripoSR')
+tripo_candidates = [
+    "E:/ComfyUI/custom_nodes/ComfyUI-Flowty-TripoSR",
+    "C:/Users/TrendingPC/TripoSR"
+]
+for p in tripo_candidates:
+    if os.path.exists(p) and p not in sys.path:
+        sys.path.insert(0, p)
+
 import urllib3, requests
 urllib3.disable_warnings()
 old_send = requests.Session.send
@@ -340,34 +405,33 @@ from PIL import Image
 import torch
 import trimesh
 from tsr.system import TSR
-from tsr.utils import resize_foreground
 
-im = Image.open(r'{temp_in}').convert('RGBA')
-processed_img = resize_foreground(im, ratio=0.85)
-
-im_arr = np.array(processed_img).astype(np.float32) / 255.0
-im_rgb = im_arr[:, :, :3] * im_arr[:, :, 3:4] + (1.0 - im_arr[:, :, 3:4]) * 0.5
-input_pil = Image.fromarray((im_rgb * 255.0).astype(np.uint8))
+im = Image.open('{temp_in_clean}').convert('RGBA')
+arr = np.array(im).astype(np.float32) / 255.0
+if arr.shape[2] == 4:
+    rgb = arr[:, :, :3] * arr[:, :, 3:4] + (1.0 - arr[:, :, 3:4]) * 0.5
+else:
+    rgb = arr[:, :, :3]
+input_pil = Image.fromarray((rgb * 255.0).astype(np.uint8)).convert('RGB')
 
 model = TSR.from_pretrained('C:/Users/TrendingPC/TripoSR/pretrained', config_name='config.yaml', weight_name='model.ckpt')
-model.renderer.set_chunk_size(16384)
-model.to('cuda:0')
+
+model.renderer.set_chunk_size(8192)
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+model.to(device)
 
 with torch.no_grad():
-    scene_codes = model([input_pil], device='cuda:0')
-    meshes = model.extract_mesh(scene_codes, has_vertex_color=True, resolution={resolution})
+    scene_codes = model([input_pil], device=device)
+    meshes = model.extract_mesh(scene_codes, resolution={resolution}, threshold=25.0)
     mesh = meshes[0]
 
-mesh.export(r'{temp_out}')
+mesh.export('{temp_out_clean}')
 print('TripoSR completed!')
 """
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(py_script)
         
-    cmd = [
-        r"C:\Users\TrendingPC\stable-diffusion-webui\venv\Scripts\python.exe",
-        script_path
-    ]
+    cmd = [python_exe, script_path]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         raise RuntimeError(f"Erreur d'inférence IA TripoSR: {res.stderr}")

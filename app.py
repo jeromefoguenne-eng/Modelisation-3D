@@ -292,27 +292,28 @@ async def generate_from_prompt(
 
     out_id = str(uuid.uuid4())[:8]
 
-    # Ingénierie de prompt spécialisée pour impression 3D FDM et détourage automatique
+    # Ingénierie de prompt spécialisée pour figurine 3D de jeu et détourage parfait
     if style == "figurine":
         enhanced_prompt = (
-            f"full 3D collectible figurine statue of {prompt_clean}, single subject standing upright, "
-            f"centered, clean sharp silhouette, isolated on pure solid white background, high detail, "
-            f"studio lighting, smooth watertight geometry, cute stylized vinyl toy"
+            f"single solid plastic tabletop gaming miniature figurine of {prompt_clean}, standing upright, "
+            f"centered, clean sharp silhouette, isolated on seamless pure solid white background, high detail, "
+            f"studio lighting, smooth continuous 3d printable geometry, cute stylized vinyl sculpt, "
+            f"no frame, no borders, no arch, no background, no pedestal, no base plate, single character only"
         )
     elif style == "relief":
         enhanced_prompt = (
             f"bas-relief carved medallion coin of {prompt_clean}, circular crest, "
-            f"isolated on pure solid white background, high depth detail, crisp contours"
+            f"isolated on pure solid white background, high depth detail, crisp contours, no frame"
         )
     elif style == "bust":
         enhanced_prompt = (
             f"sculpted portrait bust statue of {prompt_clean}, museum marble sculpture, "
-            f"isolated on pure solid white background, centered, smooth lighting"
+            f"isolated on pure solid white background, centered, smooth lighting, no frame, no borders"
         )
     else:
         enhanced_prompt = (
             f"3D printable model of {prompt_clean}, centered, isolated on pure solid white background, "
-            f"studio lighting, watertight figurine"
+            f"studio lighting, watertight figurine, no frame, no borders"
         )
 
     # Téléchargement de l'image de référence générée par IA (100% gratuit, 0 clé API)
@@ -330,7 +331,10 @@ async def generate_from_prompt(
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erreur lors de la génération de l'image IA: {str(e)}")
 
-    im = Image.open(img_path)
+    raw_im = Image.open(img_path)
+    
+    # Détourage IA haute précision (supprime à 100% tout cadre, ombre ou fond sombre)
+    im = engine.process_image_cleanup(raw_im, remove_bg=True)
     
     # Sauvegarde d'un aperçu public dans outputs
     preview_name = f"preview_prompt_{out_id}.png"
@@ -362,7 +366,7 @@ async def generate_from_prompt(
                     target_height_mm=target_height_mm,
                     with_base=add_base,
                     base_height_mm=base_thickness_mm,
-                    resolution=256
+                    resolution=288
                 )
                 mode_prefix = "Prompt_Figurine3D"
 
