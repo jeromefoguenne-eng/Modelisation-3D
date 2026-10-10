@@ -524,4 +524,10 @@ def get_demo_models():
 @app.get("/")
 def serve_index():
     """Sert l'interface utilisateur web."""
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    for candidate in [
+        os.path.join(BASE_DIR, "index.html"),
+        os.path.join(STATIC_DIR, "index.html"),
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate)
+    raise HTTPException(status_code=404, detail="index.html introuvable.")
