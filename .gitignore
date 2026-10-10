@@ -8,3 +8,7 @@ render_*.py
 build_index.py
 .DS_Store
 Thumbs.db
+.env
+*.token
+hf_token.txt
+token_hf.txt

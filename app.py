@@ -466,8 +466,44 @@ async def import_external_3d(
 
 @app.get("/api/demo-models")
 def get_demo_models():
-    """Retourne les modèles 3D précalculés haute fidélité (dont Babel Ultra-HD 10 cm)."""
+    """Retourne les modèles 3D précalculés haute fidélité (dont Van Aert et Babel Ultra-HD)."""
     return [
+        {
+            "id": "van_aert_figurine_a1_mini",
+            "name": "Wout van Aert - Figurine Cycliste SOTA (13 cm)",
+            "description": "Reconstruction neuronale complète Hunyuan3D-2.1 (cycliste debout sur les pédales, vélo complet, guidon, roues) avec socle ovale d'adhérence A1 Mini.",
+            "stl_url": "/static/demo/Van_Aert_Figurine_A1_Mini.stl",
+            "glb_url": "/static/demo/Van_Aert_Figurine_A1_Mini.glb",
+            "preview_image": "/static/demo/van_aert_original.png",
+            "image_url": "/static/demo/van_aert_original.png",
+            "height_mm": 130.0,
+            "width_mm": 128.5,
+            "depth_mm": 125.0,
+            "mode": 3,
+            "is_watertight": True,
+            "vertices": 108216,
+            "faces": 216532,
+            "estimated_weight_g": 48.0,
+            "estimated_time": "2h 10min"
+        },
+        {
+            "id": "chien_dalmatien_hunyuan",
+            "name": "Chien Dalmatien - Sculpture Studio HD (10 cm)",
+            "description": "Reconstruction neuronale complète Hunyuan3D-2.1 avec socle d'adhérence A1 Mini.",
+            "stl_url": "/static/demo/Chien_Avec_Socle_Hunyuan.stl",
+            "glb_url": "/static/demo/Chien_Avec_Socle_Hunyuan.glb",
+            "preview_image": "/static/demo/chien_dalmatien_original.jpg",
+            "image_url": "/static/demo/chien_dalmatien_original.jpg",
+            "height_mm": 100.0,
+            "width_mm": 110.0,
+            "depth_mm": 115.0,
+            "mode": 3,
+            "is_watertight": True,
+            "vertices": 93878,
+            "faces": 187756,
+            "estimated_weight_g": 38.0,
+            "estimated_time": "1h 40min"
+        },
         {
             "id": "babel_ultra_detail_10cm",
             "name": "Babel - Chien Ultra-Précis Studio (10 cm)",
@@ -524,6 +560,20 @@ def get_demo_models():
         }
     ]
 
+
+
+@app.get("/api/hf-token")
+def get_hf_token():
+    """Retourne le token Hugging Face configuré localement pour préremplissage automatique."""
+    token = os.environ.get("HF_TOKEN")
+    token_path = os.path.join(BASE_DIR, "hf_token.txt")
+    if not token and os.path.exists(token_path):
+        try:
+            with open(token_path, "r", encoding="utf-8") as f:
+                token = f.read().strip()
+        except Exception:
+            pass
+    return {"token": token or ""}
 
 
 @app.get("/")

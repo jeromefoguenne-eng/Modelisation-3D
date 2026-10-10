@@ -94,8 +94,11 @@
               Source : Image ou Prompt 3D
             </h2>
             <div class="flex items-center gap-2">
+              <button id="btnLoadDemoVanAert" type="button" class="text-xs text-amber-400 hover:text-amber-300 transition flex items-center gap-1 font-semibold">
+                <i data-lucide="bike" class="w-3.5 h-3.5"></i> Van Aert 🚴
+              </button>
               <button id="btnLoadDemoDog" type="button" class="text-xs text-purple-400 hover:text-purple-300 transition flex items-center gap-1 font-semibold">
-                <i data-lucide="dog" class="w-3.5 h-3.5"></i> Démo Chien SOTA
+                <i data-lucide="dog" class="w-3.5 h-3.5"></i> Chien
               </button>
               <button id="btnLoadDemo" type="button" class="text-xs text-bambu-400 hover:text-bambu-300 transition flex items-center gap-1">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Babel
@@ -950,6 +953,7 @@
     const btnDeleteImage = document.getElementById("btnDeleteImage");
     const btnLoadDemo = document.getElementById("btnLoadDemo");
     const btnLoadDemoDog = document.getElementById("btnLoadDemoDog");
+    const btnLoadDemoVanAert = document.getElementById("btnLoadDemoVanAert");
     const btnQuickDemoLoad = document.getElementById("btnQuickDemoLoad");
     const emptyBedOverlay = document.getElementById("emptyBedOverlay");
     const btnTrigger3DImport = document.getElementById("btnTrigger3DImport");
@@ -1657,6 +1661,24 @@
     }
 
     if (btnLoadDemoDog) btnLoadDemoDog.addEventListener("click", loadDemoDogModel);
+
+    // Quick Demo Wout van Aert SOTA Load (Tencent Hunyuan3D-2.1 - 216k faces, vélo + cycliste 100% étanche)
+    function loadDemoVanAertModel() {
+      currentFilename = "Van_Aert_Cycliste_A1_Mini";
+      imageName.textContent = "Wout van Aert (Hunyuan3D-2.1 SOTA)";
+      imageDimensions.textContent = "1024 × 1024 px";
+      imagePreview.src = "./demo/van_aert_original.png";
+      currentImageDataUrl = "./demo/van_aert_original.png";
+      dropPrompt.classList.add("hidden");
+      imagePreviewContainer.classList.remove("hidden");
+      
+      const stlPath = chkAddBase.checked ? "./demo/Van_Aert_Figurine_A1_Mini.stl" : "./demo/Van_Aert_Sculpture_Pure.stl";
+      const glbPath = chkAddBase.checked ? "./demo/Van_Aert_Figurine_A1_Mini.glb" : "./demo/Van_Aert_Sculpture_Pure.glb";
+      updateDownloadLinks(stlPath, glbPath, stlPath, "Van_Aert_Cycliste_A1_Mini");
+      loadModelSTL(stlPath);
+    }
+
+    if (btnLoadDemoVanAert) btnLoadDemoVanAert.addEventListener("click", loadDemoVanAertModel);
 
     // FONCTION DE DÉTOURAGE BFS ROBUSTE & RECADRAGE STRICT (Anti-cadres, anti-arches)
     function cleanImageCanvas(sourceCanvas) {
@@ -2394,7 +2416,11 @@
           }
         }
 
-        // Cas B : Démo Chien ou Babel intégrée
+        // Cas B : Démo Chien, Van Aert ou Babel intégrée
+        if (currentFilename && currentFilename.toLowerCase().includes("van_aert")) {
+          loadDemoVanAertModel();
+          return;
+        }
         if (currentFilename && currentFilename.toLowerCase().includes("chien")) {
           loadDemoDogModel();
           return;
@@ -2613,6 +2639,11 @@
           badgeSocleStatus.className = "text-[10px] px-1.5 py-0.2 rounded bg-bambu-500/20 text-bambu-400 font-bold border border-bambu-500/30";
         }
         if (containerBaseThickness) containerBaseThickness.classList.remove("hidden");
+        if (currentFilename && currentFilename.toLowerCase().includes("van_aert")) {
+          loadDemoVanAertModel();
+        } else if (currentFilename && currentFilename.toLowerCase().includes("chien")) {
+          loadDemoDogModel();
+        }
       });
 
       btnSocleSans.addEventListener("click", () => {
@@ -2632,6 +2663,11 @@
           badgeSocleStatus.className = "text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30";
         }
         if (containerBaseThickness) containerBaseThickness.classList.add("hidden");
+        if (currentFilename && currentFilename.toLowerCase().includes("van_aert")) {
+          loadDemoVanAertModel();
+        } else if (currentFilename && currentFilename.toLowerCase().includes("chien")) {
+          loadDemoDogModel();
+        }
       });
     }
 
@@ -2683,6 +2719,27 @@
       renderer.render(scene, camera);
     }
     animate();
+
+    // Initialisation sécurisée du Token Hugging Face (local / localStorage)
+    const hfTokenElem = document.getElementById("hfTokenInput");
+    if (hfTokenElem) {
+      const cachedToken = localStorage.getItem("hf_token");
+      if (cachedToken) {
+        hfTokenElem.value = cachedToken;
+      }
+      hfTokenElem.addEventListener("input", (e) => {
+        localStorage.setItem("hf_token", e.target.value.trim());
+      });
+      fetch(`${API_BASE}/api/hf-token`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.token && !hfTokenElem.value) {
+            hfTokenElem.value = data.token;
+            localStorage.setItem("hf_token", data.token);
+          }
+        })
+        .catch(() => {});
+    }
 
     // NOTE: Starts completely blank! Neither loadModelSTL nor btnLoadDemo.click are called.
   </script>

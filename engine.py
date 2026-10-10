@@ -538,15 +538,34 @@ def generate_mode3_hunyuan_sota(
     temp_in = os.path.join(temp_dir, f"in_{uid}.png")
     image.save(temp_in)
     
-    token = hf_token or os.environ.get("HF_TOKEN") or None
+    token = hf_token or os.environ.get("HF_TOKEN")
+    if not token:
+        token_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hf_token.txt")
+        if os.path.exists(token_path):
+            try:
+                with open(token_path, "r", encoding="utf-8") as f:
+                    token = f.read().strip()
+            except Exception:
+                pass
     print(f"[Hunyuan3D-2.1] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
     
     if token:
-        client = Client("tencent/Hunyuan3D-2.1", hf_token=token)
+        client = Client("tencent/Hunyuan3D-2.1", token=token)
     else:
         client = Client("tencent/Hunyuan3D-2.1")
         
-    print(f"[Hunyuan3D-2.1] Génération volumétrique de la géométrie 3D (octree={octree_resolution}, steps={steps})...")
+    # Détection intelligente du détourage : si l'image a déjà un canal alpha transparent, ne pas forcer rembg
+    has_alpha = False
+    try:
+        if image.mode == "RGBA":
+            alpha_channel = np.array(image)[:, :, 3]
+            if np.any(alpha_channel < 128):
+                has_alpha = True
+    except Exception:
+        has_alpha = False
+
+    rembg_flag = False if has_alpha else True
+    print(f"[Hunyuan3D-2.1] Génération volumétrique de la géométrie 3D (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
     res = client.predict(
         image=handle_file(temp_in),
         mv_image_front=None,
@@ -557,7 +576,7 @@ def generate_mode3_hunyuan_sota(
         guidance_scale=guidance_scale,
         seed=1234,
         octree_resolution=octree_resolution,
-        check_box_rembg=True,
+        check_box_rembg=rembg_flag,
         num_chunks=8000,
         randomize_seed=True,
         api_name="/shape_generation"
