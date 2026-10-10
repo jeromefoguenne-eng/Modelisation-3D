@@ -1685,6 +1685,9 @@
             const stlUrl = `${API_BASE}${result.stl_url}`;
             loadModelSTL(stlUrl);
             return;
+          } else {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `Erreur serveur lors de la modélisation 3D (${response.status})`);
           }
         }
 

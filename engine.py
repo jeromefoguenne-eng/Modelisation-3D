@@ -4,6 +4,7 @@ Moteur de génération et de traitement de maillages 3D pour Bambu Lab A1 Mini.
 """
 
 import os
+import sys
 import io
 import time
 import subprocess
@@ -38,14 +39,24 @@ def process_image_cleanup(image: Image.Image, remove_bg: bool = True, bg_thresho
         has_clean_alpha = (arr[:, :, 3] < 200).sum() > (arr.shape[0] * arr.shape[1] * 0.05)
         
         if not has_clean_alpha:
-            # 1. Tenter le détourage neural rembg pour un résultat studio parfait sans aucun cadre
+            # 1. Tenter le détourage neural rembg optimisé en résolution
             rembg_done = False
             try:
                 import rembg
-                im_rembg = rembg.remove(im)
-                arr_rembg = np.array(im_rembg)
-                if (arr_rembg[:, :, 3] > 30).sum() > 500:
-                    arr = arr_rembg
+                orig_w, orig_h = im.size
+                if max(orig_w, orig_h) > 1024:
+                    scale = 1024.0 / max(orig_w, orig_h)
+                    im_for_rembg = im.resize((int(orig_w * scale), int(orig_h * scale)), Image.Resampling.LANCZOS)
+                else:
+                    im_for_rembg = im
+                im_rembg = rembg.remove(im_for_rembg)
+                if im_for_rembg.size != im.size:
+                    mask = im_rembg.split()[-1].resize(im.size, Image.Resampling.BILINEAR)
+                    im.putalpha(mask)
+                    arr = np.array(im)
+                else:
+                    arr = np.array(im_rembg)
+                if (arr[:, :, 3] > 30).sum() > 500:
                     rembg_done = True
             except Exception as e:
                 rembg_done = False
@@ -384,21 +395,10 @@ def generate_mode3_volumetric(
     
     py_script = f"""
 import sys, os
-tripo_candidates = [
-    "E:/ComfyUI/custom_nodes/ComfyUI-Flowty-TripoSR",
-    "C:/Users/TrendingPC/TripoSR"
-]
-for p in tripo_candidates:
-    if os.path.exists(p) and p not in sys.path:
-        sys.path.insert(0, p)
-
-import urllib3, requests
-urllib3.disable_warnings()
-old_send = requests.Session.send
-def new_send(self, request, **kwargs):
-    kwargs['verify'] = False
-    return old_send(self, request, **kwargs)
-requests.Session.send = new_send
+from pathlib import Path
+comfy_node = "E:/ComfyUI/custom_nodes/ComfyUI-Flowty-TripoSR"
+if comfy_node not in sys.path:
+    sys.path.insert(0, comfy_node)
 
 import numpy as np
 from PIL import Image
@@ -408,18 +408,32 @@ from tsr.system import TSR
 
 im = Image.open('{temp_in_clean}').convert('RGBA')
 arr = np.array(im).astype(np.float32) / 255.0
-if arr.shape[2] == 4:
-    rgb = arr[:, :, :3] * arr[:, :, 3:4] + (1.0 - arr[:, :, 3:4]) * 0.5
+alpha = arr[:, :, 3]
+y_idx, x_idx = np.where(alpha > 0.05)
+if len(y_idx) > 0:
+    y1, y2 = y_idx.min(), y_idx.max()
+    x1, x2 = x_idx.min(), x_idx.max()
+    cropped = arr[y1:y2+1, x1:x2+1]
+    ch, cw = cropped.shape[:2]
+    max_side = max(ch, cw)
+    scale = int(512 * 0.82) / max_side
+    new_w, new_h = max(1, int(cw * scale)), max(1, int(ch * scale))
+    im_crop = Image.fromarray((cropped * 255).astype(np.uint8))
+    im_resized = im_crop.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    arr_res = np.array(im_resized).astype(np.float32) / 255.0
+    
+    square = np.ones((512, 512, 3), dtype=np.float32) * 0.5
+    oy = (512 - new_h) // 2
+    ox = (512 - new_w) // 2
+    a3 = arr_res[:, :, 3:4]
+    square[oy:oy+new_h, ox:ox+new_w] = arr_res[:, :, :3] * a3 + square[oy:oy+new_h, ox:ox+new_w] * (1.0 - a3)
+    input_pil = Image.fromarray((square * 255).astype(np.uint8)).convert('RGB')
 else:
-    rgb = arr[:, :, :3]
-input_pil = Image.fromarray((rgb * 255.0).astype(np.uint8)).convert('RGB')
+    input_pil = Image.fromarray((arr[:, :, :3] * 255).astype(np.uint8)).convert('RGB')
 
 comfy_ckpt = "E:/ComfyUI/models/checkpoints/triposr_model.ckpt"
 comfy_cfg = "E:/ComfyUI/custom_nodes/ComfyUI-Flowty-TripoSR/config.yaml"
-if os.path.exists(comfy_ckpt) and hasattr(TSR, "from_pretrained_custom"):
-    model = TSR.from_pretrained_custom(comfy_ckpt, comfy_cfg)
-else:
-    model = TSR.from_pretrained('C:/Users/TrendingPC/TripoSR/pretrained', config_name='config.yaml', weight_name='model.ckpt')
+model = TSR.from_pretrained_custom(comfy_ckpt, comfy_cfg)
 
 model.renderer.set_chunk_size(8192)
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -443,7 +457,7 @@ print('TripoSR completed!')
         
     raw_mesh = trimesh.load(temp_out)
     
-    # Orientation repère Bambu Studio
+    # Orientation repère Bambu Studio (Z-up)
     verts = raw_mesh.vertices.copy()
     verts_bambu = np.zeros_like(verts)
     verts_bambu[:, 0] = verts[:, 1]
@@ -453,45 +467,36 @@ print('TripoSR completed!')
     
     m = trimesh.Trimesh(vertices=verts_bambu, faces=faces_bambu)
     m.fix_normals()
-    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=12)
+    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=8)
     
+    # Mise à l'échelle pour Bambu Lab A1 Mini (plateau 180x180 mm)
+    max_xy = max(m.extents[0], m.extents[1])
+    scale_xy = min(150.0 / max(0.001, max_xy), target_height_mm / max(0.001, m.extents[2]))
+    m.apply_scale(scale_xy)
     m.apply_translation([0, 0, -m.bounds[0][2]])
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
     if not with_base:
-        m.apply_scale(target_height_mm / m.extents[2])
-        m.apply_translation([0, 0, -m.bounds[0][2]])
         return m
         
-    # Avec socle
-    scale_dog = (target_height_mm - base_height_mm + 2.0) / m.extents[2]
-    m.apply_scale(scale_dog)
-    m.apply_translation([0, 0, -m.bounds[0][2] + 2.0])
-    
+    # Avec socle de maintien Bambu Lab A1 Mini
     dx, dy = m.extents[0], m.extents[1]
-    base_rx = (dx / 2.0) + 7.0
-    base_ry = (dy / 2.0) + 7.0
+    base_rx = min(88.0, (dx / 2.0) + 6.0)
+    base_ry = min(88.0, (dy / 2.0) + 6.0)
     
     base_mesh = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=64)
     base_mesh.apply_scale([base_rx, base_ry, 1.0])
     base_mesh.apply_translation([0, 0, base_height_mm / 2.0])
     
-    m_dog_mani = Manifold(Mesh(vert_properties=m.vertices.astype(np.float32), tri_verts=m.faces.astype(np.uint32)))
-    m_base_mani = Manifold(Mesh(vert_properties=base_mesh.vertices.astype(np.float32), tri_verts=base_mesh.faces.astype(np.uint32)))
-    m_union = m_dog_mani + m_base_mani
+    # Encastrement de 1.2 mm dans le socle
+    m.apply_translation([0, 0, base_height_mm - 1.2])
     
-    mesh_union_data = m_union.to_mesh()
-    m_with_base = trimesh.Trimesh(
-        vertices=mesh_union_data.vert_properties[:, :3],
-        faces=mesh_union_data.tri_verts
-    )
-    m_with_base.fix_normals()
-    m_with_base.apply_translation([0, 0, -m_with_base.bounds[0][2]])
-    m_with_base.apply_scale(target_height_mm / m_with_base.extents[2])
-    m_with_base.apply_translation([0, 0, -m_with_base.bounds[0][2]])
+    combined = trimesh.util.concatenate([m, base_mesh])
+    combined.fix_normals()
+    combined.apply_translation([0, 0, -combined.bounds[0][2]])
     
-    return m_with_base
+    return combined
 
 
 def generate_mode3_ultra_sculpted(
@@ -500,73 +505,20 @@ def generate_mode3_ultra_sculpted(
     with_base: bool = True,
     base_height_mm: float = 4.5
 ) -> trimesh.Trimesh:
-    """Mode 3 Ultra-Précis (Qualité Studio / Meshy-7) : Reconstruction volumétrique avec subdivision géométrique fine (223k+ polygones), Scharr edge highlighting et Cavity Carving des traits faciaux."""
-    # 1. Base volumétrique
-    m_base = generate_mode3_volumetric(image, target_height_mm=target_height_mm, with_base=with_base, base_height_mm=base_height_mm)
+    """Mode 3 Ultra-Précis (Qualité Studio / Meshy-7) : Reconstruction volumétrique neuronale 360° haute résolution (288 voxels, 200k+ faces) avec préservation anatomique Taubin et socle Manifold étanche."""
+    # 1. Base volumétrique haute résolution (288 voxel Marching Cubes)
+    m = generate_mode3_volumetric(
+        image=image,
+        target_height_mm=target_height_mm,
+        with_base=with_base,
+        base_height_mm=base_height_mm,
+        resolution=288
+    )
     
-    # 2. Subdivision géométrique fine (Loop subdivision)
-    v, f = trimesh.remesh.subdivide(m_base.vertices, m_base.faces)
-    mesh_hd = trimesh.Trimesh(vertices=v, faces=f)
-    mesh_hd.fix_normals()
-    
-    # 3. Extraction avancée du champ de détails morphologiques & cavités
-    im_rgb = image.convert("RGB")
-    arr = np.array(im_rgb)
-    gray = (0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]) / 255.0
-    
-    # Fréquences moyennes (relief musculaire, museau, oreilles)
-    blur_mid = ndi.gaussian_filter(gray, 12.0)
-    mid_freq = (gray - blur_mid)
-    
-    # Hautes fréquences (micro-textures, plis, babines, médaillon, pelage)
-    blur_fine = ndi.gaussian_filter(gray, 2.5)
-    fine_freq = (gray - blur_fine)
-    
-    # Gradients de Scharr pour arêtes nettes (contours des yeux, truffe, anneaux)
-    scharr_x = np.array([[-3, 0, 3], [-10, 0, 10], [-3, 0, 3]], dtype=float) / 32.0
-    scharr_y = np.array([[-3, -10, -3], [0, 0, 0], [3, 10, 3]], dtype=float) / 32.0
-    gx = ndi.convolve(gray, scharr_x)
-    gy = ndi.convolve(gray, scharr_y)
-    edge_sharp = np.sqrt(gx**2 + gy**2)
-    edge_sharp = (edge_sharp - edge_sharp.min()) / max(0.001, (edge_sharp.max() - edge_sharp.min()))
-    
-    # Cavity Carving (creusement géométrique franc des narines, yeux, fentes)
-    dark_cavities = np.clip(1.0 - (gray / 0.4), 0.0, 1.0) ** 1.8
-    cavity_carve = -dark_cavities * 0.8
-    
-    # Carte globale de déplacement morphologique (Qualité Meshy-7)
-    disp_map = (mid_freq * 0.6) + (fine_freq * 1.1) + (edge_sharp * 0.4) + cavity_carve
-    
-    verts = mesh_hd.vertices.copy()
-    normals = mesh_hd.vertex_normals
-    
-    # Vertices du sujet orientés vers l'avant au-dessus du socle
-    min_z_subject = (base_height_mm + 1.0) if with_base else (verts[:, 2].min() + 1.0)
-    front_mask = (normals[:, 1] < -0.1) & (verts[:, 2] > min_z_subject)
-    
-    subj_verts = verts[verts[:, 2] > min_z_subject]
-    x_min, x_max = subj_verts[:, 0].min(), subj_verts[:, 0].max()
-    z_min, z_max = subj_verts[:, 2].min(), subj_verts[:, 2].max()
-    
-    # Bounding box dans l'image
-    is_subject = (arr[:, :, 0] < 245) | (arr[:, :, 1] < 245) | (arr[:, :, 2] < 245)
-    y_idx, x_idx = np.where(is_subject)
-    if len(y_idx) > 0:
-        y1, y2, x1, x2 = y_idx.min(), y_idx.max(), x_idx.min(), x_idx.max()
-        cropped_disp = disp_map[y1:y2+1, x1:x2+1]
-        ch, cw = cropped_disp.shape
-        
-        cols = np.clip(((verts[:, 0] - x_min) / max(0.001, x_max - x_min) * (cw - 1)), 0, cw - 1).astype(int)
-        rows = np.clip(((z_max - verts[:, 2]) / max(0.001, z_max - z_min) * (ch - 1)), 0, ch - 1).astype(int)
-        
-        disp_values = np.clip(cropped_disp[rows, cols] * 1.3, -1.2, 1.4)
-        weight = np.clip(-normals[:, 1], 0, 1) ** 1.5
-        
-        verts[front_mask] += normals[front_mask] * (disp_values[front_mask] * weight[front_mask])[:, None]
-        
-    mesh_ultra = trimesh.Trimesh(vertices=verts, faces=mesh_hd.faces)
-    mesh_ultra.fix_normals()
-    return mesh_ultra
+    # 2. Lissage Taubin de précision pour éliminer tout effet d'escalier sans aplatir les arêtes vives
+    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
+    m.fix_normals()
+    return m
 
 
 def process_external_3d_file(

@@ -248,12 +248,18 @@ async def convert_image(
             
         stl_name = f"{mode_name}_{out_id}.stl"
         threemf_name = f"{mode_name}_{out_id}.3mf"
+        glb_name = f"{mode_name}_{out_id}.glb"
         
         stl_path = os.path.join(OUTPUT_DIR, stl_name)
         threemf_path = os.path.join(OUTPUT_DIR, threemf_name)
+        glb_path = os.path.join(OUTPUT_DIR, glb_name)
         
         mesh.export(stl_path)
         mesh.export(threemf_path)
+        try:
+            mesh.export(glb_path)
+        except Exception:
+            pass
         
         printability = engine.check_bambu_printability(mesh)
         
@@ -261,8 +267,10 @@ async def convert_image(
             "success": True,
             "stl_filename": stl_name,
             "threemf_filename": threemf_name,
+            "glb_filename": glb_name if os.path.exists(glb_path) else None,
             "stl_url": f"/outputs/{stl_name}",
             "threemf_url": f"/outputs/{threemf_name}",
+            "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
             "printability": printability
         }
         
