@@ -757,32 +757,32 @@
     controls.target.set(0, 0, 45);
 
     // Éclairage Studio Haute Fidélité (3-Point Lighting & Rim Light)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.40);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e2430, 0.55);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e2430, 0.65);
     scene.add(hemiLight);
 
-    // Key Light (Lumière principale chaude avec ombres douces haute résolution)
-    const dirLight1 = new THREE.DirectionalLight(0xfff5ea, 1.6);
-    dirLight1.position.set(150, -150, 220);
+    // Key Light (Lumière principale chaude 2.2 avec ombres douces PCF haute résolution)
+    const dirLight1 = new THREE.DirectionalLight(0xfff5ea, 2.2);
+    dirLight1.position.set(140, -140, 220);
     dirLight1.castShadow = true;
     dirLight1.shadow.mapSize.width = 2048;
     dirLight1.shadow.mapSize.height = 2048;
     dirLight1.shadow.camera.near = 10;
     dirLight1.shadow.camera.far = 700;
     dirLight1.shadow.bias = -0.0001;
-    dirLight1.shadow.radius = 2.5;
+    dirLight1.shadow.radius = 3.0;
     scene.add(dirLight1);
 
-    // Fill Light (Débouchage des ombres doux)
-    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.7);
-    dirLight2.position.set(-150, 150, 120);
+    // Fill Light (Débouchage des ombres doux bleuté)
+    const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.85);
+    dirLight2.position.set(-140, 140, 110);
     scene.add(dirLight2);
 
-    // Rim Light (Détachement net du contour de la figurine)
-    const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    rimLight.position.set(0, 180, -80);
+    // Rim Light (Détachement net du contour de la figurine 1.5)
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    rimLight.position.set(0, 180, -90);
     scene.add(rimLight);
 
     // Bambu Lab A1 Mini Bed Plate (180 x 180 mm) avec Ombre de Contact
@@ -803,7 +803,7 @@
       // Plan d'ombre de contact douce au sol sur le plateau PEI
       const shadowPlane = new THREE.Mesh(
         new THREE.PlaneGeometry(180, 180),
-        new THREE.ShadowMaterial({ opacity: 0.35 })
+        new THREE.ShadowMaterial({ opacity: 0.40 })
       );
       shadowPlane.position.set(0, 0, 0.05);
       shadowPlane.receiveShadow = true;
@@ -824,20 +824,20 @@
     }
     createBambuBed();
 
-    // Material Library pour Filaments Bambu Lab (PBR MeshPhysicalMaterial Haute Fidélité)
+    // Material Library pour Filaments Bambu Lab (PBR MeshPhysicalMaterial Studio Haute Fidélité)
     const materials = {
-      basic: new THREE.MeshPhysicalMaterial({ color: 0x2563eb, roughness: 0.32, metalness: 0.08, clearcoat: 0.25, clearcoatRoughness: 0.15 }),
-      matte: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.92, metalness: 0.02 }),
-      silk: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.16, metalness: 0.65, clearcoat: 0.85, clearcoatRoughness: 0.12, reflectivity: 0.6 }),
-      tough: new THREE.MeshPhysicalMaterial({ color: 0x059669, roughness: 0.42, metalness: 0.08, clearcoat: 0.3 }),
-      marble: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.68, metalness: 0.04 }),
+      basic: new THREE.MeshPhysicalMaterial({ color: 0x2563eb, roughness: 0.26, metalness: 0.08, clearcoat: 0.65, clearcoatRoughness: 0.12, reflectivity: 0.5 }),
+      matte: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.95, metalness: 0.01 }),
+      silk: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.14, metalness: 0.70, clearcoat: 0.90, clearcoatRoughness: 0.08, reflectivity: 0.85 }),
+      tough: new THREE.MeshPhysicalMaterial({ color: 0x059669, roughness: 0.38, metalness: 0.08, clearcoat: 0.45, clearcoatRoughness: 0.15 }),
+      marble: new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, roughness: 0.55, metalness: 0.05, clearcoat: 0.35, clearcoatRoughness: 0.2 }),
       wood: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.88, metalness: 0.0 }),
-      glow: new THREE.MeshStandardMaterial({ color: 0xa7f3d0, emissive: 0x34d399, emissiveIntensity: 0.35, roughness: 0.35, metalness: 0.05 }),
-      petg: new THREE.MeshPhysicalMaterial({ color: 0x0284c7, roughness: 0.24, metalness: 0.18, clearcoat: 0.45 }),
-      translucent: new THREE.MeshPhysicalMaterial({ color: 0xbae6fd, roughness: 0.14, transmission: 0.82, thickness: 1.5, ior: 1.52, transparent: true, opacity: 0.95 }),
-      tpu: new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.75, metalness: 0.0 }),
-      carbon: new THREE.MeshStandardMaterial({ color: 0x18202c, roughness: 0.94, metalness: 0.15 }),
-      support: new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.6, metalness: 0.0 })
+      glow: new THREE.MeshStandardMaterial({ color: 0xa7f3d0, emissive: 0x34d399, emissiveIntensity: 0.45, roughness: 0.35, metalness: 0.05 }),
+      petg: new THREE.MeshPhysicalMaterial({ color: 0x0284c7, roughness: 0.20, metalness: 0.15, clearcoat: 0.80, clearcoatRoughness: 0.10, reflectivity: 0.6 }),
+      translucent: new THREE.MeshPhysicalMaterial({ color: 0xbae6fd, roughness: 0.12, transmission: 0.85, thickness: 2.0, ior: 1.52, transparent: true, opacity: 0.92 }),
+      tpu: new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, roughness: 0.65, metalness: 0.02, clearcoat: 0.2 }),
+      carbon: new THREE.MeshStandardMaterial({ color: 0x18202c, roughness: 0.94, metalness: 0.18 }),
+      support: new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.65, metalness: 0.0 })
     };
 
     const stlLoader = new THREE.STLLoader();

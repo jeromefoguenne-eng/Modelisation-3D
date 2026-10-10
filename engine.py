@@ -414,7 +414,12 @@ else:
     rgb = arr[:, :, :3]
 input_pil = Image.fromarray((rgb * 255.0).astype(np.uint8)).convert('RGB')
 
-model = TSR.from_pretrained('C:/Users/TrendingPC/TripoSR/pretrained', config_name='config.yaml', weight_name='model.ckpt')
+comfy_ckpt = "E:/ComfyUI/models/checkpoints/triposr_model.ckpt"
+comfy_cfg = "E:/ComfyUI/custom_nodes/ComfyUI-Flowty-TripoSR/config.yaml"
+if os.path.exists(comfy_ckpt) and hasattr(TSR, "from_pretrained_custom"):
+    model = TSR.from_pretrained_custom(comfy_ckpt, comfy_cfg)
+else:
+    model = TSR.from_pretrained('C:/Users/TrendingPC/TripoSR/pretrained', config_name='config.yaml', weight_name='model.ckpt')
 
 model.renderer.set_chunk_size(8192)
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
