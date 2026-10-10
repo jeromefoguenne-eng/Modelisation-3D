@@ -670,15 +670,27 @@
       <!-- Liste défilable des Styles Artistiques -->
       <div class="p-3.5 space-y-2 flex-1 overflow-y-auto custom-scrollbar min-h-0">
         
+        <!-- Style 0: Couleurs d'Origine / Photo HD -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border-2 border-purple-500 bg-purple-500/15 text-left transition flex items-center gap-3 relative group" data-style="original">
+          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🎨</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">Couleurs Photo / Photoréaliste</span>
+              <span class="active-badge text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+            </div>
+            <p class="text-[10px] text-slate-300 truncate">Couleurs naturelles de l'image & rendu PBR réaliste</p>
+          </div>
+        </button>
+
         <!-- Style 1: Figurine Studio -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border-2 border-purple-500 bg-purple-500/15 text-left transition flex items-center gap-3 relative group" data-style="figurine">
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="figurine">
           <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-white">Figurine Studio</span>
-              <span class="active-badge text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Figurine Studio</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-300 truncate">Vernis brillant, micro-pores & finesse vinyle</p>
+            <p class="text-[10px] text-slate-400 truncate">Vernis brillant, micro-pores & finesse vinyle</p>
           </div>
         </button>
 
@@ -925,7 +937,7 @@
     let currentVolumeCm3 = 0.0;
     let meshObject = null;
     let styleOverlayMesh = null;
-    let currentArtStyle = "figurine";
+    let currentArtStyle = "original";
 
     // UI Elements
     let currentRawFile = null;
@@ -1237,7 +1249,12 @@
     function clearStyleOverlays() {
       if (styleOverlayMesh && meshObject) {
         meshObject.remove(styleOverlayMesh);
-        if (styleOverlayMesh.geometry) styleOverlayMesh.geometry.dispose();
+        if (styleOverlayMesh.geometry && styleOverlayMesh.geometry !== meshObject.geometry && (!meshObject.userData || styleOverlayMesh.geometry !== meshObject.userData.baseGeometry)) {
+          styleOverlayMesh.geometry.dispose();
+        }
+        if (styleOverlayMesh.material) {
+          styleOverlayMesh.material.dispose();
+        }
         styleOverlayMesh = null;
       }
     }
@@ -1265,45 +1282,83 @@
 
       clearStyleOverlays();
       const normMap = getFineNoiseNormalMap();
+
+      // Restaurer la géométrie originale si on quitte le mode Low Poly
+      if (meshObject.userData && meshObject.userData.baseGeometry && styleKey !== "lowpoly") {
+        if (meshObject.geometry !== meshObject.userData.baseGeometry) {
+          meshObject.geometry = meshObject.userData.baseGeometry;
+        }
+      }
+
+      const hasColors = !!(meshObject.geometry.attributes && meshObject.geometry.attributes.color && meshObject.geometry.attributes.color.count > 0);
+      const filColor = (materials[currentMaterialName] && materials[currentMaterialName].color) ? materials[currentMaterialName].color.getHex() : 0x2563eb;
       let newMat = null;
 
       switch(styleKey) {
+        case "original":
+          // Couleurs Photo Photoréaliste PBR
+          if (hasColors) {
+            newMat = new THREE.MeshStandardMaterial({
+              vertexColors: true,
+              color: 0xffffff,
+              roughness: 0.35,
+              metalness: 0.05
+            });
+          } else {
+            newMat = (materials[currentMaterialName] || materials.basic).clone();
+          }
+          break;
+
         case "figurine":
-          // Figurine Vinyle Studio avec micro-textures de peau / pelage et vernis clair
+          // Figurine Vinyle Studio avec micro-textures de pelage/peau & vernis brillant
           newMat = new THREE.MeshPhysicalMaterial({
-            color: 0x3b82f6,
-            roughness: 0.22,
-            metalness: 0.08,
-            clearcoat: 0.85,
-            clearcoatRoughness: 0.12,
+            vertexColors: hasColors,
+            color: hasColors ? 0xffffff : filColor,
+            roughness: 0.20,
+            metalness: 0.05,
+            clearcoat: 0.88,
+            clearcoatRoughness: 0.10,
             reflectivity: 0.65,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
+            normalScale: new THREE.Vector2(0.25, 0.25)
           });
           break;
 
         case "lowpoly":
-          // Low Poly Art : facettes plates nettes
+          // Low Poly Art : facettes polygonales planes et arêtes vives
+          if (meshObject.userData && meshObject.userData.baseGeometry) {
+            let lpGeom = meshObject.userData.baseGeometry;
+            if (lpGeom.index) {
+              lpGeom = lpGeom.toNonIndexed();
+            } else {
+              lpGeom = lpGeom.clone();
+            }
+            lpGeom.computeVertexNormals();
+            meshObject.geometry = lpGeom;
+          }
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x38bdf8,
-            roughness: 0.40,
-            metalness: 0.15,
+            vertexColors: hasColors,
+            color: hasColors ? 0xffffff : 0x38bdf8,
+            roughness: 0.45,
+            metalness: 0.10,
             flatShading: true
           });
           break;
 
         case "manga":
-          // Cel-Shading Toon 3-tons + Contour d'encre noir
+          // Cel-Shading Toon anime 3-tons + Contour d'encre noir
           newMat = new THREE.MeshToonMaterial({
-            color: 0xf43f5e,
+            vertexColors: hasColors,
+            color: hasColors ? 0xffffff : filColor,
             gradientMap: getToonGradientMap()
           });
           if (meshObject.geometry) {
             const outlineMat = new THREE.MeshBasicMaterial({
-              color: 0x090d16,
+              color: 0x05070d,
               side: THREE.BackSide
             });
-            styleOverlayMesh = new THREE.Mesh(meshObject.geometry, outlineMat);
+            const outlineGeo = meshObject.geometry.clone();
+            styleOverlayMesh = new THREE.Mesh(outlineGeo, outlineMat);
             styleOverlayMesh.scale.set(1.018, 1.018, 1.018);
             meshObject.add(styleOverlayMesh);
           }
@@ -1312,7 +1367,7 @@
         case "clay":
           // Terre cuite sculpteur ZBrush Matte
           newMat = new THREE.MeshStandardMaterial({
-            color: 0xc27b56,
+            color: 0xc87d55,
             roughness: 0.95,
             metalness: 0.0,
             normalMap: normMap,
@@ -1321,26 +1376,26 @@
           break;
 
         case "marble":
-          // Marbre Antique poli avec translucidité douce
+          // Marbre Antique Carrara avec translucidité noble
           newMat = new THREE.MeshPhysicalMaterial({
-            color: 0xf1f5f9,
+            color: 0xf8fafc,
             roughness: 0.28,
             metalness: 0.05,
-            transmission: 0.18,
+            transmission: 0.15,
             thickness: 1.5,
-            clearcoat: 0.60,
+            clearcoat: 0.65,
             clearcoatRoughness: 0.18,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.25, 0.25)
+            normalScale: new THREE.Vector2(0.20, 0.20)
           });
           break;
 
         case "bronze":
           // Bronze antique patiné
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x92400e,
-            roughness: 0.36,
-            metalness: 0.88,
+            color: 0x854d0e,
+            roughness: 0.35,
+            metalness: 0.92,
             normalMap: normMap,
             normalScale: new THREE.Vector2(0.35, 0.35)
           });
@@ -1349,7 +1404,7 @@
         case "gold":
           // Or Pur 24K poli miroir
           newMat = new THREE.MeshStandardMaterial({
-            color: 0xfacc15,
+            color: 0xfbbf24,
             roughness: 0.14,
             metalness: 0.98,
             normalMap: normMap,
@@ -1361,28 +1416,29 @@
           // Bois naturel sculpté
           newMat = new THREE.MeshStandardMaterial({
             color: 0x78350f,
-            roughness: 0.82,
+            roughness: 0.85,
             metalness: 0.0,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.5, 0.5)
+            normalScale: new THREE.Vector2(0.50, 0.50)
           });
           break;
 
         case "cyberpunk":
-          // Base sombre + liserés néon holographiques
+          // Base sombre furtive + liserés néon cyan holographiques
           newMat = new THREE.MeshStandardMaterial({
             color: 0x090d16,
             roughness: 0.25,
-            metalness: 0.9
+            metalness: 0.92
           });
           if (meshObject.geometry) {
             const wireMat = new THREE.MeshBasicMaterial({
               color: 0x06b6d4,
               wireframe: true,
               transparent: true,
-              opacity: 0.65
+              opacity: 0.70
             });
-            styleOverlayMesh = new THREE.Mesh(meshObject.geometry, wireMat);
+            const wireGeo = meshObject.geometry.clone();
+            styleOverlayMesh = new THREE.Mesh(wireGeo, wireMat);
             meshObject.add(styleOverlayMesh);
           }
           break;
@@ -1390,14 +1446,14 @@
         case "silk":
           // Bambu PLA Silk vert émeraude / or soyeux
           newMat = new THREE.MeshPhysicalMaterial({
-            color: 0x10b981,
+            color: hasColors ? filColor : 0x10b981,
             roughness: 0.12,
             metalness: 0.72,
             clearcoat: 0.95,
             clearcoatRoughness: 0.08,
             reflectivity: 0.90,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.4, 0.4)
+            normalScale: new THREE.Vector2(0.40, 0.40)
           });
           break;
 
@@ -1405,8 +1461,8 @@
           // Carbone mat furtif
           newMat = new THREE.MeshStandardMaterial({
             color: 0x18202c,
-            roughness: 0.94,
-            metalness: 0.2,
+            roughness: 0.95,
+            metalness: 0.20,
             normalMap: normMap,
             normalScale: new THREE.Vector2(0.65, 0.65)
           });
@@ -1416,8 +1472,8 @@
           // Résine / Cristal transparent opalescent
           newMat = new THREE.MeshPhysicalMaterial({
             color: 0x38bdf8,
-            roughness: 0.10,
-            transmission: 0.88,
+            roughness: 0.08,
+            transmission: 0.90,
             thickness: 3.0,
             ior: 1.52,
             transparent: true,
@@ -1426,7 +1482,7 @@
           break;
 
         default:
-          newMat = materials.basic.clone();
+          newMat = (materials[currentMaterialName] || materials.basic).clone();
       }
 
       newMat.wireframe = isWireframe;
@@ -1533,16 +1589,31 @@
       if (meshObject) {
         clearStyleOverlays();
         scene.remove(meshObject);
-        if (meshObject.geometry) meshObject.geometry.dispose();
+        if (meshObject.geometry && meshObject.geometry !== geometry && (!meshObject.userData || meshObject.geometry !== meshObject.userData.baseGeometry)) {
+          meshObject.geometry.dispose();
+        }
       }
 
       geometry.computeVertexNormals();
-      const mat = customMaterial || materials[currentMaterialName].clone();
+      const hasColors = !!(geometry.attributes && geometry.attributes.color && geometry.attributes.color.count > 0);
+      let mat = customMaterial;
+      if (!mat) {
+        if (hasColors) {
+          mat = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, roughness: 0.35, metalness: 0.05 });
+        } else {
+          mat = (materials[currentMaterialName] || materials.basic).clone();
+        }
+      }
       mat.wireframe = isWireframe;
 
       meshObject = new THREE.Mesh(geometry, mat);
       meshObject.castShadow = true;
       meshObject.receiveShadow = true;
+      meshObject.userData = {
+        baseGeometry: geometry,
+        hasVertexColors: hasColors,
+        originalMaterial: customMaterial
+      };
 
       scene.add(meshObject);
       applyArtisticStyle(currentArtStyle);
@@ -1629,6 +1700,40 @@
       });
     }
 
+    // Load GLB Model with Photorealistic PBR Materials and Vertex Colors
+    function loadModelGLB(url, fallbackStlUrl = null, callback = null) {
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = "Chargement du Modèle 3D Photoréaliste...";
+      document.getElementById("loadingSubtitle").textContent = "Lecture du maillage, textures et couleurs PBR";
+
+      gltfLoader.load(url, (gltf) => {
+        let foundGeom = null;
+        let foundMat = null;
+        gltf.scene.traverse((child) => {
+          if (child.isMesh && !foundGeom) {
+            foundGeom = child.geometry.clone();
+            foundMat = child.material;
+          }
+        });
+        if (foundGeom) {
+          setActiveMesh(foundGeom, foundMat);
+          loadingOverlay.classList.add("hidden");
+          if (callback) callback();
+        } else if (fallbackStlUrl) {
+          loadModelSTL(fallbackStlUrl, callback);
+        } else {
+          loadingOverlay.classList.add("hidden");
+        }
+      }, undefined, (err) => {
+        console.warn("Échec chargement GLB, repli sur STL:", err);
+        if (fallbackStlUrl) {
+          loadModelSTL(fallbackStlUrl, callback);
+        } else {
+          loadingOverlay.classList.add("hidden");
+        }
+      });
+    }
+
     // Quick Demo Babel Load (Statuette 3D Volumétrique Debout 10cm - Qualité Meshy-7)
     function loadDemoBabelModel() {
       currentFilename = "Babel_Sans_Titre";
@@ -1638,7 +1743,7 @@
       currentImageDataUrl = "./demo/sans_titre.png";
       dropPrompt.classList.add("hidden");
       imagePreviewContainer.classList.remove("hidden");
-      loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
+      loadModelGLB("./demo/Babel_10cm_Standing.glb", "./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
     }
 
     btnLoadDemo.addEventListener("click", loadDemoBabelModel);
@@ -1657,7 +1762,7 @@
       const stlPath = chkAddBase.checked ? "./demo/Chien_Avec_Socle_Hunyuan.stl" : "./demo/Chien_Sculpture_Pure_Hunyuan.stl";
       const glbPath = chkAddBase.checked ? "./demo/Chien_Avec_Socle_Hunyuan.glb" : "./demo/Chien_Sculpture_Pure_Hunyuan.glb";
       updateDownloadLinks(stlPath, glbPath, stlPath, "Chien_Dalmatien_Hunyuan3D");
-      loadModelSTL(stlPath);
+      loadModelGLB(glbPath, stlPath);
     }
 
     if (btnLoadDemoDog) btnLoadDemoDog.addEventListener("click", loadDemoDogModel);
@@ -1675,7 +1780,7 @@
       const stlPath = chkAddBase.checked ? "./demo/Van_Aert_Figurine_A1_Mini.stl" : "./demo/Van_Aert_Sculpture_Pure.stl";
       const glbPath = chkAddBase.checked ? "./demo/Van_Aert_Figurine_A1_Mini.glb" : "./demo/Van_Aert_Sculpture_Pure.glb";
       updateDownloadLinks(stlPath, glbPath, stlPath, "Van_Aert_Cycliste_A1_Mini");
-      loadModelSTL(stlPath);
+      loadModelGLB(glbPath, stlPath);
     }
 
     if (btnLoadDemoVanAert) btnLoadDemoVanAert.addEventListener("click", loadDemoVanAertModel);
@@ -2307,7 +2412,11 @@
           const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
           const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
           updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename);
-          loadModelSTL(stlUrl);
+          if (glbUrl) {
+            loadModelGLB(glbUrl, stlUrl);
+          } else {
+            loadModelSTL(stlUrl);
+          }
           return;
         }
 
@@ -2408,7 +2517,11 @@
             const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
             const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
             updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename);
-            loadModelSTL(stlUrl);
+            if (glbUrl) {
+              loadModelGLB(glbUrl, stlUrl);
+            } else {
+              loadModelSTL(stlUrl);
+            }
             return;
           } else {
             const errData = await response.json().catch(() => ({}));
@@ -2498,9 +2611,7 @@
       if (materials[matKey]) {
         currentMaterialName = matKey;
         if (meshObject) {
-          const m = materials[matKey].clone();
-          m.wireframe = isWireframe;
-          meshObject.material = m;
+          applyArtisticStyle(currentArtStyle);
         }
       }
 
@@ -2517,10 +2628,8 @@
         });
         e.target.className = "mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40";
         currentMaterialName = e.target.dataset.mat;
-        if (meshObject && materials[currentMaterialName]) {
-          const mat = materials[currentMaterialName].clone();
-          mat.wireframe = isWireframe;
-          meshObject.material = mat;
+        if (meshObject) {
+          applyArtisticStyle(currentArtStyle);
         }
       });
     });
