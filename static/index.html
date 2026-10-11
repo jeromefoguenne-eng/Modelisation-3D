@@ -161,6 +161,41 @@
                     <span>Supprimer</span>
                   </button>
                 </div>
+
+                <!-- Boîte de retouche et reconstitution IA de l'image -->
+                <div id="aiImageEditSection" class="pt-2.5 mt-2 border-t border-dark-700/80 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-purple-300 flex items-center gap-1.5">
+                      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+                      <span>Retouche & Reconstitution IA</span>
+                    </span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium border border-purple-500/30">IA 100% Gratuite</span>
+                  </div>
+
+                  <!-- Bouton d'action directe SOTA : Rendre crédible en 3D -->
+                  <button id="btnMakeCredible3D" type="button" class="w-full py-2 px-2.5 rounded-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20 transition group">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-300 group-hover:scale-110 transition"></i>
+                    <span>✨ Rendre l'Image Crédible en 3D (IA)</span>
+                  </button>
+                  <p class="text-[9.5px] text-slate-400 leading-tight">Solidifie les structures fines (roues, rayons, membres), élimine les fils parasites et assure un modèle plein imprimable.</p>
+
+                  <!-- Input de modification personnalisée -->
+                  <div class="space-y-1.5 pt-1">
+                    <div class="flex items-center gap-1 text-[10px]">
+                      <button type="button" class="ai-edit-mode-btn active px-2 py-0.5 rounded bg-purple-600 text-white font-semibold" data-mode="complete">🧩 Reconstituer</button>
+                      <button type="button" class="ai-edit-mode-btn px-2 py-0.5 rounded bg-dark-800 text-slate-300 hover:bg-dark-700 font-medium" data-mode="add">➕ Ajouter</button>
+                      <button type="button" class="ai-edit-mode-btn px-2 py-0.5 rounded bg-dark-800 text-slate-300 hover:bg-dark-700 font-medium" data-mode="remove">➖ Enlever</button>
+                      <button type="button" class="ai-edit-mode-btn px-2 py-0.5 rounded bg-dark-800 text-slate-300 hover:bg-dark-700 font-medium" data-mode="modify">✏️ Modifier</button>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <input id="inputAiImagePrompt" type="text" placeholder="Ex: reconstituer roues pleines du vélo, membres..." class="flex-1 bg-dark-900 border border-dark-600 focus:border-purple-500 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none">
+                      <button id="btnApplyAiEdit" type="button" class="py-1.5 px-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold shrink-0 flex items-center gap-1 shadow-sm transition">
+                        <i data-lucide="wand-2" class="w-3 h-3"></i>
+                        <span>Appliquer</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1188,6 +1223,11 @@
     const btnRemoveImage = document.getElementById("btnRemoveImage");
     const btnSaveImage = document.getElementById("btnSaveImage");
     const btnDeleteImage = document.getElementById("btnDeleteImage");
+    const btnMakeCredible3D = document.getElementById("btnMakeCredible3D");
+    const aiEditModeButtons = document.querySelectorAll(".ai-edit-mode-btn");
+    const inputAiImagePrompt = document.getElementById("inputAiImagePrompt");
+    const btnApplyAiEdit = document.getElementById("btnApplyAiEdit");
+    let currentAiEditMode = "complete";
     const btnLoadDemo = document.getElementById("btnLoadDemo");
     const btnLoadDemoDog = document.getElementById("btnLoadDemoDog");
     const btnLoadDemoVanAert = document.getElementById("btnLoadDemoVanAert");
@@ -2740,6 +2780,7 @@
       currentImageDataUrl = "./demo/chien_dalmatien_original.jpg";
       dropPrompt.classList.add("hidden");
       imagePreviewContainer.classList.remove("hidden");
+      if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
       
       const stlPath = chkAddBase.checked ? "./demo/Chien_Avec_Socle_Hunyuan.stl" : "./demo/Chien_Sculpture_Pure_Hunyuan.stl";
       const glbPath = chkAddBase.checked ? "./demo/Chien_Avec_Socle_Hunyuan.glb" : "./demo/Chien_Sculpture_Pure_Hunyuan.glb";
@@ -2758,6 +2799,7 @@
       currentImageDataUrl = "./demo/van_aert_original.png";
       dropPrompt.classList.add("hidden");
       imagePreviewContainer.classList.remove("hidden");
+      if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
       
       const stlPath = chkAddBase.checked ? "./demo/Van_Aert_Figurine_A1_Mini.stl" : "./demo/Van_Aert_Sculpture_Pure.stl";
       const glbPath = chkAddBase.checked ? "./demo/Van_Aert_Figurine_A1_Mini.glb" : "./demo/Van_Aert_Sculpture_Pure.glb";
@@ -2943,6 +2985,7 @@
           dropPrompt.classList.add("hidden");
           imagePreviewContainer.classList.remove("hidden");
           loadingOverlay.classList.add("hidden");
+          if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
         };
         img.onerror = () => {
           loadingOverlay.classList.add("hidden");
@@ -3005,6 +3048,118 @@
     btnRemoveImage.addEventListener("click", (e) => {
       e.stopPropagation();
       btnDeleteImage.click();
+    });
+
+    // RETOUCHE & RECONSTITUTION IA DE L'IMAGE ACTIVE
+    aiEditModeButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        aiEditModeButtons.forEach(b => {
+          b.classList.remove("active", "bg-purple-600", "text-white");
+          b.classList.add("bg-dark-800", "text-slate-300");
+        });
+        btn.classList.add("active", "bg-purple-600", "text-white");
+        btn.classList.remove("bg-dark-800", "text-slate-300");
+        currentAiEditMode = btn.dataset.mode;
+
+        const placeholders = {
+          complete: "Ex: reconstituer les roues complètes du vélo, jambes, tête...",
+          add: "Ex: ajouter un socle de course, des sacoches, des lunettes de soleil...",
+          remove: "Ex: enlever l'arrière-plan résiduel, enlever les ombres flottantes...",
+          modify: "Ex: transformer en tenue cycliste bleue, style figurine de collection..."
+        };
+        inputAiImagePrompt.placeholder = placeholders[currentAiEditMode] || "Décrivez la modification...";
+      });
+    });
+
+    async function performAiImageEdit(actionType, customPrompt = "") {
+      const activeUrl = currentCleanDataUrl || currentImageDataUrl || imagePreview.src;
+      if (!activeUrl && !currentFilename) {
+        showToast("Veuillez d'abord charger ou générer une image.", "warning");
+        return;
+      }
+
+      loadingOverlay.classList.remove("hidden");
+      document.getElementById("loadingTitle").textContent = actionType === "credible_3d" 
+        ? "Transformation IA en Figurine 3D Crédible..." 
+        : "Retouche & Reconstitution IA en cours...";
+      document.getElementById("loadingSubtitle").textContent = "Recomposition neuronale, fermeture des structures et détourage haute fidélité";
+
+      try {
+        const formData = new FormData();
+        formData.append("action_type", actionType);
+        formData.append("edit_prompt", customPrompt);
+        formData.append("filename", currentFilename || "image.png");
+        formData.append("base_prompt", (promptInput ? promptInput.value : "") || (imageName ? imageName.textContent : ""));
+        formData.append("style", "figurine");
+        formData.append("rebuild_3d", "false");
+
+        const res = await fetch("/api/edit-image-prompt", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: "Erreur serveur" }));
+          throw new Error(err.detail || "Échec de l'optimisation IA");
+        }
+
+        const data = await res.json();
+        if (data.preview_image_url) {
+          const newImg = new Image();
+          newImg.crossOrigin = "anonymous";
+          newImg.onload = () => {
+            currentImageElement = newImg;
+            imagePreview.src = data.preview_image_url;
+            currentImageDataUrl = data.preview_image_url;
+            currentCleanDataUrl = data.preview_image_url;
+            if (data.raw_image_url) {
+              const fname = data.raw_image_url.split("/").pop();
+              currentFilename = fname;
+              imageName.textContent = "IA: " + (customPrompt || "Modèle 3D Crédible");
+            }
+            imageDimensions.textContent = `${newImg.naturalWidth} × ${newImg.naturalHeight} px`;
+            imagePreviewContainer.classList.remove("hidden");
+            dropPrompt.classList.add("hidden");
+            loadingOverlay.classList.add("hidden");
+            if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+            showToast("✨ Image optimisée avec succès par l'IA ! Prête pour la 3D.", "success");
+          };
+          newImg.onerror = () => {
+            loadingOverlay.classList.add("hidden");
+            showToast("Erreur lors du chargement du résultat IA.", "error");
+          };
+          newImg.src = data.preview_image_url;
+        } else {
+          loadingOverlay.classList.add("hidden");
+          showToast("Aucune image renvoyée par le service IA.", "warning");
+        }
+      } catch (err) {
+        loadingOverlay.classList.add("hidden");
+        console.error("AI Edit Error:", err);
+        showToast("Erreur IA: " + err.message, "error");
+      }
+    }
+
+    // Clic : Rendre l'image crédible en 3D
+    btnMakeCredible3D.addEventListener("click", () => {
+      performAiImageEdit("credible_3d");
+    });
+
+    // Clic : Appliquer la modification par prompt
+    btnApplyAiEdit.addEventListener("click", () => {
+      const promptVal = inputAiImagePrompt.value.trim();
+      if (!promptVal && currentAiEditMode !== "complete") {
+        showToast("Veuillez saisir une description de modification.", "warning");
+        return;
+      }
+      performAiImageEdit(currentAiEditMode, promptVal);
+    });
+
+    inputAiImagePrompt.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        btnApplyAiEdit.click();
+      }
     });
 
     // CLIENT-SIDE 3D FILE IMPORT (.GLB, .OBJ, .STL)

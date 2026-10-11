@@ -454,30 +454,44 @@ async def generate_from_prompt(
 
 @app.post("/api/edit-image-prompt")
 async def edit_image_prompt(
-    edit_prompt: str = Form(...),
+    edit_prompt: Optional[str] = Form(""),
     base_prompt: Optional[str] = Form(""),
-    action_type: str = Form("modify"), # modify, add, remove, complete
+    filename: Optional[str] = Form(None),
+    action_type: str = Form("modify"), # modify, add, remove, complete, credible_3d
     style: str = Form("figurine"),
     target_height_mm: float = Form(100.0),
     base_thickness_mm: float = Form(4.5),
     add_base: bool = Form(True),
     engine_mode: str = Form("ultra"),
-    rebuild_3d: bool = Form(True)
+    rebuild_3d: bool = Form(False)
 ):
-    """Retouche et modification d'une image via prompt IA (Ajout, Suppression, Reconstitution)."""
+    """Retouche et modification d'une image via prompt IA (Ajout, Suppression, Reconstitution, Modélisation 3D crédible)."""
     import urllib.request
     import urllib.parse
     import random
 
-    edit_clean = edit_prompt.strip()
-    if not edit_clean:
-        raise HTTPException(status_code=400, detail="La description de modification ne peut pas être vide.")
-
+    edit_clean = (edit_prompt or "").strip()
     base_clean = (base_prompt or "").strip()
+    
+    # Si base_prompt est vide mais qu'un filename est fourni, dériver le sujet du nom de fichier
+    if not base_clean and filename:
+        clean_name = os.path.splitext(os.path.basename(filename))[0]
+        # Nettoyage des préfixes techniques
+        for prefix in ["upload_", "edit_", "preview_edit_", "preview_"]:
+            if clean_name.startswith(prefix):
+                clean_name = clean_name[len(prefix):]
+        # Suppression des hash hexadécimaux
+        parts = clean_name.replace("_", " ").replace("-", " ").split()
+        meaningful_parts = [p for p in parts if len(p) > 2 and not all(c in '0123456789abcdef' for c in p.lower())]
+        base_clean = " ".join(meaningful_parts) if meaningful_parts else clean_name
+
     out_id = str(uuid.uuid4())[:8]
 
     # Synthèse intelligente du prompt d'édition
-    if action_type == "add":
+    if action_type == "credible_3d":
+        subject_name = edit_clean if edit_clean else (base_clean if base_clean else "character or vehicle")
+        subject_desc = f"solid collectible 3D figurine sculpt of {subject_name}, sturdy mechanical geometry, complete solid continuous wheels and frame, unbroken structural limbs, thick printable parts, studio product photography, clean isolated pure white background, perfectly proportioned, watertight sculpt, no floating threads, no thin wires, suitable for Bambu Lab 3D printing"
+    elif action_type == "add":
         if base_clean:
             subject_desc = f"{base_clean}, with added {edit_clean}, finely detailed, seamlessly integrated"
         else:
@@ -489,14 +503,16 @@ async def edit_image_prompt(
             subject_desc = f"{base_clean}, simple clean form"
     elif action_type == "complete":
         if base_clean:
-            subject_desc = f"fully reconstituted and restored 3D model of {base_clean}, with {edit_clean} completely restored and intact, full body, complete wheels and limbs, no missing parts, unbroken geometry"
+            subject_desc = f"fully reconstituted and restored 3D model of {base_clean}, with {edit_clean if edit_clean else 'all missing parts'} completely restored and intact, full body, complete wheels and limbs, no missing parts, unbroken geometry"
         else:
             subject_desc = f"fully completed and reconstituted model of {edit_clean}, complete features, no cut-off parts"
     else: # modify / default
-        if base_clean:
+        if base_clean and edit_clean:
             subject_desc = f"{base_clean}, modified with: {edit_clean}"
-        else:
+        elif edit_clean:
             subject_desc = f"{edit_clean}"
+        else:
+            subject_desc = f"{base_clean} collectible figurine"
 
     if style == "relief":
         enhanced_prompt = (

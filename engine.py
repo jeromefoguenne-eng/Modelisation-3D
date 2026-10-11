@@ -638,15 +638,17 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
         
         front_rgb = img_arr[py, px, :3]
         
-        # Pondération angulaire stricte anti-fantôme :
-        facing_factor = np.clip(-normals[:, 1], 0.0, 1.0) ** 1.4
+        # Pondération angulaire subtile pour un ombrage naturel 3D sans écrasement en blanc
+        facing_factor = np.clip(-normals[:, 1], 0.0, 1.0)
         
-        # Teinte naturelle douce porcelaine/argile pour le dos
-        coat_color = np.array([238, 232, 224], dtype=float)
+        # Coloration réaliste 360° : les faces orientées vers l'arrière ou les côtés
+        # conservent les teintes du modèle avec une atténuation d'ombrage douce (0.75 - 0.95)
+        # plutôt qu'un écrasement en blanc craie artificiel
+        shade = 0.78 + 0.22 * facing_factor
         
         colors_final = np.zeros((len(v), 4), dtype=np.uint8)
         for c in range(3):
-            blended = front_rgb[:, c].astype(float) * facing_factor + coat_color[c] * (1.0 - facing_factor)
+            blended = front_rgb[:, c].astype(float) * shade
             colors_final[:, c] = np.clip(blended, 0, 255).astype(np.uint8)
         colors_final[:, 3] = 255 # 100% Opaque, aucune translucidité fantôme
         
@@ -671,6 +673,27 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
     except Exception as e_tex:
         print(f"[Texture] Notice projection exacte: {e_tex}")
     return m
+
+
+def clean_needle_and_stretched_faces(mesh: trimesh.Trimesh, max_edge_len_ratio: float = 6.0, max_abs_edge: float = 14.0) -> trimesh.Trimesh:
+    """Élimine les triangles étirés et aiguilles parasites qui relient des parties éloignées dans le vide."""
+    if len(mesh.faces) == 0:
+        return mesh
+    v0 = mesh.vertices[mesh.faces[:, 0]]
+    v1 = mesh.vertices[mesh.faces[:, 1]]
+    v2 = mesh.vertices[mesh.faces[:, 2]]
+    d01 = np.linalg.norm(v1 - v0, axis=1)
+    d12 = np.linalg.norm(v2 - v1, axis=1)
+    d20 = np.linalg.norm(v0 - v2, axis=1)
+    edges = np.column_stack([d01, d12, d20])
+    max_e = np.max(edges, axis=1)
+    min_e = np.maximum(np.min(edges, axis=1), 1e-6)
+    aspect = max_e / min_e
+    
+    valid_faces = (aspect < max_edge_len_ratio) & (max_e < max_abs_edge)
+    if np.sum(valid_faces) > len(mesh.faces) * 0.4:
+        return mesh.submesh([valid_faces], append=True)
+    return mesh
 
 
 def generate_mode3_hunyuan_sota(
@@ -795,22 +818,16 @@ def generate_mode3_hunyuan_sota(
     # 1. Orientation repère standard Bambu Studio (+90 deg sur X pour poser la sculpture sur ses pattes/base)
     R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
     raw_mesh.apply_transform(R_z_up)
-
-    # 2. Nettoyage strict des floaters et élimination des fils parasites
-    components = raw_mesh.split(only_watertight=False)
+    # 2. Nettoyage strict des floaters et élimination des fils et aiguilles parasites
+    m = clean_needle_and_stretched_faces(raw_mesh)
+    components = m.split(only_watertight=False)
     if len(components) > 1:
         components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
         max_faces = len(components_sorted[0].faces)
-        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.10]
+        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.08]
         m = trimesh.util.concatenate(kept)
-    else:
-        m = raw_mesh
         
     m.fix_normals()
-    try:
-        m.fill_holes()
-    except Exception:
-        pass
     
     # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
