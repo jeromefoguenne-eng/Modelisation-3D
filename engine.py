@@ -666,15 +666,30 @@ def generate_mode3_hunyuan_sota(
             api_name="/shape_generation"
         )
     else:
+        cap = caption or ""
+        cap_lower = cap.lower()
+        if any(w in cap_lower for w in ["cyclist", "cycliste", "velo", "vélo", "bike", "bicycle"]):
+            dit_caption = (
+                "full racing road bicycle with two wheels front wheel and rear wheel, "
+                "complete carbon bike frame, saddle, pedals, cyclist riding bicycle"
+            )
+            dit_guidance = 6.5
+        elif cap:
+            dit_caption = f"complete 3d solid printable sculpture of {cap}, full 360 geometry"
+            dit_guidance = guidance_scale
+        else:
+            dit_caption = "complete 3d solid printable sculpture, full 360 geometry"
+            dit_guidance = guidance_scale
+
         res = client.predict(
-            caption=caption or "high detailed 3d sculpture",
+            caption=dit_caption,
             image=handle_file(temp_in),
             mv_image_front=None,
             mv_image_back=None,
             mv_image_left=None,
             mv_image_right=None,
             steps=steps,
-            guidance_scale=guidance_scale,
+            guidance_scale=dit_guidance,
             seed=1234,
             octree_resolution=octree_resolution,
             check_box_rembg=rembg_flag,
@@ -697,17 +712,21 @@ def generate_mode3_hunyuan_sota(
     R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
     raw_mesh.apply_transform(R_z_up)
 
-    # 2. Nettoyage des floaters
+    # 2. Nettoyage strict des floaters et élimination des fils parasites
     components = raw_mesh.split(only_watertight=False)
     if len(components) > 1:
         components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
         max_faces = len(components_sorted[0].faces)
-        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.03]
+        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.10]
         m = trimesh.util.concatenate(kept)
     else:
         m = raw_mesh
         
     m.fix_normals()
+    try:
+        m.fill_holes()
+    except Exception:
+        pass
     
     # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
