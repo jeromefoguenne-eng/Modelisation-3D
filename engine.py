@@ -513,21 +513,50 @@ print('TripoSR completed!')
     return combined
 
 
+def create_parametric_bone_tag(scale: float = 0.009) -> trimesh.Trimesh:
+    """Crée une médaille 3D en forme d'os sculptée avec anneau de suspension."""
+    width = 16.0 * scale
+    height = 9.0 * scale
+    thick = 2.4 * scale
+    lobe_r = 3.2 * scale
+    
+    w_body = width - lobe_r * 2
+    h_body = height - lobe_r * 0.8
+    body = trimesh.creation.box(extents=[w_body, thick, h_body])
+    
+    lobes = []
+    for dx in [-w_body/2, w_body/2]:
+        for dz in [-h_body/2, h_body/2]:
+            cyl = trimesh.creation.cylinder(radius=lobe_r, height=thick, sections=16)
+            R = trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0])
+            cyl.apply_transform(R)
+            cyl.apply_translation([dx, 0, dz])
+            lobes.append(cyl)
+            
+    ring = trimesh.creation.annulus(r_min=1.8*scale, r_max=2.8*scale, height=1.4*scale, sections=16)
+    R = trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0])
+    ring.apply_transform(R)
+    ring.apply_translation([0, 0, h_body/2 + 2.0*scale])
+    
+    bone = trimesh.util.concatenate([body] + lobes + [ring])
+    return bone
+
+
 def generate_mode3_hunyuan_sota(
     image: Image.Image,
     caption: Optional[str] = None,
     target_height_mm: float = 80.0,
     with_base: bool = True,
     base_height_mm: float = 4.5,
-    steps: int = 25,
-    guidance_scale: float = 5.0,
-    octree_resolution: int = 256,
+    steps: int = 30,
+    guidance_scale: float = 5.5,
+    octree_resolution: int = 384,
     hf_token: Optional[str] = None
 ) -> trimesh.Trimesh:
     """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2.1) :
-    Modélisation 3D neuronale par diffusion (DiT) produisant des sculptures complètes à 360°,
-    étanches (watertight), avec détails anatomiques et transfert de couleurs photoréalistes,
-    100% optimisées pour Bambu Lab A1 Mini.
+    Modélisation 3D neuronale haute fidélité (octree=384, steps=30) produisant des sculptures
+    complètes à 360°, étanches (watertight), avec détails anatomiques fins, lissage Taubin
+    anti-crénelage et transfert de couleurs photoréalistes sans vides, optimisées pour Bambu Lab A1 Mini.
     """
     import truststore
     truststore.inject_into_ssl()
@@ -554,7 +583,6 @@ def generate_mode3_hunyuan_sota(
     else:
         client = Client("tencent/Hunyuan3D-2.1")
         
-    # Détection intelligente du détourage : si l'image a déjà un canal alpha transparent, ne pas forcer rembg
     has_alpha = False
     try:
         if image.mode == "RGBA":
@@ -565,7 +593,7 @@ def generate_mode3_hunyuan_sota(
         has_alpha = False
 
     rembg_flag = False if has_alpha else True
-    print(f"[Hunyuan3D-2.1] Génération volumétrique de la géométrie 3D (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
+    print(f"[Hunyuan3D-2.1] Génération géométrique HD (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
     res = client.predict(
         image=handle_file(temp_in),
         mv_image_front=None,
@@ -592,11 +620,7 @@ def generate_mode3_hunyuan_sota(
         
     shutil.rmtree(temp_dir, ignore_errors=True)
     
-    # 1. Orientation repère standard Bambu Studio (+90 deg sur X pour poser la sculpture sur ses pattes/base)
-    R = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
-    raw_mesh.apply_transform(R)
-    
-    # 2. Nettoyage des éventuels éclats et floaters isolés
+    # Nettoyage des floaters
     components = raw_mesh.split(only_watertight=False)
     if len(components) > 1:
         components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
@@ -606,54 +630,107 @@ def generate_mode3_hunyuan_sota(
     else:
         m = raw_mesh
         
+    # Lissage anti-marches d'escalier Taubin
+    smoothing.filter_taubin(m, lamb=0.35, nu=-0.36, iterations=8)
     m.fix_normals()
     
+    # Détection et ajout de médaille / accessoire pour canidés / animaux
+    is_dog = False
+    cap_lower = (caption or "").lower()
+    if any(k in cap_lower for k in ["chien", "dog", "dalmatien", "collier", "bone", "os", "chiot"]):
+        is_dog = True
+    else:
+        # Analyse des dimensions anatomiques (animal assis)
+        ext = m.extents
+        if ext[2] > ext[1] and ext[2] > ext[0] * 1.4:
+            is_dog = True
+            
+    if is_dog:
+        try:
+            bone = create_parametric_bone_tag(scale=0.009)
+            R_tilt = trimesh.transformations.rotation_matrix(np.radians(-10), [1, 0, 0])
+            bone.apply_transform(R_tilt)
+            # Positionnement sur le cou
+            bone.apply_translation([0.065, -0.412, 0.020])
+            m = trimesh.util.concatenate([m, bone])
+            m.fix_normals()
+            print("[Hunyuan3D-2.1] Médaille sculptée 3D en forme d'os intégrée au collier.")
+        except Exception as e_bone:
+            print(f"[Hunyuan3D-2.1] Notice médaille: {e_bone}")
+
     # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
-    # 3. Projection photoréaliste des couleurs de l'image source sur le maillage
+    # 3. Projection photoréaliste des textures avec Alpha Bleed et remplissage 360°
     try:
-        img_w, img_h = image.size
+        from scipy.ndimage import distance_transform_edt
+        img_rgb = image.convert("RGB")
+        w_img, h_img = image.size
+        img_arr = np.array(img_rgb)
+        
         if image.mode == "RGBA":
             alpha_arr = np.array(image)[:, :, 3]
-            y_idx, x_idx = np.where(alpha_arr > 20)
-            if len(x_idx) > 0 and len(y_idx) > 0:
-                crop_x0, crop_x1 = int(x_idx.min()), int(x_idx.max())
-                crop_y0, crop_y1 = int(y_idx.min()), int(y_idx.max())
-                pad_x = int((crop_x1 - crop_x0) * 0.015)
-                pad_y = int((crop_y1 - crop_y0) * 0.015)
-                crop_x0 = max(0, crop_x0 - pad_x)
-                crop_x1 = min(img_w - 1, crop_x1 + pad_x)
-                crop_y0 = max(0, crop_y0 - pad_y)
-                crop_y1 = min(img_h - 1, crop_y1 + pad_y)
-                cropped_img = image.crop((crop_x0, crop_y0, crop_x1, crop_y1))
+            alpha_mask = alpha_arr > 30
+            if np.any(alpha_mask):
+                indices = distance_transform_edt(~alpha_mask, return_distances=False, return_indices=True)
+                dilated_img = img_arr[indices[0], indices[1]]
             else:
-                cropped_img = image
+                dilated_img = img_arr
         else:
-            cropped_img = image
-
-        rgb_img = cropped_img.convert("RGB")
-        w_img, h_img = rgb_img.size
-        img_arr = np.array(rgb_img)
-        v = m.vertices
+            dilated_img = img_arr
+            
+        fov = 38.0
+        cam_dist = 2.65
+        cam_z = m.extents[2] * 0.49
+        cam_pos = np.array([0.0, -cam_dist, cam_z])
         
-        min_x, max_x = m.bounds[0][0], m.bounds[1][0]
-        min_z, max_z = m.bounds[0][2], m.bounds[1][2]
-        u = np.clip((v[:, 0] - min_x) / max(0.001, (max_x - min_x)), 0.0, 1.0)
-        v_coord = np.clip(1.0 - (v[:, 2] - min_z) / max(0.001, (max_z - min_z)), 0.0, 1.0)
-        px = np.clip((u * (w_img - 1)).astype(int), 0, w_img - 1)
-        py = np.clip((v_coord * (h_img - 1)).astype(int), 0, h_img - 1)
+        v = m.vertices.copy()
+        normals = m.vertex_normals
+        zc = v[:, 1] - cam_pos[1]
+        focal = (h_img / 2.0) / np.tan(np.radians(fov) / 2.0)
         
-        front_colors = img_arr[py, px]
-        colors_final = np.zeros((len(v), 4), dtype=np.uint8)
-        colors_final[:, :3] = front_colors
-        colors_final[:, 3] = 255
-        m.visual.vertex_colors = colors_final
+        px = np.clip(((v[:, 0] - cam_pos[0]) / zc * focal + (w_img * 0.50)).astype(int), 0, w_img - 1)
+        py = np.clip((-(v[:, 2] - cam_pos[2]) / zc * focal + (h_img * 0.50)).astype(int), 0, h_img - 1)
+        
+        facing = -normals[:, 1]
+        
+        # Échantillonnage du pelage / matière sur les flancs pour le dos
+        flank_y0 = int(h_img * 0.50)
+        flank_y1 = int(h_img * 0.75)
+        flank_x0 = int(w_img * 0.20)
+        flank_x1 = int(w_img * 0.45)
+        flank_crop = img_arr[flank_y0:flank_y1, flank_x0:flank_x1]
+        flank_flat = flank_crop.reshape(-1, 3)
+        if len(flank_flat) > 0:
+            np.random.seed(42)
+            coat_samples = flank_flat[np.random.choice(len(flank_flat), len(v))]
+        else:
+            coat_samples = dilated_img[py, px]
+            
+        colors = np.zeros((len(v), 4), dtype=np.uint8)
+        front_colors = dilated_img[py, px]
+        
+        for i in range(len(v)):
+            f = facing[i]
+            if (f > 0.0) and (v[i, 1] < 0.15):
+                w = np.clip(f / 0.40, 0.0, 1.0)
+                col = (front_colors[i] * w + coat_samples[i] * (1.0 - w)).astype(np.uint8)
+                colors[i, :3] = col
+            else:
+                colors[i, :3] = coat_samples[i]
+            colors[i, 3] = 255
+            
+        if is_dog:
+            # Rehausser la médaille en or brossé
+            is_bone_vert = (v[:, 1] < -0.38) & (v[:, 2] > -0.05) & (v[:, 2] < 0.10) & (np.abs(v[:, 0] - 0.065) < 0.08)
+            colors[is_bone_vert, :3] = [235, 195, 115]
+            
+        m.visual.vertex_colors = colors
     except Exception as e_col:
         print(f"[Hunyuan3D-2.1] Notice texturation: {e_col}")
-    
+        
     # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     current_h = max(0.001, m.extents[2])
     scale = target_height_mm / current_h
@@ -676,8 +753,14 @@ def generate_mode3_hunyuan_sota(
     base_mesh.apply_scale([base_rx, base_ry, 1.0])
     base_mesh.apply_translation([0, 0, base_height_mm / 2.0])
     
-    # Encastrement de 1.2 mm dans le socle
-    m.apply_translation([0, 0, base_height_mm - 1.2])
+    # Teinte socle gris graphite élégant
+    base_col = np.zeros((len(base_mesh.vertices), 4), dtype=np.uint8)
+    base_col[:, :3] = [38, 42, 50]
+    base_col[:, 3] = 255
+    base_mesh.visual.vertex_colors = base_col
+    
+    # Encastrement de 1.0 mm dans le socle
+    m.apply_translation([0, 0, base_height_mm - 1.0])
     
     combined = trimesh.util.concatenate([m, base_mesh])
     combined.fix_normals()
