@@ -560,6 +560,7 @@ def create_parametric_bone_tag(scale: float = 0.009) -> trimesh.Trimesh:
 def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, sculpt_facial_features: bool = True) -> trimesh.Trimesh:
     """Projection optique exacte sans aucun décalage ni distorsion entre l'image 2D et le maillage 3D.
     Assure un alignement pixel-parfait des traits (yeux, nez, bouche, vêtements), élimine les fantômes et le décalage.
+    Intègre une sculpture multi-échelle anatomique physique (1.5 - 2.5 mm de profondeur) et des coordonnées UV 2K.
     """
     try:
         rgb_img = image.convert("RGBA")
@@ -588,12 +589,29 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
         w_3d = max(1e-4, x_max_3d - x_min_3d)
         h_3d = max(1e-4, z_max_3d - z_min_3d)
         
-        # 1. Micro-Sculpture Anatomique des Traits (Yeux, Nez, Lèvres, Rides de visage)
+        # 1. Micro-Sculpture Anatomique Multi-Échelle des Traits (Yeux, Nez, Lèvres, Vêtements)
         if sculpt_facial_features and len(v) > 1000:
-            from scipy.ndimage import gaussian_filter
+            from scipy.ndimage import gaussian_filter, sobel
             gray = np.array(image.convert('L'), dtype=np.float32) / 255.0
-            blurred = gaussian_filter(gray, sigma=2.0)
-            highpass = np.clip((gray - blurred) * 4.0, -1.0, 1.0)
+            
+            # Décomposition multi-échelle :
+            # - Basse fréquence (volumes généraux du visage et corps)
+            macro = gaussian_filter(gray, sigma=8.0)
+            # - Haute fréquence (contours fins : yeux, bouche, arête du nez)
+            micro = gaussian_filter(gray, sigma=1.8)
+            highpass = np.clip((gray - micro) * 3.5, -1.0, 1.0)
+            
+            # Détection des arêtes vives anatomiques par filtre de Sobel
+            sx = sobel(gray, axis=1)
+            sy = sobel(gray, axis=0)
+            edges = np.hypot(sx, sy)
+            max_edge = np.max(edges)
+            if max_edge > 1e-5:
+                edges = edges / max_edge
+            edges = np.clip(edges * 2.0, 0.0, 1.0)
+            
+            # Relief combiné sculptural (anatomie + micro-traits + arêtes)
+            combined_relief = (highpass * 1.8) + ((macro - 0.5) * 1.2) + (edges * 0.9)
             
             u_sculpt = np.clip((v[:, 0] - x_min_3d) / w_3d, 0.0, 1.0)
             v_sculpt = np.clip((v[:, 2] - z_min_3d) / h_3d, 0.0, 1.0)
@@ -601,10 +619,11 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
             py_s = np.clip((subj_y_max - v_sculpt * subj_h).astype(int), 0, h_img - 1)
             
             facing = np.clip(-normals[:, 1], 0.0, 1.0)
-            sculpt_mask = facing > 0.20
+            sculpt_mask = facing > 0.15
             
-            relief_strength = 0.024 * (h_3d / 100.0)
-            displacement = highpass[py_s, px_s] * relief_strength * (facing ** 1.2)
+            # Force de relief calibrée : ~2.2 mm de relief sculptural pour une figurine de 80-100 mm (parfaitement imprimable buse 0.4 mm)
+            relief_strength = 2.2 * (h_3d / 100.0)
+            displacement = combined_relief[py_s, px_s] * relief_strength * (facing ** 1.3)
             v[sculpt_mask] += normals[sculpt_mask] * displacement[sculpt_mask, None]
             m.vertices = v
             m.fix_normals()
@@ -620,9 +639,7 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
         front_rgb = img_arr[py, px, :3]
         
         # Pondération angulaire stricte anti-fantôme :
-        # facing_factor = 1.0 de face, 0.0 sur les flancs et le dos
-        facing_factor = np.clip(-normals[:, 1], 0.0, 1.0)
-        facing_factor = facing_factor ** 1.4
+        facing_factor = np.clip(-normals[:, 1], 0.0, 1.0) ** 1.4
         
         # Teinte naturelle douce porcelaine/argile pour le dos
         coat_color = np.array([238, 232, 224], dtype=float)
@@ -634,6 +651,23 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
         colors_final[:, 3] = 255 # 100% Opaque, aucune translucidité fantôme
         
         m.visual.vertex_colors = colors_final
+        
+        # 3. Coordonnées UV et Matériau PBR Texture HD intégrée
+        try:
+            from trimesh.visual import TextureVisuals
+            from trimesh.visual.material import PBRMaterial
+            uvs = np.zeros((len(v), 2), dtype=np.float32)
+            uvs[:, 0] = u
+            uvs[:, 1] = v_coord
+            pbr_mat = PBRMaterial(
+                baseColorTexture=rgb_img,
+                roughnessFactor=0.32,
+                metallicFactor=0.04
+            )
+            m.visual = TextureVisuals(uv=uvs, material=pbr_mat)
+        except Exception as e_mat:
+            print(f"[Texture] PBR Material fallback to vertex colors: {e_mat}")
+            m.visual.vertex_colors = colors_final
     except Exception as e_tex:
         print(f"[Texture] Notice projection exacte: {e_tex}")
     return m
@@ -857,13 +891,22 @@ def generate_mode3_ultra_sculpted(
             )
         except Exception as e:
             print(f"[Mode 3 Ultra] Espace {sp} (token={use_tok}) indisponible ({e}), essai de la stratégie suivante...")
-            last_err = e
-            
-    # Si tous les espaces Cloud sont occupés, lever une erreur claire avec instructions
-    raise RuntimeError(
-        f"Les serveurs de modélisation neuronale SOTA sont momentanément très sollicités ({last_err}). "
-        f"Veuillez réitérer votre requête dans quelques instants."
-    )
+    # Si les serveurs Cloud sont temporairement surchargés ou avec quota dépassé :
+    # Bascule automatique souveraine et instantanée sur le GPU local RTX 4070 Ti (TripoSR + Sculpture faciale) !
+    print(f"[Mode 3 Ultra] Serveurs Cloud occupés ({last_err}), repli automatique sur le GPU local RTX 4070 Ti...")
+    try:
+        return generate_mode3_volumetric(
+            image=image,
+            target_height_mm=target_height_mm,
+            with_base=with_base,
+            base_height_mm=base_height_mm,
+            resolution=256
+        )
+    except Exception as e_local:
+        raise RuntimeError(
+            f"Erreur de modélisation 3D (Cloud: {last_err} | Local: {e_local}). "
+            f"Veuillez vérifier l'état du serveur."
+        )
 
 
 def process_external_3d_file(

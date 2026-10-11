@@ -1651,6 +1651,124 @@
       }
     }
 
+    // ----------------------------------------------------
+    // TEXTURES HD & NORMAL MAP DÉRIVÉES DE L'IMAGE SOURCE (Fidélité des traits 1:1)
+    // ----------------------------------------------------
+    let imageDerivedNormalMap = null;
+    let imageDerivedAlbedoTexture = null;
+
+    function updateImageDerivedTextures() {
+      const img = currentImageElement || imagePreview;
+      if (!img) return null;
+      const nw = img.naturalWidth || img.width || 0;
+      const nh = img.naturalHeight || img.height || 0;
+      if (nw === 0 || nh === 0) return null;
+
+      const w = Math.min(1024, nw);
+      const h = Math.min(1024, nh);
+
+      // 1. Texture Albedo HD native 1024x1024
+      const cAlb = document.createElement("canvas");
+      cAlb.width = w;
+      cAlb.height = h;
+      const ctxAlb = cAlb.getContext("2d");
+      ctxAlb.drawImage(img, 0, 0, w, h);
+
+      if (imageDerivedAlbedoTexture) imageDerivedAlbedoTexture.dispose();
+      imageDerivedAlbedoTexture = new THREE.CanvasTexture(cAlb);
+      imageDerivedAlbedoTexture.colorSpace = THREE.SRGBColorSpace;
+      imageDerivedAlbedoTexture.wrapS = THREE.ClampToEdgeWrapping;
+      imageDerivedAlbedoTexture.wrapT = THREE.ClampToEdgeWrapping;
+      imageDerivedAlbedoTexture.anisotropy = 8;
+      imageDerivedAlbedoTexture.needsUpdate = true;
+
+      // 2. Normal Map Tangentielle calculée par gradient de Sobel 2D
+      // Extrait les yeux, le nez, les commissures des lèvres, les mèches et les plis de vêtements
+      const cNorm = document.createElement("canvas");
+      cNorm.width = w;
+      cNorm.height = h;
+      const ctxNorm = cNorm.getContext("2d");
+      ctxNorm.drawImage(img, 0, 0, w, h);
+
+      const srcData = ctxNorm.getImageData(0, 0, w, h).data;
+      const outImgData = ctxNorm.createImageData(w, h);
+      const outData = outImgData.data;
+
+      const lum = new Float32Array(w * h);
+      for (let i = 0; i < w * h; i++) {
+        const a = srcData[i * 4 + 3] / 255.0;
+        const l = (srcData[i * 4] * 0.299 + srcData[i * 4 + 1] * 0.587 + srcData[i * 4 + 2] * 0.114) / 255.0;
+        lum[i] = l * a;
+      }
+
+      const strength = 4.2;
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = y * w + x;
+          const gx = (
+            -1.0 * lum[(y - 1) * w + (x - 1)] + 1.0 * lum[(y - 1) * w + (x + 1)] +
+            -2.0 * lum[y * w + (x - 1)]       + 2.0 * lum[y * w + (x + 1)] +
+            -1.0 * lum[(y + 1) * w + (x - 1)] + 1.0 * lum[(y + 1) * w + (x + 1)]
+          );
+          const gy = (
+            -1.0 * lum[(y - 1) * w + (x - 1)] - 2.0 * lum[(y - 1) * w + x] - 1.0 * lum[(y - 1) * w + (x + 1)] +
+             1.0 * lum[(y + 1) * w + (x - 1)] + 2.0 * lum[(y + 1) * w + x] + 1.0 * lum[(y + 1) * w + (x + 1)]
+          );
+
+          let nx = -gx * strength;
+          let ny = -gy * strength;
+          let nz = 1.0;
+          const invLen = 1.0 / Math.hypot(nx, ny, nz);
+          nx *= invLen;
+          ny *= invLen;
+          nz *= invLen;
+
+          const pIdx = idx * 4;
+          outData[pIdx]     = Math.floor((nx * 0.5 + 0.5) * 255);
+          outData[pIdx + 1] = Math.floor((ny * 0.5 + 0.5) * 255);
+          outData[pIdx + 2] = Math.floor((nz * 0.5 + 0.5) * 255);
+          outData[pIdx + 3] = 255;
+        }
+      }
+      ctxNorm.putImageData(outImgData, 0, 0);
+
+      if (imageDerivedNormalMap) imageDerivedNormalMap.dispose();
+      imageDerivedNormalMap = new THREE.CanvasTexture(cNorm);
+      imageDerivedNormalMap.wrapS = THREE.ClampToEdgeWrapping;
+      imageDerivedNormalMap.wrapT = THREE.ClampToEdgeWrapping;
+      imageDerivedNormalMap.needsUpdate = true;
+      return imageDerivedNormalMap;
+    }
+
+    function getImageDerivedNormalMap() {
+      if (imageDerivedNormalMap) return imageDerivedNormalMap;
+      return updateImageDerivedTextures() || getFineNoiseNormalMap();
+    }
+
+    // Assure des coordonnées UV 0..1 projetées sans distorsion pour tout maillage (STL, GLB, figurine)
+    function ensurePlanarUVs(geometry) {
+      if (!geometry || !geometry.attributes || !geometry.attributes.position) return;
+      if (geometry.attributes.uv) return; // Déjà présent
+      geometry.computeBoundingBox();
+      const box = geometry.boundingBox;
+      const minX = box.min.x, maxX = box.max.x;
+      const minZ = box.min.z, maxZ = box.max.z;
+      const rangeX = Math.max(1e-4, maxX - minX);
+      const rangeZ = Math.max(1e-4, maxZ - minZ);
+
+      const pos = geometry.attributes.position;
+      const count = pos.count;
+      const uvs = new Float32Array(count * 2);
+
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        uvs[i * 2]     = THREE.MathUtils.clamp((x - minX) / rangeX, 0, 1);
+        uvs[i * 2 + 1] = THREE.MathUtils.clamp((z - minZ) / rangeZ, 0, 1);
+      }
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    }
+
     // Texture de Normal Map Micro-Finesse Procédurale (Tactile Pores / Micro-Grain)
     let fineNoiseNormalMap = null;
     function getFineNoiseNormalMap() {
@@ -2263,7 +2381,7 @@
       if (!meshObject) return;
 
       clearStyleOverlays();
-      const normMap = getFineNoiseNormalMap();
+      const normMap = getImageDerivedNormalMap();
       const userColor = new THREE.Color(currentSingleColor || "#f8fafc");
 
       // Rétablissement STRICT et garanti de la modélisation de départ 100% intacte sans distorsion
@@ -2375,22 +2493,26 @@
             newMat.depthWrite = true;
             newMat.depthTest = true;
             newMat.side = THREE.FrontSide;
-          } else if (meshObject.userData && meshObject.userData.hasVertexColors) {
+          } else {
+            const hasVCol = Boolean(meshObject.userData && meshObject.userData.hasVertexColors);
             newMat = new THREE.MeshStandardMaterial({
-              vertexColors: true,
+              vertexColors: hasVCol && !imageDerivedAlbedoTexture,
               color: 0xffffff,
-              roughness: 0.35,
-              metalness: 0.05,
+              roughness: 0.32,
+              metalness: 0.04,
               depthWrite: true,
               depthTest: true,
               side: THREE.FrontSide
             });
-          } else {
-            newMat = (materials[currentMaterialName] || materials.basic).clone();
-            newMat.transparent = false;
-            newMat.opacity = 1.0;
-            newMat.depthWrite = true;
-            newMat.side = THREE.FrontSide;
+          }
+          // Lier immédiatement la texture HD native et la Normal Map des traits
+          if (imageDerivedAlbedoTexture) {
+            newMat.map = imageDerivedAlbedoTexture;
+            newMat.vertexColors = false;
+          }
+          if (normMap) {
+            newMat.normalMap = normMap;
+            newMat.normalScale = new THREE.Vector2(0.85, 0.85);
           }
           break;
 
@@ -2399,13 +2521,13 @@
           // Volume Intégral Studio HD : Sculpture Fine PBR Monochrome avec Micro-Reliefs
           newMat = new THREE.MeshPhysicalMaterial({
             color: userColor,
-            roughness: 0.32,
+            roughness: 0.30,
             metalness: 0.05,
-            clearcoat: 0.55,
+            clearcoat: 0.60,
             clearcoatRoughness: 0.12,
             reflectivity: 0.55,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
+            normalScale: new THREE.Vector2(0.95, 0.95)
           });
           break;
 
@@ -2495,15 +2617,19 @@
           // Effet Photoréaliste PBR Studio (Image 2)
           const hasVCol = Boolean(meshObject.userData && meshObject.userData.hasVertexColors);
           newMat = new THREE.MeshPhysicalMaterial({
-            vertexColors: hasVCol,
-            color: hasVCol ? 0xffffff : userColor,
-            roughness: 0.30,
+            map: imageDerivedAlbedoTexture || null,
+            vertexColors: hasVCol && !imageDerivedAlbedoTexture,
+            color: (hasVCol || imageDerivedAlbedoTexture) ? 0xffffff : userColor,
+            roughness: 0.28,
             metalness: 0.04,
-            clearcoat: 0.35,
-            clearcoatRoughness: 0.20,
-            reflectivity: 0.65,
-            normalMap: getSkinPoresNormalMap(),
-            normalScale: new THREE.Vector2(0.45, 0.45)
+            clearcoat: 0.45,
+            clearcoatRoughness: 0.15,
+            reflectivity: 0.70,
+            normalMap: normMap || getSkinPoresNormalMap(),
+            normalScale: new THREE.Vector2(0.85, 0.85),
+            depthWrite: true,
+            depthTest: true,
+            side: THREE.FrontSide
           });
           break;
 
@@ -2793,6 +2919,8 @@
         }
       }
 
+      ensurePlanarUVs(geometry);
+      updateImageDerivedTextures();
       geometry.computeVertexNormals();
       const hasColors = !!(geometry.attributes && geometry.attributes.color && geometry.attributes.color.count > 0);
       let mat = customMaterial;
@@ -2884,6 +3012,8 @@
       document.getElementById("loadingSubtitle").textContent = "Lecture et placement sur le plateau Bambu Lab";
 
       stlLoader.load(url, (geometry) => {
+        ensurePlanarUVs(geometry);
+        updateImageDerivedTextures();
         setActiveMesh(geometry);
         loadingOverlay.classList.add("hidden");
         if (callback) callback();
@@ -2924,6 +3054,9 @@
             mergedGeom = geometries[0];
           }
 
+          ensurePlanarUVs(mergedGeom);
+          updateImageDerivedTextures();
+
           // Nettoyer et sécuriser le matériau pour éviter la transparence fantomatique et les décalages
           if (primaryMat) {
             primaryMat.transparent = false;
@@ -2931,8 +3064,15 @@
             primaryMat.depthWrite = true;
             primaryMat.depthTest = true;
             primaryMat.side = THREE.FrontSide;
+            if (!primaryMat.map && imageDerivedAlbedoTexture) {
+              primaryMat.map = imageDerivedAlbedoTexture;
+            }
             if (primaryMat.map) {
               primaryMat.map.needsUpdate = true;
+            }
+            if (!primaryMat.normalMap && imageDerivedNormalMap) {
+              primaryMat.normalMap = imageDerivedNormalMap;
+              primaryMat.normalScale = new THREE.Vector2(0.85, 0.85);
             }
           }
 
@@ -3451,6 +3591,7 @@
 
       const vertices = [];
       const colors = [];
+      const uvs = [];
       const indices = [];
       const frontIdx = new Int32Array(gw * gh).fill(-1);
       const backIdx = new Int32Array(gw * gh).fill(-1);
@@ -3471,16 +3612,23 @@
           // Effet coupole sphérique douce : converge naturellement à 0 au contour
           const inflation = Math.sqrt(dNorm) * maxVolThickness;
 
-          // Micro-sculpture fine des traits du visage (yeux, nez, bouche, contours)
+          // Micro-sculpture multi-échelle fine des traits anatomiques (yeux, nez, bouche, contours)
           let laplacian = 0.0;
+          let sobelGrad = 0.0;
           if (x > 0 && x < gw - 1 && y > 0 && y < gh - 1) {
             laplacian = (lum[idx] * 4.0 - (lum[idx - 1] + lum[idx + 1] + lum[idx - gw] + lum[idx + gw]));
+            const gx = lum[idx + 1] - lum[idx - 1];
+            const gy = lum[idx + gw] - lum[idx - gw];
+            sobelGrad = Math.hypot(gx, gy);
           }
-          const relief = ((lum[idx] - 0.5) * 2.6) + (laplacian * 3.2);
+          // Relief sculptural physique (macro forme + meso contours + micro traits)
+          const reliefFactor = (realH / 100.0);
+          const relief = (((lum[idx] - 0.5) * 1.8) + (laplacian * 4.2) + (sobelGrad * 2.2)) * reliefFactor;
 
           const yFront = (inflation * 0.55) + relief;
           const vFront = vertices.length / 3;
           vertices.push(xCoord, yFront, zCoord);
+          uvs.push(xNorm, yNorm);
           // Couleurs vertex exactes 100% alignées sur les pixels de l'image (0% décalage)
           colors.push(gData[idx * 4] / 255.0, gData[idx * 4 + 1] / 255.0, gData[idx * 4 + 2] / 255.0);
           frontIdx[idx] = vFront;
@@ -3488,6 +3636,7 @@
           const yBack = -(inflation * 0.45);
           const vBack = vertices.length / 3;
           vertices.push(xCoord, yBack, zCoord);
+          uvs.push(xNorm, yNorm);
           // Teinte douce céramique/argile pour le dos
           colors.push(0.92, 0.90, 0.88);
           backIdx[idx] = vBack;
@@ -3555,15 +3704,18 @@
         const cBot = vertices.length / 3;
         vertices.push(0, 0, 0);
         colors.push(0.15, 0.16, 0.20);
+        uvs.push(0.5, 0.0);
         const cTop = vertices.length / 3;
         vertices.push(0, 0, baseThickness);
         colors.push(0.18, 0.19, 0.23);
+        uvs.push(0.5, 0.0);
 
         const rBot = vertices.length / 3;
         for (let s = 0; s < baseSegs; s++) {
           const a = (s / baseSegs) * Math.PI * 2;
           vertices.push(Math.cos(a) * (baseRx + 1.2), Math.sin(a) * (baseRy + 1.2), 0);
           colors.push(0.14, 0.15, 0.18);
+          uvs.push(0.5, 0.0);
         }
 
         const rTop = vertices.length / 3;
@@ -3571,6 +3723,7 @@
           const a = (s / baseSegs) * Math.PI * 2;
           vertices.push(Math.cos(a) * baseRx, Math.sin(a) * baseRy, baseThickness);
           colors.push(0.16, 0.17, 0.21);
+          uvs.push(0.5, 0.0);
         }
 
         for (let s = 0; s < baseSegs; s++) {
@@ -3585,6 +3738,7 @@
       const geom = new THREE.BufferGeometry();
       geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
       geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
       geom.setIndex(indices);
       geom.computeVertexNormals();
       return geom;
@@ -3926,10 +4080,18 @@
         await checkBackendAvailable();
 
         // Cas A : Serveur local actif (Moteur SOTA Studio HD / Meshy-Grade)
-        if (isBackendConnected && currentRawFile) {
+        if (isBackendConnected && (currentRawFile || currentCleanDataUrl || currentImageDataUrl)) {
           document.getElementById("loadingSubtitle").textContent = "Génération neuronale SOTA (Qualité Studio / Meshy) en cours (~15s)...";
+          let fileToSend = currentRawFile;
+          if (!fileToSend) {
+            const dataUrlToConvert = currentCleanDataUrl || currentImageDataUrl;
+            const resBlob = await fetch(dataUrlToConvert);
+            const blob = await resBlob.blob();
+            fileToSend = new File([blob], currentFilename || "image.png", { type: blob.type || "image/png" });
+          }
+
           const formData = new FormData();
-          formData.append("file", currentRawFile);
+          formData.append("file", fileToSend);
           formData.append("mode", currentMode);
           formData.append("engine_mode", currentEngine);
           formData.append("target_height_mm", targetH);
@@ -3959,22 +4121,8 @@
             return;
           } else {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || `Erreur serveur lors de la modélisation 3D (${response.status})`);
+            console.warn("Échec conversion serveur, bascule sur le moteur client:", errData);
           }
-        }
-
-        // Cas B : Démo Chien, Van Aert ou Babel intégrée
-        if (currentFilename && currentFilename.toLowerCase().includes("van_aert")) {
-          loadDemoVanAertModel();
-          return;
-        }
-        if (currentFilename && currentFilename.toLowerCase().includes("chien")) {
-          loadDemoDogModel();
-          return;
-        }
-        if (currentFilename && (currentFilename.toLowerCase().includes("babel") || currentFilename.toLowerCase().includes("sans titre") || currentFilename.toLowerCase().includes("sans_titre"))) {
-          loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
-          return;
         }
 
         // Cas C : Moteur Organique Client-Side (EDT Distance Field Inflation)
