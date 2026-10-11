@@ -479,10 +479,16 @@ print('TripoSR completed!')
     m = raw_mesh
     m.fix_normals()
 
-    # Nettoyage des éclats isolés et conservation de la structure principale
+    # Nettoyage des éclats isolés et conservation de l'intégralité du sujet (vélo, membres, accessoires)
     components = m.split(only_watertight=False)
     if len(components) > 1:
-        m = max(components, key=lambda c: len(c.faces)).copy()
+        total_faces = len(m.faces)
+        min_component_faces = max(100, int(total_faces * 0.008))
+        valid_components = [c for c in components if len(c.faces) >= min_component_faces]
+        if valid_components:
+            m = trimesh.util.concatenate(valid_components) if len(valid_components) > 1 else valid_components[0].copy()
+        else:
+            m = max(components, key=lambda c: len(c.faces)).copy()
         m.fix_normals()
 
     # Lissage Taubin de surface (élimine le bruit sans altérer les volumes)
@@ -618,25 +624,7 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
             blended = front_rgb[:, c].astype(float) * shade
             colors_final[:, c] = np.clip(blended, 0, 255).astype(np.uint8)
         colors_final[:, 3] = 255 # 100% Opaque, aucune translucidité fantôme
-        
         m.visual.vertex_colors = colors_final
-        
-        # 3. Coordonnées UV et Matériau PBR Texture HD intégrée
-        try:
-            from trimesh.visual import TextureVisuals
-            from trimesh.visual.material import PBRMaterial
-            uvs = np.zeros((len(v), 2), dtype=np.float32)
-            uvs[:, 0] = u
-            uvs[:, 1] = v_coord
-            pbr_mat = PBRMaterial(
-                baseColorTexture=rgb_img,
-                roughnessFactor=0.32,
-                metallicFactor=0.04
-            )
-            m.visual = TextureVisuals(uv=uvs, material=pbr_mat)
-        except Exception as e_mat:
-            print(f"[Texture] PBR Material fallback to vertex colors: {e_mat}")
-            m.visual.vertex_colors = colors_final
     except Exception as e_tex:
         print(f"[Texture] Notice projection exacte: {e_tex}")
     return m

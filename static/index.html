@@ -39,6 +39,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -2234,17 +2235,33 @@
         case "original":
         case "studio":
         case "volume":
-          // Volume Intégral Studio HD : Sculpture Fine PBR Monochrome avec Micro-Reliefs
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: userColor,
-            roughness: 0.32,
-            metalness: 0.05,
-            clearcoat: 0.55,
-            clearcoatRoughness: 0.12,
-            reflectivity: 0.55,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
-          });
+          // Volume Intégral Studio HD : Préservation stricte des couleurs et textures photoréalistes d'origine
+          if (meshObject.userData && meshObject.userData.originalMaterial && (meshObject.userData.originalMaterial.map || meshObject.userData.hasVertexColors)) {
+            newMat = meshObject.userData.originalMaterial.clone();
+            if (meshObject.userData.hasVertexColors) {
+              newMat.vertexColors = true;
+              newMat.color = new THREE.Color(0xffffff);
+            }
+          } else if (meshObject.userData && meshObject.userData.hasVertexColors) {
+            newMat = new THREE.MeshStandardMaterial({
+              vertexColors: true,
+              color: 0xffffff,
+              roughness: 0.35,
+              metalness: 0.05,
+              side: THREE.DoubleSide
+            });
+          } else {
+            newMat = new THREE.MeshPhysicalMaterial({
+              color: userColor,
+              roughness: 0.32,
+              metalness: 0.05,
+              clearcoat: 0.55,
+              clearcoatRoughness: 0.12,
+              reflectivity: 0.55,
+              normalMap: normMap,
+              normalScale: new THREE.Vector2(0.35, 0.35)
+            });
+          }
           break;
 
         case "basrelief":
@@ -2322,16 +2339,29 @@
 
         case "photoreal":
           // Photoréaliste PBR : Haute Fidélité Physique & Micro-Détails
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: userColor,
-            roughness: 0.25,
-            metalness: 0.10,
-            clearcoat: 0.40,
-            clearcoatRoughness: 0.10,
-            reflectivity: 0.70,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
-          });
+          if (meshObject.userData && meshObject.userData.hasVertexColors) {
+            newMat = new THREE.MeshPhysicalMaterial({
+              vertexColors: true,
+              color: 0xffffff,
+              roughness: 0.25,
+              metalness: 0.08,
+              clearcoat: 0.45,
+              clearcoatRoughness: 0.10,
+              reflectivity: 0.70,
+              side: THREE.DoubleSide
+            });
+          } else {
+            newMat = new THREE.MeshPhysicalMaterial({
+              color: userColor,
+              roughness: 0.25,
+              metalness: 0.10,
+              clearcoat: 0.40,
+              clearcoatRoughness: 0.10,
+              reflectivity: 0.70,
+              normalMap: normMap,
+              normalScale: new THREE.Vector2(0.35, 0.35)
+            });
+          }
           break;
 
         case "voxel":
@@ -2625,10 +2655,18 @@
       let mat = customMaterial;
       if (!mat) {
         if (hasColors) {
-          mat = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, roughness: 0.35, metalness: 0.05 });
+          mat = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, roughness: 0.35, metalness: 0.05, side: THREE.DoubleSide });
         } else {
           mat = (materials[currentMaterialName] || materials.basic).clone();
         }
+      } else {
+        if (hasColors) {
+          mat.vertexColors = true;
+          mat.color = new THREE.Color(0xffffff);
+        }
+        mat.roughness = 0.35;
+        mat.metalness = 0.05;
+        mat.side = THREE.DoubleSide;
       }
       mat.wireframe = isWireframe;
 
@@ -2638,7 +2676,7 @@
       meshObject.userData = {
         baseGeometry: geometry,
         hasVertexColors: hasColors,
-        originalMaterial: customMaterial
+        originalMaterial: mat.clone ? mat.clone() : mat
       };
 
       scene.add(meshObject);
@@ -2727,21 +2765,63 @@
       document.getElementById("loadingSubtitle").textContent = "Lecture du maillage, textures et couleurs PBR";
 
       gltfLoader.load(url, (gltf) => {
-        let foundGeom = null;
-        let foundMat = null;
+        const geometries = [];
+        let primaryMaterial = null;
+        let anyVertexColors = false;
+
         gltf.scene.updateMatrixWorld(true);
         gltf.scene.traverse((child) => {
-          if (child.isMesh && !foundGeom) {
-            foundGeom = child.geometry.clone();
-            foundGeom.applyMatrix4(child.matrixWorld);
-            foundMat = child.material;
+          if (child.isMesh && child.geometry) {
+            const g = child.geometry.clone();
+            g.applyMatrix4(child.matrixWorld);
+            if (g.attributes.color && g.attributes.color.count > 0) {
+              anyVertexColors = true;
+            }
+            geometries.push(g);
+            if (!primaryMaterial && child.material) {
+              primaryMaterial = child.material.clone ? child.material.clone() : child.material;
+            }
           }
         });
-        if (foundGeom) {
-          setActiveMesh(foundGeom, foundMat);
-          loadingOverlay.classList.add("hidden");
-          if (callback) callback();
-        } else if (fallbackStlUrl) {
+
+        if (geometries.length > 0) {
+          let mergedGeom = null;
+          if (geometries.length === 1) {
+            mergedGeom = geometries[0];
+          } else if (window.THREE && THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeBufferGeometries) {
+            if (anyVertexColors) {
+              geometries.forEach(g => {
+                if (!g.attributes.color) {
+                  const count = g.attributes.position.count;
+                  const colors = new Float32Array(count * 3);
+                  for (let i = 0; i < count; i++) {
+                    colors[i * 3] = 0.15;
+                    colors[i * 3 + 1] = 0.165;
+                    colors[i * 3 + 2] = 0.196;
+                  }
+                  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                }
+              });
+            }
+            try {
+              mergedGeom = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+            } catch (errMerge) {
+              console.warn("Notice fusion BufferGeometryUtils:", errMerge);
+              mergedGeom = geometries[0];
+            }
+          } else {
+            mergedGeom = geometries[0];
+          }
+
+          if (mergedGeom) {
+            setActiveMesh(mergedGeom, primaryMaterial);
+            loadingOverlay.classList.add("hidden");
+            if (callback) callback();
+            return;
+          }
+        }
+
+        if (fallbackStlUrl) {
           loadModelSTL(fallbackStlUrl, callback);
         } else {
           loadingOverlay.classList.add("hidden");
