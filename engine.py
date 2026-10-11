@@ -589,45 +589,9 @@ def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, scu
         w_3d = max(1e-4, x_max_3d - x_min_3d)
         h_3d = max(1e-4, z_max_3d - z_min_3d)
         
-        # 1. Micro-Sculpture Anatomique Multi-Échelle des Traits (Yeux, Nez, Lèvres, Vêtements)
-        if sculpt_facial_features and len(v) > 1000:
-            from scipy.ndimage import gaussian_filter, sobel
-            gray = np.array(image.convert('L'), dtype=np.float32) / 255.0
-            
-            # Décomposition multi-échelle :
-            # - Basse fréquence (volumes généraux du visage et corps)
-            macro = gaussian_filter(gray, sigma=8.0)
-            # - Haute fréquence (contours fins : yeux, bouche, arête du nez)
-            micro = gaussian_filter(gray, sigma=1.8)
-            highpass = np.clip((gray - micro) * 3.5, -1.0, 1.0)
-            
-            # Détection des arêtes vives anatomiques par filtre de Sobel
-            sx = sobel(gray, axis=1)
-            sy = sobel(gray, axis=0)
-            edges = np.hypot(sx, sy)
-            max_edge = np.max(edges)
-            if max_edge > 1e-5:
-                edges = edges / max_edge
-            edges = np.clip(edges * 2.0, 0.0, 1.0)
-            
-            # Relief combiné sculptural (anatomie + micro-traits + arêtes)
-            combined_relief = (highpass * 1.8) + ((macro - 0.5) * 1.2) + (edges * 0.9)
-            
-            u_sculpt = np.clip((v[:, 0] - x_min_3d) / w_3d, 0.0, 1.0)
-            v_sculpt = np.clip((v[:, 2] - z_min_3d) / h_3d, 0.0, 1.0)
-            px_s = np.clip((subj_x_min + u_sculpt * subj_w).astype(int), 0, w_img - 1)
-            py_s = np.clip((subj_y_max - v_sculpt * subj_h).astype(int), 0, h_img - 1)
-            
-            facing = np.clip(-normals[:, 1], 0.0, 1.0)
-            sculpt_mask = facing > 0.15
-            
-            # Force de relief calibrée : ~2.2 mm de relief sculptural pour une figurine de 80-100 mm (parfaitement imprimable buse 0.4 mm)
-            relief_strength = 2.2 * (h_3d / 100.0)
-            displacement = combined_relief[py_s, px_s] * relief_strength * (facing ** 1.3)
-            v[sculpt_mask] += normals[sculpt_mask] * displacement[sculpt_mask, None]
-            m.vertices = v
-            m.fix_normals()
-            normals = m.vertex_normals
+        # 1. Préservation géométrique SOTA : Les modèles neuronaux SOTA possèdent déjà leur anatomie 3D native.
+        # Aucun déplacement artificiel de sommets n'est appliqué pour éviter l'effet hérisson / stalactites.
+        pass
             
         # 2. Texturation et Coloration Vertex Exacte (0% Décalage)
         u = np.clip((v[:, 0] - x_min_3d) / w_3d, 0.0, 1.0)
@@ -818,26 +782,26 @@ def generate_mode3_hunyuan_sota(
     # 1. Orientation repère standard Bambu Studio (+90 deg sur X pour poser la sculpture sur ses pattes/base)
     R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
     raw_mesh.apply_transform(R_z_up)
-    # 2. Nettoyage strict des floaters et élimination des fils et aiguilles parasites
-    m = clean_needle_and_stretched_faces(raw_mesh)
-    components = m.split(only_watertight=False)
-    if len(components) > 1:
-        components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
-        max_faces = len(components_sorted[0].faces)
-        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.08]
-        m = trimesh.util.concatenate(kept)
-        
-    m.fix_normals()
     
-    # Repos Z=0 et centrage XY
+    # 2. Extraction de la composante principale étanche (préserve le vélo et les membres sans les tronquer)
+    components = raw_mesh.split(only_watertight=False)
+    if len(components) > 1:
+        m = max(components, key=lambda c: len(c.faces)).copy()
+    else:
+        m = raw_mesh
+        
+    # 3. Lissage Taubin de surface (élimine le bruit de voxel haute fréquence sans réduire le volume)
+    from trimesh import smoothing
+    try:
+        smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
+    except Exception:
+        pass
+        
+    # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     m.apply_translation([0, 0, -m.bounds[0][2]])
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
-    # 3. Projection photoréaliste exacte et micro-sculpture des traits du visage
-    m = project_exact_texture_and_relief(m, image, sculpt_facial_features=True)
-        
-    # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     current_h = max(0.001, m.extents[2])
     scale = target_height_mm / current_h
     max_xy = max(m.extents[0], m.extents[1]) * scale
@@ -846,6 +810,25 @@ def generate_mode3_hunyuan_sota(
         
     m.apply_scale(scale)
     m.apply_translation([0, 0, -m.bounds[0][2]])
+    
+    # 5. Élimination ciblée des arêtes de pont parasites géantes (> 8.5 mm après échelle)
+    try:
+        f_v = m.vertices[m.faces]
+        d01 = np.linalg.norm(f_v[:, 1] - f_v[:, 0], axis=1)
+        d12 = np.linalg.norm(f_v[:, 2] - f_v[:, 1], axis=1)
+        d20 = np.linalg.norm(f_v[:, 0] - f_v[:, 2], axis=1)
+        face_edge_max = np.maximum(d01, np.maximum(d12, d20))
+        bad_bridge_faces = face_edge_max > 8.5
+        if np.sum(bad_bridge_faces) > 0 and np.sum(bad_bridge_faces) < len(m.faces) * 0.05:
+            m = m.submesh([~bad_bridge_faces], append=True)
+            m.apply_translation([0, 0, -m.bounds[0][2]])
+    except Exception:
+        pass
+
+    m.fix_normals()
+    
+    # 6. Projection photoréaliste exacte fidèle 360° (sans déplacement parasite de sommets)
+    m = project_exact_texture_and_relief(m, image, sculpt_facial_features=False)
     
     if not with_base:
         return m

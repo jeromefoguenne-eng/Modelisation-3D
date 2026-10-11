@@ -3387,10 +3387,8 @@
           // Effet coupole sphérique douce : converge naturellement à 0 au contour
           const inflation = Math.sqrt(dNorm) * maxVolThickness;
 
-          // Sculpture des détails anatomiques sur la face avant
-          const relief = (lum[idx] - 0.5) * 2.4;
-
-          const yFront = (inflation * 0.55) + relief;
+          // Sculpture volumétrique douce sans piquants ni distorsion de pixels
+          const yFront = (inflation * 0.55);
           const vFront = vertices.length / 3;
           vertices.push(xCoord, yFront, zCoord);
           frontIdx[idx] = vFront;
@@ -3629,10 +3627,23 @@
         await checkBackendAvailable();
 
         // Cas A : Serveur local actif (Moteur SOTA Studio HD / Meshy-Grade)
-        if (isBackendConnected && currentRawFile) {
+        let fileToSend = currentRawFile;
+        if (!fileToSend && (currentCleanDataUrl || currentImageDataUrl)) {
+          const activeUrl = currentCleanDataUrl || currentImageDataUrl;
+          if (activeUrl.startsWith("data:")) {
+            try {
+              const resBlob = await fetch(activeUrl);
+              fileToSend = await resBlob.blob();
+            } catch (eBlob) {
+              console.warn("Conversion blob échouée:", eBlob);
+            }
+          }
+        }
+
+        if (isBackendConnected && fileToSend) {
           document.getElementById("loadingSubtitle").textContent = "Génération neuronale SOTA (Qualité Studio / Meshy) en cours (~15s)...";
           const formData = new FormData();
-          formData.append("file", currentRawFile);
+          formData.append("file", fileToSend, currentFilename || "model_source.png");
           formData.append("mode", currentMode);
           formData.append("engine_mode", currentEngine);
           formData.append("target_height_mm", targetH);
