@@ -231,8 +231,13 @@ def generate_mode1_extruded(
     verts[:, 2] = (verts[:, 2] / (nz - 1)) * total_z
     
     mesh = trimesh.Trimesh(vertices=verts, faces=faces)
+    if mesh.volume < 0:
+        mesh.faces = np.fliplr(mesh.faces)
     mesh.fix_normals()
     smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=6)
+    if mesh.volume < 0:
+        mesh.faces = np.fliplr(mesh.faces)
+    mesh.fix_normals()
     
     # Alignement au sol Z=0
     mesh.apply_translation([0, 0, -mesh.bounds[0][2]])
@@ -363,6 +368,8 @@ def generate_mode2_heightmap(
         faces.append([t1, b2, t2])
         
     mesh = trimesh.Trimesh(vertices=np.array(verts), faces=np.array(faces))
+    if mesh.volume < 0:
+        mesh.faces = np.fliplr(mesh.faces)
     mesh.fix_normals()
     return mesh
 
@@ -696,29 +703,15 @@ def generate_mode3_hunyuan_sota(
     smoothing.filter_taubin(m, lamb=0.35, nu=-0.36, iterations=8)
     m.fix_normals()
     
-    # Détection et ajout de médaille / accessoire pour canidés / animaux
-    is_dog = False
-    cap_lower = (caption or "").lower()
-    if any(k in cap_lower for k in ["chien", "dog", "dalmatien", "collier", "bone", "os", "chiot"]):
-        is_dog = True
-    else:
-        # Analyse des dimensions anatomiques (animal assis)
-        ext = m.extents
-        if ext[2] > ext[1] and ext[2] > ext[0] * 1.4:
-            is_dog = True
-            
-    if is_dog:
-        try:
-            bone = create_parametric_bone_tag(scale=0.009)
-            R_tilt = trimesh.transformations.rotation_matrix(np.radians(-10), [1, 0, 0])
-            bone.apply_transform(R_tilt)
-            # Positionnement sur le cou
-            bone.apply_translation([0.065, -0.412, 0.020])
-            m = trimesh.util.concatenate([m, bone])
-            m.fix_normals()
-            print("[Hunyuan3D-2.1] Médaille sculptée 3D en forme d'os intégrée au collier.")
-        except Exception as e_bone:
-            print(f"[Hunyuan3D-2.1] Notice médaille: {e_bone}")
+    # 1. Orientation repère Bambu Lab A1 Mini (Z-up) :
+    # Hunyuan3D produit des maillages dans l'espace glTF/caméra où +Y est l'axe vertical (sol vers ciel)
+    # et +Z est l'axe frontal.
+    # Pour l'impression 3D sur plateau horizontal, l'axe vertical est impérativement +Z.
+    # On applique une rotation de +90° autour de X : (x, y, z) -> (x, -z, y).
+    # Ainsi, la tête/sommet se trouve à +Z, les pieds/roues/sol se trouvent à -Z,
+    # et la face avant regarde la caméra.
+    R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
+    m.apply_transform(R_z_up)
 
     # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
@@ -864,7 +857,18 @@ def generate_mode3_ultra_sculpted(
             print(f"[Mode 3 Ultra] Espace {sp} en attente / erreur ({e}), essai de l'espace suivant...")
             last_err = e
             
-    raise RuntimeError(f"Génération 3D SOTA temporairement indisponible sur les serveurs Hugging Face: {last_err}")
+    # Repli de secours automatique sur le moteur volumétrique local GPU (RTX 4070 Ti)
+    print(f"[Mode 3 Ultra] Espace cloud indisponible ({last_err}), repli automatique sur le moteur volumétrique local TripoSR...")
+    try:
+        return generate_mode3_volumetric(
+            image=image,
+            target_height_mm=target_height_mm,
+            with_base=with_base,
+            base_height_mm=base_height_mm,
+            resolution=256
+        )
+    except Exception as e_local:
+        raise RuntimeError(f"Génération 3D SOTA temporairement indisponible sur les serveurs Hugging Face: {last_err}")
 
 
 def process_external_3d_file(

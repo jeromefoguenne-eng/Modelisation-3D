@@ -2689,9 +2689,11 @@
       gltfLoader.load(url, (gltf) => {
         let foundGeom = null;
         let foundMat = null;
+        gltf.scene.updateMatrixWorld(true);
         gltf.scene.traverse((child) => {
           if (child.isMesh && !foundGeom) {
             foundGeom = child.geometry.clone();
+            foundGeom.applyMatrix4(child.matrixWorld);
             foundMat = child.material;
           }
         });
