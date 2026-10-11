@@ -452,6 +452,158 @@ async def generate_from_prompt(
         raise HTTPException(status_code=500, detail=f"Erreur de reconstruction 3D: {str(e)}")
 
 
+@app.post("/api/edit-image-prompt")
+async def edit_image_prompt(
+    edit_prompt: str = Form(...),
+    base_prompt: Optional[str] = Form(""),
+    action_type: str = Form("modify"), # modify, add, remove, complete
+    style: str = Form("figurine"),
+    target_height_mm: float = Form(100.0),
+    base_thickness_mm: float = Form(4.5),
+    add_base: bool = Form(True),
+    engine_mode: str = Form("ultra"),
+    rebuild_3d: bool = Form(True)
+):
+    """Retouche et modification d'une image via prompt IA (Ajout, Suppression, Reconstitution)."""
+    import urllib.request
+    import urllib.parse
+    import random
+
+    edit_clean = edit_prompt.strip()
+    if not edit_clean:
+        raise HTTPException(status_code=400, detail="La description de modification ne peut pas être vide.")
+
+    base_clean = (base_prompt or "").strip()
+    out_id = str(uuid.uuid4())[:8]
+
+    # Synthèse intelligente du prompt d'édition
+    if action_type == "add":
+        if base_clean:
+            subject_desc = f"{base_clean}, with added {edit_clean}, finely detailed, seamlessly integrated"
+        else:
+            subject_desc = f"{edit_clean}, complete figurine"
+    elif action_type == "remove":
+        if base_clean:
+            subject_desc = f"{base_clean}, without {edit_clean}, clean minimal silhouette, omitting {edit_clean}"
+        else:
+            subject_desc = f"{base_clean}, simple clean form"
+    elif action_type == "complete":
+        if base_clean:
+            subject_desc = f"fully reconstituted and restored 3D model of {base_clean}, with {edit_clean} completely restored and intact, full body, complete wheels and limbs, no missing parts, unbroken geometry"
+        else:
+            subject_desc = f"fully completed and reconstituted model of {edit_clean}, complete features, no cut-off parts"
+    else: # modify / default
+        if base_clean:
+            subject_desc = f"{base_clean}, modified with: {edit_clean}"
+        else:
+            subject_desc = f"{edit_clean}"
+
+    if style == "relief":
+        enhanced_prompt = (
+            f"bas-relief carved medallion coin of {subject_desc}, circular crest, "
+            f"isolated on pure solid white background, high depth detail, crisp contours, no frame"
+        )
+    elif style == "bust":
+        enhanced_prompt = (
+            f"sculpted portrait bust statue of {subject_desc}, museum marble sculpture, "
+            f"isolated on pure solid white background, centered, smooth lighting, no frame, no borders"
+        )
+    else:
+        enhanced_prompt = (
+            f"single solid plastic tabletop gaming miniature figurine of {subject_desc}, standing upright, "
+            f"centered, clean sharp silhouette, isolated on seamless pure solid white background, high detail, "
+            f"studio lighting, smooth continuous 3d printable geometry, cute stylized sculpt, "
+            f"no frame, no borders, no arch, no background, no pedestal, no base plate, single character only"
+        )
+
+    encoded = urllib.parse.quote(enhanced_prompt)
+    seed = random.randint(1000, 9999999)
+    img_api_url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true&seed={seed}"
+
+    img_name = f"edit_{out_id}.png"
+    img_path = os.path.join(UPLOAD_DIR, img_name)
+
+    try:
+        req = urllib.request.Request(img_api_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=30) as response, open(img_path, 'wb') as out_f:
+            shutil.copyfileobj(response, out_f)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur lors de la génération de l'image modifiée IA: {str(e)}")
+
+    raw_im = Image.open(img_path)
+    im = engine.process_image_cleanup(raw_im, remove_bg=True)
+
+    preview_name = f"preview_edit_{out_id}.png"
+    preview_path = os.path.join(OUTPUT_DIR, preview_name)
+    im.save(preview_path)
+
+    res_data = {
+        "success": True,
+        "base_prompt": base_clean,
+        "edit_prompt": edit_clean,
+        "action_type": action_type,
+        "enhanced_prompt": enhanced_prompt,
+        "preview_image_url": f"/outputs/{preview_name}",
+        "raw_image_url": f"/uploads/{img_name}"
+    }
+
+    if rebuild_3d:
+        try:
+            if style == "relief":
+                mesh = engine.generate_mode1_extruded(
+                    image=im,
+                    target_height_mm=target_height_mm,
+                    base_thickness_mm=base_thickness_mm,
+                    relief_height_mm=4.0,
+                    add_base=add_base
+                )
+                mode_prefix = "Edit_Relief"
+            else:
+                if engine_mode == "ultra":
+                    mesh = engine.generate_mode3_ultra_sculpted(
+                        image=im,
+                        caption=edit_clean or base_clean,
+                        target_height_mm=target_height_mm,
+                        with_base=add_base,
+                        base_height_mm=base_thickness_mm
+                    )
+                    mode_prefix = "Edit_Studio_Ultra"
+                else:
+                    mesh = engine.generate_mode3_volumetric(
+                        image=im,
+                        target_height_mm=target_height_mm,
+                        with_base=add_base,
+                        base_height_mm=base_thickness_mm,
+                        resolution=288
+                    )
+                    mode_prefix = "Edit_Figurine3D"
+
+            stl_name = f"{mode_prefix}_{out_id}.stl"
+            threemf_name = f"{mode_prefix}_{out_id}.3mf"
+
+            stl_path = os.path.join(OUTPUT_DIR, stl_name)
+            threemf_path = os.path.join(OUTPUT_DIR, threemf_name)
+
+            mesh.export(stl_path)
+            mesh.export(threemf_path)
+
+            printability = engine.check_bambu_printability(mesh)
+
+            res_data.update({
+                "rebuilt_3d": True,
+                "stl_filename": stl_name,
+                "threemf_filename": threemf_name,
+                "stl_url": f"/outputs/{stl_name}",
+                "threemf_url": f"/outputs/{threemf_name}",
+                "printability": printability
+            })
+        except Exception as e:
+            res_data["rebuilt_3d"] = False
+            res_data["rebuild_error"] = str(e)
+
+    return res_data
+
+
 @app.post("/api/import-3d")
 async def import_external_3d(
     file: UploadFile = File(...),

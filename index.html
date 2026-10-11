@@ -150,6 +150,68 @@
                   </button>
                 </div>
 
+                <!-- Bouton Principal de Retouche IA (Ajout, Suppression, Reconstitution) -->
+                <div class="pt-1">
+                  <button id="btnOpenAiEdit" type="button" class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600/30 via-indigo-600/30 to-bambu-600/30 hover:from-purple-600/50 hover:to-bambu-600/50 border border-purple-500/40 text-xs text-purple-200 font-bold transition flex items-center justify-between shadow-sm hover:text-white group">
+                    <div class="flex items-center gap-2">
+                      <i data-lucide="sparkles" class="w-4 h-4 text-purple-400 group-hover:rotate-12 transition-transform"></i>
+                      <span>Modifier / Retoucher avec l'IA</span>
+                    </div>
+                    <i data-lucide="chevron-down" id="iconAiEditToggle" class="w-3.5 h-3.5 text-purple-400 transition-transform"></i>
+                  </button>
+
+                  <!-- Boîte Déroulante de Retouche IA -->
+                  <div id="aiEditBox" class="hidden mt-2 p-3 rounded-xl bg-dark-800/95 border border-purple-500/50 space-y-2.5 shadow-lg">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[11px] font-bold text-purple-300 flex items-center gap-1.5">
+                        <i data-lucide="wand-2" class="w-3.5 h-3.5 text-purple-400"></i>
+                        <span>Modification par Prompt IA :</span>
+                      </span>
+                      <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/30">100% Gratuit</span>
+                    </div>
+
+                    <!-- Type d'opération IA (Ajouter / Enlever / Reconstituer) -->
+                    <div class="grid grid-cols-3 gap-1">
+                      <button type="button" class="ai-action-btn py-1 px-1 rounded-lg border-2 border-purple-500 bg-purple-500/20 text-[10px] text-purple-200 font-bold text-center transition" data-action="modify">
+                        ➕ Ajouter
+                      </button>
+                      <button type="button" class="ai-action-btn py-1 px-1 rounded-lg border border-dark-600 bg-dark-750 text-[10px] text-slate-300 font-medium text-center transition hover:border-slate-500 hover:text-white" data-action="remove">
+                        ➖ Enlever
+                      </button>
+                      <button type="button" class="ai-action-btn py-1 px-1 rounded-lg border border-dark-600 bg-dark-750 text-[10px] text-slate-300 font-medium text-center transition hover:border-slate-500 hover:text-white" data-action="complete">
+                        🧩 Reconstituer
+                      </button>
+                    </div>
+
+                    <!-- Saisie du prompt de modification -->
+                    <div>
+                      <textarea id="aiEditPromptInput" rows="2" placeholder="Ex: Reconstituer la roue arrière et le guidon du vélo, ajouter un casque de course aéro..." class="w-full bg-dark-900 border border-dark-600 focus:border-purple-500 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none transition resize-none"></textarea>
+                    </div>
+
+                    <!-- Suggestions 1-clic pour inspiration rapide -->
+                    <div class="flex flex-wrap gap-1">
+                      <button type="button" class="ai-edit-chip px-1.5 py-0.5 rounded bg-dark-700 hover:bg-dark-600 border border-dark-600 text-[9px] text-slate-300 hover:text-white transition" data-prompt="Reconstituer les parties manquantes, roues du vélo et membres">🧩 Reconstituer parties manquantes</button>
+                      <button type="button" class="ai-edit-chip px-1.5 py-0.5 rounded bg-dark-700 hover:bg-dark-600 border border-dark-600 text-[9px] text-slate-300 hover:text-white transition" data-prompt="Ajouter un casque de vélo aérodynamique et des lunettes">🪖 Ajouter casque & lunettes</button>
+                      <button type="button" class="ai-edit-chip px-1.5 py-0.5 rounded bg-dark-700 hover:bg-dark-600 border border-dark-600 text-[9px] text-slate-300 hover:text-white transition" data-prompt="Enlever les éléments parasites et garder uniquement le sujet central">🧹 Enlever éléments parasites</button>
+                      <button type="button" class="ai-edit-chip px-1.5 py-0.5 rounded bg-dark-700 hover:bg-dark-600 border border-dark-600 text-[9px] text-slate-300 hover:text-white transition" data-prompt="Ajouter un socle miniature circulaire stable pour impression">🐾 Ajouter socle stable</button>
+                    </div>
+
+                    <!-- Option régénération 3D automatique -->
+                    <div class="flex items-center justify-between pt-0.5">
+                      <label class="flex items-center gap-1.5 text-[10px] text-slate-300 cursor-pointer">
+                        <input type="checkbox" id="chkAutoRebuild3D" checked class="w-3.5 h-3.5 rounded bg-dark-900 border-dark-600 text-purple-600 focus:ring-0">
+                        <span>Reconstruire le modèle 3D automatiquement</span>
+                      </label>
+                    </div>
+
+                    <!-- Bouton d'application de la modification -->
+                    <button id="btnApplyAiEdit" type="button" class="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-bambu-600 hover:from-purple-500 hover:to-bambu-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition">
+                      <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                      <span>Appliquer la Modification IA</span>
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Boutons Dédiés : Supprimer et Enregistrer l'image -->
                 <div class="pt-2 border-t border-dark-700/80 flex items-center gap-2">
                   <button id="btnSaveImage" type="button" class="flex-1 py-1.5 px-2.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 font-semibold transition flex items-center justify-center gap-1.5 border border-dark-600 shadow-sm hover:text-white">
@@ -3593,6 +3655,206 @@
         loadingOverlay.classList.add("hidden");
       }
     });
+
+    // ----------------------------------------------------
+    // RETOUCHE & MODIFICATION D'IMAGE PAR PROMPT IA
+    // ----------------------------------------------------
+    const btnOpenAiEdit = document.getElementById("btnOpenAiEdit");
+    const aiEditBox = document.getElementById("aiEditBox");
+    const iconAiEditToggle = document.getElementById("iconAiEditToggle");
+    const aiEditPromptInput = document.getElementById("aiEditPromptInput");
+    const btnApplyAiEdit = document.getElementById("btnApplyAiEdit");
+    const chkAutoRebuild3D = document.getElementById("chkAutoRebuild3D");
+    let currentAiAction = "modify"; // modify, remove, complete
+
+    if (btnOpenAiEdit && aiEditBox) {
+      btnOpenAiEdit.addEventListener("click", () => {
+        const isHidden = aiEditBox.classList.contains("hidden");
+        if (isHidden) {
+          aiEditBox.classList.remove("hidden");
+          if (iconAiEditToggle) iconAiEditToggle.classList.add("rotate-180");
+          if (aiEditPromptInput) aiEditPromptInput.focus();
+        } else {
+          aiEditBox.classList.add("hidden");
+          if (iconAiEditToggle) iconAiEditToggle.classList.remove("rotate-180");
+        }
+      });
+    }
+
+    // Gestion des boutons de sélection de type d'action (Ajouter / Enlever / Reconstituer)
+    const aiActionBtns = document.querySelectorAll(".ai-action-btn");
+    aiActionBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        aiActionBtns.forEach(b => {
+          b.classList.remove("border-2", "border-purple-500", "bg-purple-500/20", "text-purple-200", "font-bold");
+          b.classList.add("border-dark-600", "bg-dark-750", "text-slate-300", "font-medium");
+        });
+        btn.classList.add("border-2", "border-purple-500", "bg-purple-500/20", "text-purple-200", "font-bold");
+        btn.classList.remove("border-dark-600", "bg-dark-750", "text-slate-300", "font-medium");
+        currentAiAction = btn.dataset.action || "modify";
+
+        // Ajuster le placeholder selon le type d'action
+        if (aiEditPromptInput) {
+          if (currentAiAction === "remove") {
+            aiEditPromptInput.placeholder = "Ex: Enlever le socle, supprimer les lunettes, enlever le chapeau...";
+          } else if (currentAiAction === "complete") {
+            aiEditPromptInput.placeholder = "Ex: Reconstituer la roue arrière et le guidon du vélo, réparer les bras coupés...";
+          } else {
+            aiEditPromptInput.placeholder = "Ex: Ajouter des ailes déployées, ajouter un casque de course aéro, ajouter une épée...";
+          }
+        }
+      });
+    });
+
+    // Clic sur les chips de suggestion
+    const aiEditChips = document.querySelectorAll(".ai-edit-chip");
+    aiEditChips.forEach(chip => {
+      chip.addEventListener("click", () => {
+        const p = chip.dataset.prompt;
+        if (p && aiEditPromptInput) {
+          aiEditPromptInput.value = p;
+          aiEditPromptInput.focus();
+        }
+      });
+    });
+
+    // Déclenchement de l'application de la modification
+    if (btnApplyAiEdit) {
+      btnApplyAiEdit.addEventListener("click", async () => {
+        const editPromptText = (aiEditPromptInput ? aiEditPromptInput.value : "").trim();
+        if (!editPromptText) {
+          alert("Veuillez décrire la modification souhaitée (ex: reconstituer les roues manquantes du vélo, ajouter un casque...).");
+          if (aiEditPromptInput) aiEditPromptInput.focus();
+          return;
+        }
+
+        const basePromptText = (promptInput.value || "").trim() || (imageName ? imageName.textContent.replace(/^Prompt\s*:\s*/, "").replace(/^Modifié\s*:\s*/, "") : "figurine");
+        const targetH = parseFloat(sliderHeight.value) || 100.0;
+        const baseThickness = parseFloat(sliderBase.value) || 4.5;
+        const shouldRebuild3D = chkAutoRebuild3D ? chkAutoRebuild3D.checked : true;
+
+        loadingOverlay.classList.remove("hidden");
+        document.getElementById("loadingTitle").textContent = "Modification IA de l'image en cours...";
+        document.getElementById("loadingSubtitle").textContent = (currentAiAction === "complete")
+          ? "Reconstitution des parties manquantes et détourage neural..."
+          : (currentAiAction === "remove")
+            ? "Suppression d'éléments et nettoyage neural..."
+            : "Ajout d'éléments et intégration haute résolution...";
+
+        try {
+          await checkBackendAvailable();
+
+          // Cas A : Serveur local actif
+          if (isBackendConnected) {
+            const formData = new FormData();
+            formData.append("edit_prompt", editPromptText);
+            formData.append("base_prompt", basePromptText);
+            formData.append("action_type", currentAiAction);
+            formData.append("style", currentPromptStyle || "figurine");
+            formData.append("target_height_mm", targetH);
+            formData.append("base_thickness_mm", baseThickness);
+            formData.append("add_base", chkAddBase.checked ? "true" : "false");
+            formData.append("engine_mode", currentEngine || "ultra");
+            formData.append("rebuild_3d", shouldRebuild3D ? "true" : "false");
+
+            const response = await fetch(`${API_BASE}/api/edit-image-prompt`, {
+              method: "POST",
+              body: formData,
+              mode: "cors"
+            });
+
+            if (!response.ok) {
+              const err = await response.json().catch(() => ({}));
+              throw new Error(err.detail || "Erreur de modification d'image.");
+            }
+
+            const result = await response.json();
+            if (result.preview_image_url) {
+              const newImgUrl = `${API_BASE}${result.preview_image_url}`;
+              imagePreview.src = newImgUrl;
+              imageName.textContent = `Modifié : ${editPromptText.slice(0, 24)}...`;
+              imageDimensions.textContent = "1024 × 1024 px (IA)";
+              promptInput.value = result.enhanced_prompt || `${basePromptText} + ${editPromptText}`;
+
+              const updatedImg = new Image();
+              updatedImg.crossOrigin = "anonymous";
+              updatedImg.onload = () => {
+                currentImageElement = updatedImg;
+              };
+              updatedImg.src = newImgUrl;
+            }
+
+            if (result.rebuilt_3d && result.stl_url) {
+              const stlUrl = `${API_BASE}${result.stl_url}`;
+              const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
+              const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
+              updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename);
+              if (glbUrl) {
+                loadModelGLB(glbUrl, stlUrl);
+              } else {
+                loadModelSTL(stlUrl);
+              }
+            }
+            return;
+          }
+
+          // Cas B : Mode Web Hybride / GitHub Pages (100% Autonome & Gratuit)
+          let synthPrompt = "";
+          if (currentAiAction === "complete") {
+            synthPrompt = `full 3D collectible figurine of ${basePromptText}, fully reconstituted complete model with ${editPromptText}, all parts fully intact, standing upright, clean sharp silhouette, isolated on pure solid white background, high detail, studio lighting, no frame, no borders, tabletop miniature`;
+          } else if (currentAiAction === "remove") {
+            synthPrompt = `full 3D collectible figurine of ${basePromptText}, minimalist clean silhouette without ${editPromptText}, isolated on pure solid white background, high detail, studio lighting, no frame, no borders, tabletop miniature`;
+          } else {
+            synthPrompt = `full 3D collectible figurine of ${basePromptText}, featuring added ${editPromptText}, standing upright, clean sharp silhouette, isolated on pure solid white background, high detail, studio lighting, no frame, no borders, tabletop miniature`;
+          }
+
+          const seed = Math.floor(Math.random() * 999999);
+          const imgApiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(synthPrompt)}?width=768&height=768&nologo=true&seed=${seed}`;
+
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error("Impossible de charger l'image modifiée."));
+            img.src = imgApiUrl;
+          });
+
+          // Détourage et cadrage client-side
+          const canvasTemp = document.createElement("canvas");
+          canvasTemp.width = img.width;
+          canvasTemp.height = img.height;
+          const ctxTemp = canvasTemp.getContext("2d");
+          ctxTemp.drawImage(img, 0, 0);
+
+          const imgData = ctxTemp.getImageData(0, 0, canvasTemp.width, canvasTemp.height);
+          const d = imgData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], g = d[i + 1], b = d[i + 2];
+            if (r > 230 && g > 230 && b > 230) {
+              d[i + 3] = 0;
+            }
+          }
+          ctxTemp.putImageData(imgData, 0, 0);
+
+          const cleanUrl = canvasTemp.toDataURL("image/png");
+          imagePreview.src = cleanUrl;
+          currentCleanDataUrl = cleanUrl;
+          currentImageElement = img;
+          imageName.textContent = `Modifié : ${editPromptText.slice(0, 24)}...`;
+
+          if (shouldRebuild3D) {
+            const geom = generateClientOrganicFigurine(canvasTemp, targetH, baseThickness);
+            setActiveMesh(geom);
+          }
+
+        } catch (err) {
+          console.error("Erreur retouche IA:", err);
+          alert("Erreur lors de la retouche IA : " + err.message);
+        } finally {
+          loadingOverlay.classList.add("hidden");
+        }
+      });
+    }
 
     // 2. GENERATION 3D DEPUIS UNE IMAGE UPLOADÉE (Image-to-3D)
     btnGenerate.addEventListener("click", async () => {
