@@ -404,17 +404,46 @@
             Dimensions & Géométrie
           </h2>
 
-          <!-- Hauteur Totale -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-xs">
-              <span class="text-slate-300 font-medium">Hauteur Totale (Z)</span>
-              <span class="text-bambu-400 font-bold"><span id="valHeight">100.0</span> mm (10.0 cm)</span>
+          <!-- Contrôle 3D des Dimensions (Longueur X, Largeur Y, Hauteur Z) avec Adaptation Automatique -->
+          <div class="space-y-3 p-3 rounded-xl bg-dark-900/60 border border-dark-600/80">
+            <!-- Verrouillage Ratio Automatique -->
+            <button id="btnLockAspect" type="button" class="flex items-center justify-between w-full p-2 rounded-lg bg-bambu-500/15 border border-bambu-500/40 text-xs text-bambu-300 font-semibold transition hover:bg-bambu-500/25">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-bambu-400" id="iconLockAspect"></i>
+                <span>Ratio Proportionnel Automatique</span>
+              </span>
+              <span id="badgeLockStatus" class="text-[10px] px-2 py-0.5 rounded bg-bambu-500 text-white font-bold">Verrouillé</span>
+            </button>
+
+            <!-- Longueur (X) -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300 font-medium">Longueur (X - Frontal)</span>
+                <span class="text-cyan-400 font-bold font-mono"><span id="valLength">52.1</span> mm</span>
+              </div>
+              <input type="range" id="sliderLength" min="15" max="175" step="0.5" value="52.1" class="w-full accent-cyan-500">
             </div>
-            <input type="range" id="sliderHeight" min="20" max="175" step="1" value="100" class="w-full accent-bambu-500">
-            <div class="flex justify-between text-[10px] text-slate-500">
-              <span>20 mm</span>
-              <span>100 mm (Recommandé)</span>
-              <span>175 mm (Max A1 Mini)</span>
+
+            <!-- Largeur (Y) -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300 font-medium">Largeur (Y - Profondeur)</span>
+                <span class="text-indigo-400 font-bold font-mono"><span id="valWidth">41.4</span> mm</span>
+              </div>
+              <input type="range" id="sliderWidth" min="15" max="175" step="0.5" value="41.4" class="w-full accent-indigo-500">
+            </div>
+
+            <!-- Hauteur (Z) -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300 font-medium">Hauteur Totale (Z)</span>
+                <span class="text-bambu-400 font-bold font-mono"><span id="valHeight">100.0</span> mm</span>
+              </div>
+              <input type="range" id="sliderHeight" min="20" max="175" step="0.5" value="100.0" class="w-full accent-bambu-500">
+            </div>
+
+            <div id="dimAlertBambu" class="hidden text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-1.5 rounded-lg text-center font-medium">
+              ⚠️ Attention : Dépasse le volume maximal Bambu Lab A1 Mini (180×180×180 mm).
             </div>
           </div>
 
@@ -561,13 +590,40 @@
           </a>
         </div>
 
-        <!-- Materials Picker -->
-        <div class="absolute top-4 right-4 flex items-center gap-2 bg-dark-800/90 backdrop-blur border border-dark-700 rounded-xl p-1.5 shadow-xl z-10 text-xs">
-          <span class="text-slate-400 pl-2">Matière :</span>
-          <button class="mat-btn px-2.5 py-1 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40" data-mat="basic">Basic</button>
-          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="matte">Matte</button>
-          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="silk">Silk</button>
-          <button class="mat-btn px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="carbon">Carbone</button>
+        <!-- Materials & Single Color Palette Bar -->
+        <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+          <!-- Palette de Couleurs Unique (Monochrome) -->
+          <div class="flex items-center gap-1.5 bg-dark-850/95 backdrop-blur-md border border-dark-600/90 rounded-2xl p-2 shadow-2xl">
+            <span class="text-[11px] font-bold text-slate-300 pl-1.5 pr-1 flex items-center gap-1">
+              <i data-lucide="palette" class="w-3.5 h-3.5 text-bambu-400"></i>
+              <span>Couleur :</span>
+            </span>
+
+            <!-- Preset Swatches -->
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border-2 border-white shadow-md transition transform hover:scale-110 active:scale-95 bg-[#f8fafc] ring-2 ring-white ring-offset-2 ring-offset-dark-900" data-color="#f8fafc" title="Blanc Jade (Bambu PLA Blanc)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#262626]" data-color="#262626" title="Noir Mat (Matte Charcoal)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#64748b]" data-color="#64748b" title="Gris Pierre (Stone Grey)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#c2654a]" data-color="#c2654a" title="Terre Cuite / Argile (Terracotta)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#d4af37]" data-color="#d4af37" title="Or Soyeux (Silk Gold)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#2563eb]" data-color="#2563eb" title="Bleu Cobalt (Bambu Blue)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#059669]" data-color="#059669" title="Vert Émeraude (Silk Emerald)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#7c3aed]" data-color="#7c3aed" title="Violet Royal (Silk Purple)"></button>
+            <button type="button" class="color-swatch-btn w-6 h-6 rounded-full border border-dark-500 shadow-md transition transform hover:scale-110 active:scale-95 bg-[#b45309]" data-color="#b45309" title="Cuivre Brillant (Copper)"></button>
+
+            <!-- Custom Color Picker -->
+            <div class="relative flex items-center ml-1 pl-1.5 border-l border-dark-600">
+              <input type="color" id="pickerCustomColor" value="#f8fafc" class="w-6 h-6 rounded-full cursor-pointer border border-dark-500 bg-transparent p-0 overflow-hidden" title="Palette personnalisée (choisir n'importe quelle couleur)">
+            </div>
+          </div>
+
+          <!-- Finition Surface / Matière -->
+          <div class="flex items-center gap-1 bg-dark-850/90 backdrop-blur border border-dark-700 rounded-xl p-1 shadow-lg text-[11px]">
+            <span class="text-slate-400 pl-2 pr-1">Finition :</span>
+            <button type="button" class="mat-btn px-2 py-0.5 rounded-lg bg-bambu-500/20 text-bambu-400 font-semibold border border-bambu-500/40" data-mat="basic">Satiné</button>
+            <button type="button" class="mat-btn px-2 py-0.5 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="matte">Mat</button>
+            <button type="button" class="mat-btn px-2 py-0.5 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="silk">Soyeux</button>
+            <button type="button" class="mat-btn px-2 py-0.5 rounded-lg hover:bg-dark-700 text-slate-300" data-mat="carbon">Carbone</button>
+          </div>
         </div>
 
         <!-- Loading Spinner -->
@@ -671,135 +727,99 @@
       <!-- Liste défilable des Styles Artistiques -->
       <div class="p-3.5 space-y-2 flex-1 overflow-y-auto custom-scrollbar min-h-0">
         
-        <!-- Style 0: Couleurs d'Origine / Photo HD -->
+        <!-- Effet 1: Studio HD (Sculpture Fine Haute Précision) -->
         <button type="button" class="style-card w-full p-2.5 rounded-xl border-2 border-purple-500 bg-purple-500/15 text-left transition flex items-center gap-3 relative group" data-style="original">
-          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🎨</div>
+          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🗿</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-white">Couleurs Photo / Photoréaliste</span>
+              <span class="text-xs font-bold text-white">Effet Studio HD (Sculpture Fine)</span>
               <span class="active-badge text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-300 truncate">Couleurs naturelles de l'image & rendu PBR réaliste</p>
+            <p class="text-[10px] text-slate-300 truncate">Micro-reliefs faciaux préservés, ombrage studio satiné</p>
           </div>
         </button>
 
-        <!-- Style 1: Figurine Studio -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="figurine">
-          <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Figurine Studio</span>
-              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-            </div>
-            <p class="text-[10px] text-slate-400 truncate">Vernis brillant, micro-pores & finesse vinyle</p>
-          </div>
-        </button>
-
-        <!-- Style 2: Low Poly Art -->
+        <!-- Effet 2: Low Poly Art (Origami 3D Géométrique) -->
         <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lowpoly">
           <div class="w-9 h-9 rounded-lg bg-cyan-500/20 flex items-center justify-center text-lg shrink-0">💎</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Low Poly Art</span>
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Low Poly Art (Origami)</span>
               <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-400 truncate">Facettes géométriques plates & arêtes vives</p>
+            <p class="text-[10px] text-slate-400 truncate">Facettes géométriques planes triangulées & arêtes vives</p>
           </div>
         </button>
 
-        <!-- Style 3: Manga / Cel-Shaded -->
+        <!-- Effet 3: Manga / Cel-Shaded Anime -->
         <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="manga">
           <div class="w-9 h-9 rounded-lg bg-pink-500/20 flex items-center justify-center text-lg shrink-0">⛩️</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Manga / Cel-Shaded</span>
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Manga / Cel-Shaded</span>
               <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-400 truncate">Ombrage Toon 3-tons & contours d'animation</p>
+            <p class="text-[10px] text-slate-400 truncate">Contour d'encrage noir épais & ombrage Toon par bandes</p>
           </div>
         </button>
 
-        <!-- Style 4: Argile ZBrush Sculpt -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="clay">
-          <div class="w-9 h-9 rounded-lg bg-amber-700/20 flex items-center justify-center text-lg shrink-0">🗿</div>
+        <!-- Effet 4: Voxel 3D / Minecraft Pixel Art -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="voxel">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg shrink-0">🧊</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Argile / ZBrush</span>
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Voxel 3D (Pixel Art)</span>
               <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-400 truncate">Argile mate sculpteur, révélateur de volumes</p>
+            <p class="text-[10px] text-slate-400 truncate">Quantification géométrique en cubes 3D Minecraft</p>
           </div>
         </button>
 
-        <!-- Style 5: Marbre Antique -->
+        <!-- Effet 5: Figurine Chibi (Pop Art Vinyle) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="figurine">
+          <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Figurine Chibi</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+            </div>
+            <p class="text-[10px] text-slate-400 truncate">Galbe curviligne épuré, style Pop Art & vernis lisse</p>
+          </div>
+        </button>
+
+        <!-- Effet 6: Structure Bionique (Treillis Voronoï) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="voronoi">
+          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🕸️</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Structure Bionique</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+            </div>
+            <p class="text-[10px] text-slate-400 truncate">Treillis ajouré haute technologie & exosquelette</p>
+          </div>
+        </button>
+
+        <!-- Effet 7: Bas-Relief Antique (Gravure Romaine) -->
         <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="marble">
           <div class="w-9 h-9 rounded-lg bg-slate-200/20 flex items-center justify-center text-lg shrink-0">🏛️</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Marbre Antique</span>
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Bas-Relief Antique</span>
               <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-400 truncate">Pierre noble polie, micro-veines & translucidité</p>
+            <p class="text-[10px] text-slate-400 truncate">Micro-reliefs amplifiés & gravure sculpturale romaine</p>
           </div>
         </button>
 
-        <!-- Style 6: Bronze Patiné -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="bronze">
-          <div class="w-9 h-9 rounded-lg bg-amber-600/20 flex items-center justify-center text-lg shrink-0">🥉</div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Bronze Patiné</span>
-              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-            </div>
-            <p class="text-[10px] text-slate-400 truncate">Métal coulé antique, reflets chauds & patine</p>
-          </div>
-        </button>
-
-        <!-- Style 7: Or Pur 24K -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="gold">
-          <div class="w-9 h-9 rounded-lg bg-yellow-500/20 flex items-center justify-center text-lg shrink-0">✨</div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Or Pur 24K</span>
-              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-            </div>
-            <p class="text-[10px] text-slate-400 truncate">Éclat précieux spéculaire, poli miroir luxueux</p>
-          </div>
-        </button>
-
-        <!-- Style 8: Bois Naturel -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="wood">
-          <div class="w-9 h-9 rounded-lg bg-amber-900/30 flex items-center justify-center text-lg shrink-0">🪵</div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Bois Naturel</span>
-              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-            </div>
-            <p class="text-[10px] text-slate-400 truncate">Finition artisanale chaleureuse, fibres végétales</p>
-          </div>
-        </button>
-
-        <!-- Style 9: Cyberpunk Néon -->
+        <!-- Effet 8: Cyber Néon (Hologramme Filaire) -->
         <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="cyberpunk">
           <div class="w-9 h-9 rounded-lg bg-cyan-400/20 flex items-center justify-center text-lg shrink-0">⚡</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Cyberpunk Néon</span>
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Cyber Néon</span>
               <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-            <p class="text-[10px] text-slate-400 truncate">Carbone sombre & liserés holographiques cyan</p>
-          </div>
-        </button>
-
-        <!-- Style 10: Bambu Silk PLA -->
-        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="silk">
-          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🧵</div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Bambu Silk PLA</span>
-              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-            </div>
-            <p class="text-[10px] text-slate-400 truncate">Reflet soyeux imprimante 3D & micro-couches FDM</p>
+            <p class="text-[10px] text-slate-400 truncate">Maillage filaire fluorescent sur noyau sombre</p>
           </div>
         </button>
 
@@ -980,10 +1000,20 @@
     const btnOpenCompare = document.getElementById("btnOpenCompare");
     const btnCloseCompare = document.getElementById("btnCloseCompare");
     const compareModal = document.getElementById("compareModal");
+    const sliderLength = document.getElementById("sliderLength");
+    const valLength = document.getElementById("valLength");
+    const sliderWidth = document.getElementById("sliderWidth");
+    const valWidth = document.getElementById("valWidth");
     const sliderHeight = document.getElementById("sliderHeight");
     const valHeight = document.getElementById("valHeight");
+    const btnLockAspect = document.getElementById("btnLockAspect");
+    const iconLockAspect = document.getElementById("iconLockAspect");
+    const badgeLockStatus = document.getElementById("badgeLockStatus");
+    const dimAlertBambu = document.getElementById("dimAlertBambu");
     const sliderBase = document.getElementById("sliderBase");
     const valBase = document.getElementById("valBase");
+    let isAspectLocked = true;
+    let currentSingleColor = "#f8fafc";
     const chkAddBase = document.getElementById("chkAddBase");
     const btnSocleAvec = document.getElementById("btnSocleAvec");
     const btnSocleSans = document.getElementById("btnSocleSans");
@@ -1056,13 +1086,147 @@
       });
     });
 
-    // Slider inputs
-    sliderHeight.addEventListener("input", (e) => {
-      valHeight.textContent = parseFloat(e.target.value).toFixed(1);
-    });
+    // Gestionnaire du Verrouillage de Ratio (Adaptation Automatique)
+    if (btnLockAspect) {
+      btnLockAspect.addEventListener("click", () => {
+        isAspectLocked = !isAspectLocked;
+        if (isAspectLocked) {
+          btnLockAspect.classList.add("bg-bambu-500/15", "border-bambu-500/40", "text-bambu-300");
+          btnLockAspect.classList.remove("bg-dark-800", "border-dark-600", "text-slate-400");
+          if (badgeLockStatus) {
+            badgeLockStatus.textContent = "Verrouillé";
+            badgeLockStatus.className = "text-[10px] px-2 py-0.5 rounded bg-bambu-500 text-white font-bold";
+          }
+          if (iconLockAspect) iconLockAspect.setAttribute("data-lucide", "lock");
+        } else {
+          btnLockAspect.classList.remove("bg-bambu-500/15", "border-bambu-500/40", "text-bambu-300");
+          btnLockAspect.classList.add("bg-dark-800", "border-dark-600", "text-slate-400");
+          if (badgeLockStatus) {
+            badgeLockStatus.textContent = "Libre (XYZ)";
+            badgeLockStatus.className = "text-[10px] px-2 py-0.5 rounded bg-dark-700 text-slate-300 font-bold border border-dark-600";
+          }
+          if (iconLockAspect) iconLockAspect.setAttribute("data-lucide", "unlock");
+        }
+        if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+      });
+    }
+
+    // Fonction de mise à jour des dimensions et mise à l'échelle automatique
+    function updateModelDimensions(axis) {
+      if (!meshObject || !meshObject.userData || !meshObject.userData.baseExtents) {
+        if (axis === 'x' && valLength) valLength.textContent = parseFloat(sliderLength.value).toFixed(1);
+        if (axis === 'y' && valWidth) valWidth.textContent = parseFloat(sliderWidth.value).toFixed(1);
+        if (axis === 'z' && valHeight) valHeight.textContent = parseFloat(sliderHeight.value).toFixed(1);
+        return;
+      }
+
+      const base = meshObject.userData.baseExtents;
+      let targetX = parseFloat(sliderLength.value) || base.x;
+      let targetY = parseFloat(sliderWidth.value) || base.y;
+      let targetZ = parseFloat(sliderHeight.value) || base.z;
+
+      if (isAspectLocked) {
+        if (axis === 'x') {
+          const ratio = targetX / base.x;
+          targetY = base.y * ratio;
+          targetZ = base.z * ratio;
+          if (sliderWidth) sliderWidth.value = targetY.toFixed(1);
+          if (sliderHeight) sliderHeight.value = targetZ.toFixed(1);
+        } else if (axis === 'y') {
+          const ratio = targetY / base.y;
+          targetX = base.x * ratio;
+          targetZ = base.z * ratio;
+          if (sliderLength) sliderLength.value = targetX.toFixed(1);
+          if (sliderHeight) sliderHeight.value = targetZ.toFixed(1);
+        } else if (axis === 'z') {
+          const ratio = targetZ / base.z;
+          targetX = base.x * ratio;
+          targetY = base.y * ratio;
+          if (sliderLength) sliderLength.value = targetX.toFixed(1);
+          if (sliderWidth) sliderWidth.value = targetY.toFixed(1);
+        }
+      }
+
+      if (valLength) valLength.textContent = targetX.toFixed(1);
+      if (valWidth) valWidth.textContent = targetY.toFixed(1);
+      if (valHeight) valHeight.textContent = targetZ.toFixed(1);
+
+      // Appliquer l'échelle au modèle 3D
+      const sx = targetX / base.x;
+      const sy = targetY / base.y;
+      const sz = targetZ / base.z;
+      meshObject.scale.set(sx, sy, sz);
+
+      if (meshObject.userData.baseMinZ !== undefined) {
+        meshObject.position.z = -meshObject.userData.baseMinZ * sz;
+      }
+
+      // Alerte si les dimensions dépassent le plateau A1 Mini (180x180x180 mm)
+      if (dimAlertBambu) {
+        if (targetX > 180 || targetY > 180 || targetZ > 180) {
+          dimAlertBambu.classList.remove("hidden");
+        } else {
+          dimAlertBambu.classList.add("hidden");
+        }
+      }
+
+      // Statistiques dashboard
+      const statX = document.getElementById("statDimX");
+      const statY = document.getElementById("statDimY");
+      const statZ = document.getElementById("statDimZ");
+      if (statX) statX.textContent = targetX.toFixed(1);
+      if (statY) statY.textContent = targetY.toFixed(1);
+      if (statZ) statZ.textContent = targetZ.toFixed(1);
+
+      currentVolumeCm3 = Math.max(1.0, (targetX * targetY * targetZ * 0.25) / 1000.0);
+      const w = (currentVolumeCm3 * currentDensity * 0.35).toFixed(1);
+      const statW = document.getElementById("statWeight");
+      if (statW) statW.textContent = w;
+
+      const estMins = Math.max(15, Math.round((targetZ / 0.16) * 1.5 + (w * 1.8)));
+      const hrs = Math.floor(estMins / 60);
+      const m = estMins % 60;
+      const statT = document.getElementById("statTime");
+      if (statT) statT.textContent = hrs > 0 ? `${hrs}h ${m}m` : `${m} min`;
+
+      if (quickModelSpecs) {
+        quickModelSpecs.textContent = `${targetX.toFixed(0)}×${targetY.toFixed(0)}×${targetZ.toFixed(0)} mm`;
+      }
+
+      updateExportedSTL();
+    }
+
+    if (sliderLength) sliderLength.addEventListener("input", () => updateModelDimensions('x'));
+    if (sliderWidth) sliderWidth.addEventListener("input", () => updateModelDimensions('y'));
+    if (sliderHeight) sliderHeight.addEventListener("input", () => updateModelDimensions('z'));
+
     sliderBase.addEventListener("input", (e) => {
       valBase.textContent = parseFloat(e.target.value).toFixed(1);
     });
+
+    // Palette de Couleurs Unique (Presets & Custom Color Picker)
+    const colorSwatches = document.querySelectorAll(".color-swatch-btn");
+    const pickerCustomColor = document.getElementById("pickerCustomColor");
+
+    colorSwatches.forEach(btn => {
+      btn.addEventListener("click", () => {
+        colorSwatches.forEach(b => {
+          b.classList.remove("ring-2", "ring-white", "ring-offset-2", "ring-offset-dark-900", "scale-110");
+        });
+        btn.classList.add("ring-2", "ring-white", "ring-offset-2", "ring-offset-dark-900", "scale-110");
+        currentSingleColor = btn.dataset.color || "#f8fafc";
+        if (pickerCustomColor) pickerCustomColor.value = currentSingleColor;
+        applyArtisticStyle(currentArtStyle);
+      });
+    });
+
+    if (pickerCustomColor) {
+      pickerCustomColor.addEventListener("input", (e) => {
+        currentSingleColor = e.target.value;
+        colorSwatches.forEach(b => b.classList.remove("ring-2", "ring-white", "scale-110"));
+        applyArtisticStyle(currentArtStyle);
+      });
+    }
 
     // Three.js Scene Setup
     const container = document.getElementById("viewportContainer");
@@ -1190,6 +1354,36 @@
     const objLoader = new THREE.OBJLoader();
     const stlExporter = new THREE.STLExporter();
 
+    // Exportation STL binaire en temps réel synchronisée avec l'échelle et les dimensions
+    function updateExportedSTL() {
+      if (!meshObject || !stlExporter) return;
+      try {
+        const result = stlExporter.parse(meshObject, { binary: true });
+        const blob = new Blob([result], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const baseName = (currentFilename ? currentFilename.replace(/\.[^/.]+$/, "") : "modele_3d");
+        
+        if (btnDownloadSTL) {
+          btnDownloadSTL.href = url;
+          btnDownloadSTL.download = `${baseName}_BambuA1Mini.stl`;
+        }
+        if (btnDownload3MF) {
+          btnDownload3MF.href = url;
+          btnDownload3MF.download = `${baseName}_BambuA1Mini.3mf`;
+        }
+        if (btnQuickDownloadSTL) {
+          btnQuickDownloadSTL.href = url;
+          btnQuickDownloadSTL.download = `${baseName}_BambuA1Mini.stl`;
+        }
+        if (btnToolbarDownloadSTL) {
+          btnToolbarDownloadSTL.href = url;
+          btnToolbarDownloadSTL.download = `${baseName}_BambuA1Mini.stl`;
+        }
+      } catch (err) {
+        console.warn("Erreur export STL temps réel:", err);
+      }
+    }
+
     // Texture de Normal Map Micro-Finesse Procédurale (Tactile Pores / Micro-Grain)
     let fineNoiseNormalMap = null;
     function getFineNoiseNormalMap() {
@@ -1259,12 +1453,10 @@
       return toonGradientMap;
     }
 
-    // Algorithme de Décimation Polygonale Voxel pour Vrai Style Low Poly Géométrique
-    function generateLowPolyGeometry(sourceGeom, voxelCount = 36) {
+    // Algorithme de Décimation Polygonale Origami pour Vrai Style Low Poly Géométrique
+    function generateLowPolyGeometry(sourceGeom, voxelCount = 30) {
       if (!sourceGeom || !sourceGeom.attributes || !sourceGeom.attributes.position) return sourceGeom;
       const posAttr = sourceGeom.attributes.position;
-      const colAttr = sourceGeom.attributes.color;
-      const hasColors = !!(colAttr && colAttr.count > 0);
       const numVerts = posAttr.count;
 
       let minX = Infinity, minY = Infinity, minZ = Infinity;
@@ -1296,12 +1488,7 @@
 
         let cell = grid.get(key);
         if (!cell) {
-          cell = {
-            id: clusterCount++,
-            count: 0,
-            sumX: 0, sumY: 0, sumZ: 0,
-            sumR: 0, sumG: 0, sumB: 0
-          };
+          cell = { id: clusterCount++, count: 0, sumX: 0, sumY: 0, sumZ: 0 };
           grid.set(key, cell);
         }
 
@@ -1309,34 +1496,21 @@
         cell.sumX += px;
         cell.sumY += py;
         cell.sumZ += pz;
-        if (hasColors) {
-          cell.sumR += colAttr.getX(i);
-          cell.sumG += colAttr.getY(i);
-          cell.sumB += colAttr.getZ(i);
-        }
         vertToCluster[i] = cell.id;
       }
 
       const clusterPos = new Float32Array(clusterCount * 3);
-      const clusterCol = hasColors ? new Float32Array(clusterCount * 3) : null;
-
       for (const cell of grid.values()) {
         const cid = cell.id;
         const inv = 1.0 / cell.count;
         clusterPos[cid * 3] = cell.sumX * inv;
         clusterPos[cid * 3 + 1] = cell.sumY * inv;
         clusterPos[cid * 3 + 2] = cell.sumZ * inv;
-        if (clusterCol) {
-          clusterCol[cid * 3] = cell.sumR * inv;
-          clusterCol[cid * 3 + 1] = cell.sumG * inv;
-          clusterCol[cid * 3 + 2] = cell.sumB * inv;
-        }
       }
 
       const isIndexed = !!sourceGeom.index;
       const numTris = isIndexed ? Math.floor(sourceGeom.index.count / 3) : Math.floor(numVerts / 3);
       const outPositions = [];
-      const outColors = clusterCol ? [] : null;
 
       for (let t = 0; t < numTris; t++) {
         const v0 = isIndexed ? sourceGeom.index.getX(t * 3) : t * 3;
@@ -1347,7 +1521,7 @@
         const c1 = vertToCluster[v1];
         const c2 = vertToCluster[v2];
 
-        // Élimination des triangles dégénérés (au sein d'un même voxel)
+        // Élimination des facettes dégénérées au sein de la même cellule voxel
         if (c0 === c1 || c1 === c2 || c0 === c2) continue;
 
         outPositions.push(
@@ -1355,27 +1529,83 @@
           clusterPos[c1 * 3], clusterPos[c1 * 3 + 1], clusterPos[c1 * 3 + 2],
           clusterPos[c2 * 3], clusterPos[c2 * 3 + 1], clusterPos[c2 * 3 + 2]
         );
-
-        if (outColors) {
-          // Coloration unie de chaque facette polygonale pour un rendu origami net
-          const r = (clusterCol[c0 * 3] + clusterCol[c1 * 3] + clusterCol[c2 * 3]) / 3;
-          const g = (clusterCol[c0 * 3 + 1] + clusterCol[c1 * 3 + 1] + clusterCol[c2 * 3 + 1]) / 3;
-          const b = (clusterCol[c0 * 3 + 2] + clusterCol[c1 * 3 + 2] + clusterCol[c2 * 3 + 2]) / 3;
-          outColors.push(r, g, b,  r, g, b,  r, g, b);
-        }
       }
 
       const lp = new THREE.BufferGeometry();
       lp.setAttribute('position', new THREE.BufferAttribute(new Float32Array(outPositions), 3));
-      if (outColors) {
-        lp.setAttribute('color', new THREE.BufferAttribute(new Float32Array(outColors), 3));
-      }
       lp.computeVertexNormals();
       return lp;
     }
 
+    // Algorithme de Voxélisation Cubique 3D (Style Minecraft Pixel Art)
+    function generateVoxelGeometry(sourceGeom, voxelCount = 28) {
+      if (!sourceGeom || !sourceGeom.attributes || !sourceGeom.attributes.position) return sourceGeom;
+      const posAttr = sourceGeom.attributes.position;
+      const numVerts = posAttr.count;
+
+      let minX = Infinity, minY = Infinity, minZ = Infinity;
+      let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+      for (let i = 0; i < numVerts; i++) {
+        const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+      }
+
+      const dx = maxX - minX || 1;
+      const dy = maxY - minY || 1;
+      const dz = maxZ - minZ || 1;
+      const maxDim = Math.max(dx, dy, dz);
+      const cellSize = maxDim / voxelCount;
+
+      const activeVoxels = new Set();
+      for (let i = 0; i < numVerts; i++) {
+        const px = posAttr.getX(i), py = posAttr.getY(i), pz = posAttr.getZ(i);
+        const gx = Math.floor((px - minX) / cellSize);
+        const gy = Math.floor((py - minY) / cellSize);
+        const gz = Math.floor((pz - minZ) / cellSize);
+        activeVoxels.add(gx + ',' + gy + ',' + gz);
+      }
+
+      // Construction de cubes instanciés fusionnés
+      const cubeGeo = new THREE.BoxGeometry(cellSize * 0.95, cellSize * 0.95, cellSize * 0.95);
+      const cubePos = cubeGeo.attributes.position;
+      const cubeNorm = cubeGeo.attributes.normal;
+      const cubeIdx = cubeGeo.index;
+
+      const outPositions = [];
+      const outNormals = [];
+
+      for (const vKey of activeVoxels) {
+        const [gx, gy, gz] = vKey.split(',').map(Number);
+        const cx = minX + (gx + 0.5) * cellSize;
+        const cy = minY + (gy + 0.5) * cellSize;
+        const cz = minZ + (gz + 0.5) * cellSize;
+
+        for (let i = 0; i < cubeIdx.count; i++) {
+          const idx = cubeIdx.getX(i);
+          outPositions.push(
+            cubePos.getX(idx) + cx,
+            cubePos.getY(idx) + cy,
+            cubePos.getZ(idx) + cz
+          );
+          outNormals.push(
+            cubeNorm.getX(idx),
+            cubeNorm.getY(idx),
+            cubeNorm.getZ(idx)
+          );
+        }
+      }
+
+      const vg = new THREE.BufferGeometry();
+      vg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(outPositions), 3));
+      vg.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(outNormals), 3));
+      return vg;
+    }
+
     // Contour d'Encrage Manga par Inversion de Coque Extrudée le long des Normales
-    function createOutlineMesh(sourceMesh, thickness = 0.75) {
+    function createOutlineMesh(sourceMesh, thickness = 0.85) {
       if (!sourceMesh || !sourceMesh.geometry) return null;
       const baseGeom = sourceMesh.userData && sourceMesh.userData.baseGeometry ? sourceMesh.userData.baseGeometry : sourceMesh.geometry;
       const geom = baseGeom.clone();
@@ -1401,7 +1631,7 @@
       return new THREE.Mesh(geom, mat);
     }
 
-    // Nettoyage des sous-maillages d'effets visuels (Contour Manga, Wireframe Cyberpunk)
+    // Nettoyage des sous-maillages d'effets visuels (Contour Manga, Wireframe Cyberpunk, Treillis Voronoï)
     function clearStyleOverlays() {
       if (styleOverlayMesh && meshObject) {
         meshObject.remove(styleOverlayMesh);
@@ -1415,7 +1645,7 @@
       }
     }
 
-    // Application Immédiate d'un Style 3D Artistique
+    // Application Immédiate d'un Style 3D Artistique (Véritables Effets Géométriques & Matériaux)
     function applyArtisticStyle(styleKey) {
       currentArtStyle = styleKey;
 
@@ -1438,14 +1668,20 @@
 
       clearStyleOverlays();
       const normMap = getFineNoiseNormalMap();
+      const userColor = new THREE.Color(currentSingleColor || "#f8fafc");
 
-      // Gestion Géométrique pour Low Poly vs Reste des Styles
+      // Gestion Géométrique pour Styles Modificateurs de Forme (Low Poly & Voxel vs Standard)
       if (meshObject.userData && meshObject.userData.baseGeometry) {
         if (styleKey === "lowpoly") {
           if (!meshObject.userData.lowPolyGeometry) {
-            meshObject.userData.lowPolyGeometry = generateLowPolyGeometry(meshObject.userData.baseGeometry, 36);
+            meshObject.userData.lowPolyGeometry = generateLowPolyGeometry(meshObject.userData.baseGeometry, 28);
           }
           meshObject.geometry = meshObject.userData.lowPolyGeometry;
+        } else if (styleKey === "voxel") {
+          if (!meshObject.userData.voxelGeometry) {
+            meshObject.userData.voxelGeometry = generateVoxelGeometry(meshObject.userData.baseGeometry, 26);
+          }
+          meshObject.geometry = meshObject.userData.voxelGeometry;
         } else {
           if (meshObject.geometry !== meshObject.userData.baseGeometry) {
             meshObject.geometry = meshObject.userData.baseGeometry;
@@ -1453,187 +1689,156 @@
         }
       }
 
-      const hasColors = !!(meshObject.geometry.attributes && meshObject.geometry.attributes.color && meshObject.geometry.attributes.color.count > 0);
-      const filColor = (materials[currentMaterialName] && materials[currentMaterialName].color) ? materials[currentMaterialName].color.getHex() : 0x2563eb;
       let newMat = null;
 
       switch(styleKey) {
         case "original":
-          // Couleurs Photo Photoréaliste PBR Fidèles
-          if (meshObject.userData && meshObject.userData.originalMaterial && meshObject.userData.originalMaterial.map) {
-            newMat = meshObject.userData.originalMaterial.clone();
-            newMat.roughness = 0.35;
-            newMat.metalness = 0.05;
-          } else if (hasColors) {
-            newMat = new THREE.MeshStandardMaterial({
-              vertexColors: true,
-              color: 0xffffff,
-              roughness: 0.35,
-              metalness: 0.05
-            });
-          } else {
-            newMat = (materials[currentMaterialName] || materials.basic).clone();
-          }
-          break;
-
-        case "figurine":
-          // Figurine Vinyle Collector : Vernis Brillant Haute Réflectivité & Couleurs Vives
+        case "studio":
+          // 1. Effet Studio HD : Sculpture Fine PBR Monochrome avec Micro-Reliefs
           newMat = new THREE.MeshPhysicalMaterial({
-            vertexColors: hasColors,
-            color: hasColors ? 0xffffff : filColor,
-            roughness: 0.15,
+            color: userColor,
+            roughness: 0.32,
             metalness: 0.05,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.03,
-            reflectivity: 0.95,
+            clearcoat: 0.55,
+            clearcoatRoughness: 0.12,
+            reflectivity: 0.55,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.20, 0.20)
+            normalScale: new THREE.Vector2(0.35, 0.35)
           });
           break;
 
         case "lowpoly":
-          // Low Poly Art : Facettes Triangulaires Plans Géométriques Nettes
+          // 2. Effet Low Poly Art : Facettes Triangulaires Plans Origami à Arêtes Vives
           newMat = new THREE.MeshStandardMaterial({
-            vertexColors: hasColors,
-            color: hasColors ? 0xffffff : 0x38bdf8,
-            roughness: 0.40,
-            metalness: 0.08,
+            color: userColor,
+            roughness: 0.38,
+            metalness: 0.10,
             flatShading: true
           });
           break;
 
         case "manga":
-          // Cel-Shading Toon Manga Contrasté + Encrage Noir Extrudé
+          // 3. Effet Manga Cel-Shaded : Ombrage Anime Steppé + Encrage Noir Extrudé
           newMat = new THREE.MeshToonMaterial({
-            vertexColors: hasColors,
-            color: hasColors ? 0xffffff : filColor,
+            color: userColor,
             gradientMap: getToonGradientMap()
           });
-          styleOverlayMesh = createOutlineMesh(meshObject, 0.75);
+          styleOverlayMesh = createOutlineMesh(meshObject, 0.85);
           if (styleOverlayMesh) {
             meshObject.add(styleOverlayMesh);
           }
           break;
 
-        case "clay":
-          // Cire Rouge / Terre Cuite ZBrush Sculpteur (MatCap Red Wax)
+        case "voxel":
+          // 4. Effet Voxel 3D : Cubes Minecraft Pixel Art avec Ombrage Voxelisé
           newMat = new THREE.MeshStandardMaterial({
-            color: 0xbf5032,
-            roughness: 0.92,
-            metalness: 0.0,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.85, 0.85)
+            color: userColor,
+            roughness: 0.65,
+            metalness: 0.05,
+            flatShading: true
           });
           break;
 
-        case "marble":
-          // Marbre de Carrare Antique : Blanc Sculpté Pur Translucide
+        case "figurine":
+          // 5. Effet Figurine Chibi : Pop Art Vinyle Lisse & Vernis Brillant Miroir
           newMat = new THREE.MeshPhysicalMaterial({
-            color: 0xfcfcfc,
-            roughness: 0.18,
-            clearcoat: 0.85,
-            clearcoatRoughness: 0.12,
-            transmission: 0.26,
-            thickness: 2.2,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.25, 0.25)
-          });
-          break;
-
-        case "bronze":
-          // Bronze Antique de Musée Patiné
-          newMat = new THREE.MeshStandardMaterial({
-            color: 0x6e4722,
-            metalness: 0.92,
-            roughness: 0.30,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.60, 0.60)
-          });
-          break;
-
-        case "gold":
-          // Or Pur 24K Poli Miroir Haute Réflectance
-          newMat = new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            metalness: 1.0,
-            roughness: 0.08,
+            color: userColor,
+            roughness: 0.12,
+            metalness: 0.02,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.02,
+            reflectivity: 0.98,
             normalMap: normMap,
             normalScale: new THREE.Vector2(0.12, 0.12)
           });
           break;
 
-        case "wood":
-          // Bois Naturel Sculpté (Noyer / Chêne Artisanal)
+        case "voronoi":
+          // 6. Effet Structure Bionique : Treillis Ajouré Exosquelette + Structure Interne
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x6d3e1d,
-            roughness: 0.88,
-            metalness: 0.0,
+            color: userColor,
+            roughness: 0.30,
+            metalness: 0.45,
+            wireframe: false
+          });
+          if (meshObject.geometry) {
+            const wireMat = new THREE.MeshBasicMaterial({
+              color: 0x10b981,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.75
+            });
+            const baseGeom = meshObject.userData && meshObject.userData.baseGeometry ? meshObject.userData.baseGeometry : meshObject.geometry;
+            styleOverlayMesh = new THREE.Mesh(baseGeom.clone(), wireMat);
+            meshObject.add(styleOverlayMesh);
+          }
+          break;
+
+        case "marble":
+          // 7. Effet Bas-Relief Antique : Gravure Romaine en Pierre Antique Translucide
+          newMat = new THREE.MeshPhysicalMaterial({
+            color: userColor,
+            roughness: 0.22,
+            clearcoat: 0.80,
+            clearcoatRoughness: 0.15,
+            transmission: 0.22,
+            thickness: 2.5,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.85, 0.85)
+            normalScale: new THREE.Vector2(0.50, 0.50)
           });
           break;
 
         case "cyberpunk":
-          // Armure Stealth Obsidian Sombre + Maillage Néon Cyan Électrique
+          // 8. Effet Cyber Néon : Noyau Sombre Furtif + Maillage Filaire Cyan Électrique
           newMat = new THREE.MeshStandardMaterial({
             color: 0x050811,
-            roughness: 0.16,
-            metalness: 0.96
+            roughness: 0.15,
+            metalness: 0.95
           });
           if (meshObject.geometry) {
             const wireMat = new THREE.MeshBasicMaterial({
               color: 0x00f0ff,
               wireframe: true,
               transparent: true,
-              opacity: 0.85
+              opacity: 0.90
             });
             const baseGeom = meshObject.userData && meshObject.userData.baseGeometry ? meshObject.userData.baseGeometry : meshObject.geometry;
-            const wireGeo = baseGeom.clone();
-            styleOverlayMesh = new THREE.Mesh(wireGeo, wireMat);
+            styleOverlayMesh = new THREE.Mesh(baseGeom.clone(), wireMat);
             meshObject.add(styleOverlayMesh);
           }
           break;
 
-        case "silk":
-          // Bambu Lab PLA Silk Vert Émeraude / Éclat Soyeux Liquide
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: 0x059669,
-            metalness: 0.88,
-            roughness: 0.10,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.04,
-            reflectivity: 0.95,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
-          });
-          break;
-
         case "carbon":
-          // Fibre de Carbone Mat Furtif Aéronautique
+          // Finition Carbone Stealth
           newMat = new THREE.MeshStandardMaterial({
-            color: 0x14171d,
-            roughness: 0.92,
-            metalness: 0.28,
+            color: 0x161a22,
+            roughness: 0.90,
+            metalness: 0.25,
             normalMap: normMap,
             normalScale: new THREE.Vector2(0.80, 0.80)
           });
           break;
 
         case "crystal":
-          // Saphir / Cristal Optique Réfractif Translucide
+          // Finition Cristal Translucide
           newMat = new THREE.MeshPhysicalMaterial({
-            color: 0x38bdf8,
-            roughness: 0.03,
-            transmission: 0.96,
+            color: userColor,
+            roughness: 0.05,
+            transmission: 0.95,
             thickness: 3.5,
-            ior: 1.55,
+            ior: 1.52,
             transparent: true,
-            opacity: 0.95
+            opacity: 0.90
           });
           break;
 
         default:
-          newMat = (materials[currentMaterialName] || materials.basic).clone();
+          newMat = new THREE.MeshPhysicalMaterial({
+            color: userColor,
+            roughness: 0.32,
+            metalness: 0.05,
+            clearcoat: 0.55
+          });
       }
 
       newMat.wireframe = isWireframe;
@@ -1783,9 +1988,21 @@
         meshObject.position.z = -box.min.z;
       }
 
-      const dx = (box.max.x - box.min.x).toFixed(1);
-      const dy = (box.max.y - box.min.y).toFixed(1);
-      const dz = (box.max.z - box.min.z).toFixed(1);
+      const dxNum = Math.max(1.0, box.max.x - box.min.x);
+      const dyNum = Math.max(1.0, box.max.y - box.min.y);
+      const dzNum = Math.max(1.0, box.max.z - box.min.z);
+
+      meshObject.userData.baseExtents = { x: dxNum, y: dyNum, z: dzNum };
+      meshObject.userData.baseMinZ = box.min.z;
+
+      // Initialiser les curseurs aux dimensions réelles
+      if (sliderLength) { sliderLength.value = dxNum.toFixed(1); valLength.textContent = dxNum.toFixed(1); }
+      if (sliderWidth) { sliderWidth.value = dyNum.toFixed(1); valWidth.textContent = dyNum.toFixed(1); }
+      if (sliderHeight) { sliderHeight.value = dzNum.toFixed(1); valHeight.textContent = dzNum.toFixed(1); }
+
+      const dx = dxNum.toFixed(1);
+      const dy = dyNum.toFixed(1);
+      const dz = dzNum.toFixed(1);
 
       document.getElementById("statDimX").textContent = dx;
       document.getElementById("statDimY").textContent = dy;
@@ -1793,11 +2010,11 @@
       document.getElementById("statWatertight").textContent = "100% Imprimable (Watertight)";
 
       // Estimate volume & weight
-      currentVolumeCm3 = Math.max(1.0, (dx * dy * dz * 0.25) / 1000.0);
+      currentVolumeCm3 = Math.max(1.0, (dxNum * dyNum * dzNum * 0.25) / 1000.0);
       const w = (currentVolumeCm3 * currentDensity * 0.35).toFixed(1);
       document.getElementById("statWeight").textContent = w;
 
-      const estMins = Math.max(15, Math.round((dz / 0.16) * 1.5 + (w * 1.8)));
+      const estMins = Math.max(15, Math.round((dzNum / 0.16) * 1.5 + (w * 1.8)));
       const hrs = Math.floor(estMins / 60);
       const m = estMins % 60;
       document.getElementById("statTime").textContent = hrs > 0 ? `${hrs}h ${m}m` : `${m} min`;
@@ -1808,31 +2025,13 @@
       if (btnDownloadGLB) btnDownloadGLB.classList.remove("opacity-50", "pointer-events-none");
       if (quickDownloadCard) quickDownloadCard.classList.remove("hidden");
       if (btnToolbarDownloadSTL) btnToolbarDownloadSTL.classList.remove("hidden");
-      if (quickModelSpecs && sliderHeight) quickModelSpecs.textContent = `${sliderHeight.value} mm`;
+      if (quickModelSpecs) quickModelSpecs.textContent = `${dx}×${dy}×${dz} mm`;
 
       controls.target.set(0, 0, (box.max.z - box.min.z) / 2);
       controls.update();
 
       // Export binary STL into download buttons
-      try {
-        const result = stlExporter.parse(meshObject, { binary: true });
-        const blob = new Blob([result], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        btnDownloadSTL.href = url;
-        btnDownloadSTL.download = (currentFilename ? currentFilename.replace(/\.[^/.]+$/, "") : "modele_3d") + "_BambuA1Mini.stl";
-        btnDownload3MF.href = url;
-        btnDownload3MF.download = (currentFilename ? currentFilename.replace(/\.[^/.]+$/, "") : "modele_3d") + "_BambuA1Mini.3mf";
-        if (btnQuickDownloadSTL) {
-          btnQuickDownloadSTL.href = url;
-          btnQuickDownloadSTL.download = btnDownloadSTL.download;
-        }
-        if (btnToolbarDownloadSTL) {
-          btnToolbarDownloadSTL.href = url;
-          btnToolbarDownloadSTL.download = btnDownloadSTL.download;
-        }
-      } catch (err) {
-        console.warn("STL Export preview:", err);
-      }
+      updateExportedSTL();
     }
 
     // Load STL Model from URL

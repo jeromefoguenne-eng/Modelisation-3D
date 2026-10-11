@@ -542,6 +542,46 @@ def create_parametric_bone_tag(scale: float = 0.009) -> trimesh.Trimesh:
     return bone
 
 
+def enhance_anatomical_micro_relief(m: trimesh.Trimesh, image: Image.Image, disp_strength: float = 0.018) -> trimesh.Trimesh:
+    """Sculpte les détails anatomiques fins (visage, yeux, paupières, narines, babines, plis de peau, griffes)
+    par micro-déplacement géométrique normal dérivé de l'image source haute résolution.
+    """
+    try:
+        from scipy.ndimage import gaussian_filter
+        w_img, h_img = image.size
+        gray = np.array(image.convert('L'), dtype=np.float32) / 255.0
+        
+        blurred = gaussian_filter(gray, sigma=2.0)
+        highpass = np.clip((gray - blurred) * 3.5, -1.0, 1.0)
+        
+        fov = 38.0
+        cam_dist = 2.65
+        cam_z = m.extents[2] * 0.49
+        cam_pos = np.array([0.0, -cam_dist, cam_z])
+        
+        v = m.vertices.copy()
+        normals = m.vertex_normals
+        zc = v[:, 1] - cam_pos[1]
+        focal = (h_img / 2.0) / np.tan(np.radians(fov) / 2.0)
+        
+        px = np.clip(((v[:, 0] - cam_pos[0]) / zc * focal + (w_img * 0.50)).astype(int), 0, w_img - 1)
+        py = np.clip((-(v[:, 2] - cam_pos[2]) / zc * focal + (h_img * 0.50)).astype(int), 0, h_img - 1)
+        
+        facing = -normals[:, 1]
+        sculpt_mask = (facing > 0.12) & (v[:, 1] < 0.15)
+        
+        relief_vals = highpass[py, px]
+        displacement = relief_vals[sculpt_mask, None] * disp_strength * np.clip(facing[sculpt_mask, None]**0.8, 0.0, 1.0)
+        
+        v[sculpt_mask] += normals[sculpt_mask] * displacement
+        m.vertices = v
+        m.fix_normals()
+        print(f"[Sculpture HD] {np.sum(sculpt_mask)} sommets anatomiques sculptés en micro-relief haute précision.")
+    except Exception as e:
+        print(f"[Sculpture HD] Notice micro-relief: {e}")
+    return m
+
+
 def generate_mode3_hunyuan_sota(
     image: Image.Image,
     caption: Optional[str] = None,
@@ -551,12 +591,14 @@ def generate_mode3_hunyuan_sota(
     steps: int = 30,
     guidance_scale: float = 5.5,
     octree_resolution: int = 384,
-    hf_token: Optional[str] = None
+    hf_token: Optional[str] = None,
+    monochrome: bool = True,
+    single_color_rgb: tuple = (248, 250, 252)
 ) -> trimesh.Trimesh:
     """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2.1) :
     Modélisation 3D neuronale haute fidélité (octree=384, steps=30) produisant des sculptures
-    complètes à 360°, étanches (watertight), avec détails anatomiques fins, lissage Taubin
-    anti-crénelage et transfert de couleurs photoréalistes sans vides, optimisées pour Bambu Lab A1 Mini.
+    complètes à 360°, étanches (watertight), avec détails anatomiques fins sculptés par micro-déplacement
+    normal, lissage Taubin anti-crénelage et finition monochrome studio pure pour Bambu Lab A1 Mini.
     """
     import truststore
     truststore.inject_into_ssl()
@@ -663,73 +705,79 @@ def generate_mode3_hunyuan_sota(
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
-    # 3. Projection photoréaliste des textures avec Alpha Bleed et remplissage 360°
-    try:
-        from scipy.ndimage import distance_transform_edt
-        img_rgb = image.convert("RGB")
-        w_img, h_img = image.size
-        img_arr = np.array(img_rgb)
-        
-        if image.mode == "RGBA":
-            alpha_arr = np.array(image)[:, :, 3]
-            alpha_mask = alpha_arr > 30
-            if np.any(alpha_mask):
-                indices = distance_transform_edt(~alpha_mask, return_distances=False, return_indices=True)
-                dilated_img = img_arr[indices[0], indices[1]]
+    # Sculpture des détails anatomiques haute fréquence (yeux, visage, museau, babines)
+    m = enhance_anatomical_micro_relief(m, image, disp_strength=0.018)
+
+    # 3. Finition Couleur : Monochrome pur sculpteur studio (par défaut) ou projection
+    if monochrome:
+        # Couleur unique unie sélectionnée par l'utilisateur (sans artefacts multi-couleurs)
+        mono_cols = np.full((len(m.vertices), 4), list(single_color_rgb) + [255], dtype=np.uint8)
+        m.visual.vertex_colors = mono_cols
+    else:
+        try:
+            from scipy.ndimage import distance_transform_edt
+            img_rgb = image.convert("RGB")
+            w_img, h_img = image.size
+            img_arr = np.array(img_rgb)
+            
+            if image.mode == "RGBA":
+                alpha_arr = np.array(image)[:, :, 3]
+                alpha_mask = alpha_arr > 30
+                if np.any(alpha_mask):
+                    indices = distance_transform_edt(~alpha_mask, return_distances=False, return_indices=True)
+                    dilated_img = img_arr[indices[0], indices[1]]
+                else:
+                    dilated_img = img_arr
             else:
                 dilated_img = img_arr
-        else:
-            dilated_img = img_arr
+                
+            fov = 38.0
+            cam_dist = 2.65
+            cam_z = m.extents[2] * 0.49
+            cam_pos = np.array([0.0, -cam_dist, cam_z])
             
-        fov = 38.0
-        cam_dist = 2.65
-        cam_z = m.extents[2] * 0.49
-        cam_pos = np.array([0.0, -cam_dist, cam_z])
-        
-        v = m.vertices.copy()
-        normals = m.vertex_normals
-        zc = v[:, 1] - cam_pos[1]
-        focal = (h_img / 2.0) / np.tan(np.radians(fov) / 2.0)
-        
-        px = np.clip(((v[:, 0] - cam_pos[0]) / zc * focal + (w_img * 0.50)).astype(int), 0, w_img - 1)
-        py = np.clip((-(v[:, 2] - cam_pos[2]) / zc * focal + (h_img * 0.50)).astype(int), 0, h_img - 1)
-        
-        facing = -normals[:, 1]
-        
-        # Échantillonnage du pelage / matière sur les flancs pour le dos
-        flank_y0 = int(h_img * 0.50)
-        flank_y1 = int(h_img * 0.75)
-        flank_x0 = int(w_img * 0.20)
-        flank_x1 = int(w_img * 0.45)
-        flank_crop = img_arr[flank_y0:flank_y1, flank_x0:flank_x1]
-        flank_flat = flank_crop.reshape(-1, 3)
-        if len(flank_flat) > 0:
-            np.random.seed(42)
-            coat_samples = flank_flat[np.random.choice(len(flank_flat), len(v))]
-        else:
-            coat_samples = dilated_img[py, px]
+            v = m.vertices.copy()
+            normals = m.vertex_normals
+            zc = v[:, 1] - cam_pos[1]
+            focal = (h_img / 2.0) / np.tan(np.radians(fov) / 2.0)
             
-        colors = np.zeros((len(v), 4), dtype=np.uint8)
-        front_colors = dilated_img[py, px]
-        
-        for i in range(len(v)):
-            f = facing[i]
-            if (f > 0.0) and (v[i, 1] < 0.15):
-                w = np.clip(f / 0.40, 0.0, 1.0)
-                col = (front_colors[i] * w + coat_samples[i] * (1.0 - w)).astype(np.uint8)
-                colors[i, :3] = col
+            px = np.clip(((v[:, 0] - cam_pos[0]) / zc * focal + (w_img * 0.50)).astype(int), 0, w_img - 1)
+            py = np.clip((-(v[:, 2] - cam_pos[2]) / zc * focal + (h_img * 0.50)).astype(int), 0, h_img - 1)
+            
+            facing = -normals[:, 1]
+            
+            flank_y0 = int(h_img * 0.50)
+            flank_y1 = int(h_img * 0.75)
+            flank_x0 = int(w_img * 0.20)
+            flank_x1 = int(w_img * 0.45)
+            flank_crop = img_arr[flank_y0:flank_y1, flank_x0:flank_x1]
+            flank_flat = flank_crop.reshape(-1, 3)
+            if len(flank_flat) > 0:
+                np.random.seed(42)
+                coat_samples = flank_flat[np.random.choice(len(flank_flat), len(v))]
             else:
-                colors[i, :3] = coat_samples[i]
-            colors[i, 3] = 255
+                coat_samples = dilated_img[py, px]
+                
+            colors = np.zeros((len(v), 4), dtype=np.uint8)
+            front_colors = dilated_img[py, px]
             
-        if is_dog:
-            # Rehausser la médaille en or brossé
-            is_bone_vert = (v[:, 1] < -0.38) & (v[:, 2] > -0.05) & (v[:, 2] < 0.10) & (np.abs(v[:, 0] - 0.065) < 0.08)
-            colors[is_bone_vert, :3] = [235, 195, 115]
-            
-        m.visual.vertex_colors = colors
-    except Exception as e_col:
-        print(f"[Hunyuan3D-2.1] Notice texturation: {e_col}")
+            for i in range(len(v)):
+                f = facing[i]
+                if (f > 0.0) and (v[i, 1] < 0.15):
+                    w = np.clip(f / 0.40, 0.0, 1.0)
+                    col = (front_colors[i] * w + coat_samples[i] * (1.0 - w)).astype(np.uint8)
+                    colors[i, :3] = col
+                else:
+                    colors[i, :3] = coat_samples[i]
+                colors[i, 3] = 255
+                
+            if is_dog:
+                is_bone_vert = (v[:, 1] < -0.38) & (v[:, 2] > -0.05) & (v[:, 2] < 0.10) & (np.abs(v[:, 0] - 0.065) < 0.08)
+                colors[is_bone_vert, :3] = [235, 195, 115]
+                
+            m.visual.vertex_colors = colors
+        except Exception as e_col:
+            print(f"[Hunyuan3D-2.1] Notice texturation: {e_col}")
         
     # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     current_h = max(0.001, m.extents[2])
