@@ -209,10 +209,11 @@ async def convert_image(
     with open(img_path, "rb") as f_img:
         img_sha = hashlib.sha256(f_img.read()).hexdigest()[:12]
 
-    cache_key = f"mode{mode}_{engine_mode}_{img_sha}_h{int(target_height_mm)}_b{int(add_base)}_v6_clean_rtx"
+    cache_key = f"mode{mode}_{engine_mode}_{img_sha}_h{int(target_height_mm)}_b{int(add_base)}_v7_ai_verified_sota"
     cached_stl = os.path.join(OUTPUT_DIR, f"{cache_key}.stl")
     cached_3mf = os.path.join(OUTPUT_DIR, f"{cache_key}.3mf")
     cached_glb = os.path.join(OUTPUT_DIR, f"{cache_key}.glb")
+    cached_verify = os.path.join(OUTPUT_DIR, f"{cache_key}_ai_verify.json" if False else f"{cache_key}.stl")
 
     if os.path.exists(cached_stl) and os.path.exists(cached_glb):
         print(f"[Cache Hit] Modèle 3D précalculé servi instantanément ({cache_key})...")
@@ -225,6 +226,7 @@ async def convert_image(
         
         cached_mesh = trimesh.load(cached_stl, force="mesh")
         printability = engine.check_bambu_printability(cached_mesh)
+        ai_verification = engine.ai_verify_3d_reconstruction(cached_mesh, im, OUTPUT_DIR, out_id)
         return {
             "success": True,
             "stl_filename": stl_name,
@@ -233,7 +235,8 @@ async def convert_image(
             "stl_url": f"/outputs/{stl_name}",
             "threemf_url": f"/outputs/{threemf_name}",
             "glb_url": f"/outputs/{glb_name}",
-            "printability": printability
+            "printability": printability,
+            "ai_verification": ai_verification
         }
 
     try:
@@ -306,6 +309,7 @@ async def convert_image(
             pass
         
         printability = engine.check_bambu_printability(mesh)
+        ai_verification = engine.ai_verify_3d_reconstruction(mesh, im, OUTPUT_DIR, out_id)
         
         return {
             "success": True,
@@ -315,7 +319,8 @@ async def convert_image(
             "stl_url": f"/outputs/{stl_name}",
             "threemf_url": f"/outputs/{threemf_name}",
             "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
-            "printability": printability
+            "printability": printability,
+            "ai_verification": ai_verification
         }
         
     except Exception as e:
