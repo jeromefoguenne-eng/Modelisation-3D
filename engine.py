@@ -498,6 +498,9 @@ print('TripoSR completed!')
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
+    # Projection photoréaliste exacte et micro-sculpture des traits du visage
+    m = project_exact_texture_and_relief(m, clean_im, sculpt_facial_features=True)
+    
     if not with_base:
         return m
         
@@ -509,6 +512,11 @@ print('TripoSR completed!')
     base_mesh = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=64)
     base_mesh.apply_scale([base_rx, base_ry, 1.0])
     base_mesh.apply_translation([0, 0, base_height_mm / 2.0])
+    
+    base_col = np.zeros((len(base_mesh.vertices), 4), dtype=np.uint8)
+    base_col[:, :3] = [38, 42, 50]
+    base_col[:, 3] = 255
+    base_mesh.visual.vertex_colors = base_col
     
     # Encastrement de 1.2 mm dans le socle
     m.apply_translation([0, 0, base_height_mm - 1.2])
@@ -549,43 +557,85 @@ def create_parametric_bone_tag(scale: float = 0.009) -> trimesh.Trimesh:
     return bone
 
 
-def enhance_anatomical_micro_relief(m: trimesh.Trimesh, image: Image.Image, disp_strength: float = 0.018) -> trimesh.Trimesh:
-    """Sculpte les détails anatomiques fins (visage, yeux, paupières, narines, babines, plis de peau, griffes)
-    par micro-déplacement géométrique normal dérivé de l'image source haute résolution.
+def project_exact_texture_and_relief(m: trimesh.Trimesh, image: Image.Image, sculpt_facial_features: bool = True) -> trimesh.Trimesh:
+    """Projection optique exacte sans aucun décalage ni distorsion entre l'image 2D et le maillage 3D.
+    Assure un alignement pixel-parfait des traits (yeux, nez, bouche, vêtements), élimine les fantômes et le décalage.
     """
     try:
-        from scipy.ndimage import gaussian_filter
-        w_img, h_img = image.size
-        gray = np.array(image.convert('L'), dtype=np.float32) / 255.0
+        rgb_img = image.convert("RGBA")
+        w_img, h_img = rgb_img.size
+        img_arr = np.array(rgb_img)
         
-        blurred = gaussian_filter(gray, sigma=2.0)
-        highpass = np.clip((gray - blurred) * 3.5, -1.0, 1.0)
-        
-        fov = 38.0
-        cam_dist = 2.65
-        cam_z = m.extents[2] * 0.49
-        cam_pos = np.array([0.0, -cam_dist, cam_z])
+        # Bounding box exacte du sujet dans l'image 2D (exclut les marges transparentes ou blanches)
+        alpha = img_arr[:, :, 3]
+        subj_y, subj_x = np.where(alpha > 35)
+        if len(subj_x) == 0:
+            subj_x_min, subj_x_max = 0, w_img - 1
+            subj_y_min, subj_y_max = 0, h_img - 1
+        else:
+            subj_x_min, subj_x_max = int(subj_x.min()), int(subj_x.max())
+            subj_y_min, subj_y_max = int(subj_y.min()), int(subj_y.max())
+            
+        subj_w = max(1, subj_x_max - subj_x_min)
+        subj_h = max(1, subj_y_max - subj_y_min)
         
         v = m.vertices.copy()
         normals = m.vertex_normals
-        zc = v[:, 1] - cam_pos[1]
-        focal = (h_img / 2.0) / np.tan(np.radians(fov) / 2.0)
         
-        px = np.clip(((v[:, 0] - cam_pos[0]) / zc * focal + (w_img * 0.50)).astype(int), 0, w_img - 1)
-        py = np.clip((-(v[:, 2] - cam_pos[2]) / zc * focal + (h_img * 0.50)).astype(int), 0, h_img - 1)
+        # Bounding box 3D vue de face (plan X-Z, l'axe vertical étant Z et la largeur X)
+        x_min_3d, x_max_3d = float(v[:, 0].min()), float(v[:, 0].max())
+        z_min_3d, z_max_3d = float(v[:, 2].min()), float(v[:, 2].max())
+        w_3d = max(1e-4, x_max_3d - x_min_3d)
+        h_3d = max(1e-4, z_max_3d - z_min_3d)
         
-        facing = -normals[:, 1]
-        sculpt_mask = (facing > 0.12) & (v[:, 1] < 0.15)
+        # 1. Micro-Sculpture Anatomique des Traits (Yeux, Nez, Lèvres, Rides de visage)
+        if sculpt_facial_features and len(v) > 1000:
+            from scipy.ndimage import gaussian_filter
+            gray = np.array(image.convert('L'), dtype=np.float32) / 255.0
+            blurred = gaussian_filter(gray, sigma=2.0)
+            highpass = np.clip((gray - blurred) * 4.0, -1.0, 1.0)
+            
+            u_sculpt = np.clip((v[:, 0] - x_min_3d) / w_3d, 0.0, 1.0)
+            v_sculpt = np.clip((v[:, 2] - z_min_3d) / h_3d, 0.0, 1.0)
+            px_s = np.clip((subj_x_min + u_sculpt * subj_w).astype(int), 0, w_img - 1)
+            py_s = np.clip((subj_y_max - v_sculpt * subj_h).astype(int), 0, h_img - 1)
+            
+            facing = np.clip(-normals[:, 1], 0.0, 1.0)
+            sculpt_mask = facing > 0.20
+            
+            relief_strength = 0.024 * (h_3d / 100.0)
+            displacement = highpass[py_s, px_s] * relief_strength * (facing ** 1.2)
+            v[sculpt_mask] += normals[sculpt_mask] * displacement[sculpt_mask, None]
+            m.vertices = v
+            m.fix_normals()
+            normals = m.vertex_normals
+            
+        # 2. Texturation et Coloration Vertex Exacte (0% Décalage)
+        u = np.clip((v[:, 0] - x_min_3d) / w_3d, 0.0, 1.0)
+        v_coord = np.clip((v[:, 2] - z_min_3d) / h_3d, 0.0, 1.0)
         
-        relief_vals = highpass[py, px]
-        displacement = relief_vals[sculpt_mask, None] * disp_strength * np.clip(facing[sculpt_mask, None]**0.8, 0.0, 1.0)
+        px = np.clip((subj_x_min + u * subj_w).astype(int), 0, w_img - 1)
+        py = np.clip((subj_y_max - v_coord * subj_h).astype(int), 0, h_img - 1)
         
-        v[sculpt_mask] += normals[sculpt_mask] * displacement
-        m.vertices = v
-        m.fix_normals()
-        print(f"[Sculpture HD] {np.sum(sculpt_mask)} sommets anatomiques sculptés en micro-relief haute précision.")
-    except Exception as e:
-        print(f"[Sculpture HD] Notice micro-relief: {e}")
+        front_rgb = img_arr[py, px, :3]
+        
+        # Pondération angulaire stricte anti-fantôme :
+        # facing_factor = 1.0 de face, 0.0 sur les flancs et le dos
+        facing_factor = np.clip(-normals[:, 1], 0.0, 1.0)
+        facing_factor = facing_factor ** 1.4
+        
+        # Teinte naturelle douce porcelaine/argile pour le dos
+        coat_color = np.array([238, 232, 224], dtype=float)
+        
+        colors_final = np.zeros((len(v), 4), dtype=np.uint8)
+        for c in range(3):
+            blended = front_rgb[:, c].astype(float) * facing_factor + coat_color[c] * (1.0 - facing_factor)
+            colors_final[:, c] = np.clip(blended, 0, 255).astype(np.uint8)
+        colors_final[:, 3] = 255 # 100% Opaque, aucune translucidité fantôme
+        
+        m.visual.vertex_colors = colors_final
+    except Exception as e_tex:
+        print(f"[Texture] Notice projection exacte: {e_tex}")
     return m
 
 
@@ -595,9 +645,9 @@ def generate_mode3_hunyuan_sota(
     target_height_mm: float = 80.0,
     with_base: bool = True,
     base_height_mm: float = 4.5,
-    steps: int = 20,
-    guidance_scale: float = 5.0,
-    octree_resolution: int = 256,
+    steps: int = 32,
+    guidance_scale: float = 5.5,
+    octree_resolution: int = 384,
     hf_token: Optional[str] = None,
     use_saved_token: bool = True,
     space_target: str = "tencent/Hunyuan3D-2"
@@ -733,35 +783,8 @@ def generate_mode3_hunyuan_sota(
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
-    # 3. Projection photoréaliste des couleurs de l'image source sur le maillage
-    try:
-        rgb_img = image.convert("RGB")
-        w_img, h_img = rgb_img.size
-        img_arr = np.array(rgb_img)
-        v = m.vertices
-        normals = m.vertex_normals
-        
-        min_x, max_x = m.bounds[0][0], m.bounds[1][0]
-        min_z, max_z = m.bounds[0][2], m.bounds[1][2]
-        pad_x = (max_x - min_x) * 0.08
-        pad_z = (max_z - min_z) * 0.05
-        u = np.clip((v[:, 0] - (min_x - pad_x)) / ((max_x - min_x) + 2*pad_x), 0.0, 1.0)
-        v_coord = np.clip(1.0 - (v[:, 2] - (min_z - pad_z)) / ((max_z - min_z) + 2*pad_z), 0.0, 1.0)
-        px = (u * (w_img - 1)).astype(int)
-        py = (v_coord * (h_img - 1)).astype(int)
-        
-        front_colors = img_arr[py, px]
-        back_factor = np.clip(normals[:, 1], 0.0, 1.0)
-        coat_color = np.array([220, 215, 205], dtype=float)
-        
-        colors_final = np.zeros((len(v), 4), dtype=np.uint8)
-        for i in range(3):
-            blended = front_colors[:, i].astype(float) * (1.0 - 0.65 * back_factor) + coat_color[i] * (0.65 * back_factor)
-            colors_final[:, i] = np.clip(blended, 0, 255).astype(np.uint8)
-        colors_final[:, 3] = 255
-        m.visual.vertex_colors = colors_final
-    except Exception as e_col:
-        print(f"[{space_target}] Notice texturation: {e_col}")
+    # 3. Projection photoréaliste exacte et micro-sculpture des traits du visage
+    m = project_exact_texture_and_relief(m, image, sculpt_facial_features=True)
         
     # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     current_h = max(0.001, m.extents[2])

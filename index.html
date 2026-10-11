@@ -38,6 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -2367,17 +2368,29 @@
         // 1. Reliefs & Volumes
         case "original":
           // Modélisation originale 100% fidèle avec couleurs photoréalistes PBR et textures d'origine
-          if (meshObject.userData && meshObject.userData.hasVertexColors) {
+          if (meshObject.userData && meshObject.userData.originalMaterial) {
+            newMat = meshObject.userData.originalMaterial.clone();
+            newMat.transparent = false;
+            newMat.opacity = 1.0;
+            newMat.depthWrite = true;
+            newMat.depthTest = true;
+            newMat.side = THREE.FrontSide;
+          } else if (meshObject.userData && meshObject.userData.hasVertexColors) {
             newMat = new THREE.MeshStandardMaterial({
               vertexColors: true,
               color: 0xffffff,
               roughness: 0.35,
-              metalness: 0.05
+              metalness: 0.05,
+              depthWrite: true,
+              depthTest: true,
+              side: THREE.FrontSide
             });
-          } else if (meshObject.userData && meshObject.userData.originalMaterial) {
-            newMat = meshObject.userData.originalMaterial.clone();
           } else {
             newMat = (materials[currentMaterialName] || materials.basic).clone();
+            newMat.transparent = false;
+            newMat.opacity = 1.0;
+            newMat.depthWrite = true;
+            newMat.side = THREE.FrontSide;
           }
           break;
 
@@ -2887,18 +2900,43 @@
       document.getElementById("loadingSubtitle").textContent = "Lecture du maillage, textures et couleurs PBR";
 
       gltfLoader.load(url, (gltf) => {
-        let foundGeom = null;
-        let foundMat = null;
+        const geometries = [];
+        let primaryMat = null;
         gltf.scene.updateMatrixWorld(true);
         gltf.scene.traverse((child) => {
-          if (child.isMesh && !foundGeom) {
-            foundGeom = child.geometry.clone();
-            foundGeom.applyMatrix4(child.matrixWorld);
-            foundMat = child.material;
+          if (child.isMesh && child.geometry) {
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld);
+            geometries.push(geom);
+            if (!primaryMat && child.material) {
+              primaryMat = child.material.clone ? child.material.clone() : child.material;
+            }
           }
         });
-        if (foundGeom) {
-          setActiveMesh(foundGeom, foundMat);
+
+        if (geometries.length > 0) {
+          let mergedGeom;
+          if (geometries.length === 1) {
+            mergedGeom = geometries[0];
+          } else if (THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeBufferGeometries) {
+            mergedGeom = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+          } else {
+            mergedGeom = geometries[0];
+          }
+
+          // Nettoyer et sécuriser le matériau pour éviter la transparence fantomatique et les décalages
+          if (primaryMat) {
+            primaryMat.transparent = false;
+            primaryMat.opacity = 1.0;
+            primaryMat.depthWrite = true;
+            primaryMat.depthTest = true;
+            primaryMat.side = THREE.FrontSide;
+            if (primaryMat.map) {
+              primaryMat.map.needsUpdate = true;
+            }
+          }
+
+          setActiveMesh(mergedGeom, primaryMat);
           loadingOverlay.classList.add("hidden");
           if (callback) callback();
         } else if (fallbackStlUrl) {
@@ -3345,8 +3383,8 @@
       const cropH = maxY - minY + 1;
       const aspect = cropW / cropH;
 
-      // 2. Grille de calcul optimisée
-      const res = (currentEngine === "ultra") ? 180 : 130;
+      // 2. Grille de calcul haute résolution (Qualité Studio SOTA)
+      const res = (currentEngine === "ultra") ? 260 : 180;
       const gw = aspect > 1 ? res : Math.max(30, Math.round(res * aspect));
       const gh = aspect > 1 ? Math.max(30, Math.round(res / aspect)) : res;
 
@@ -3404,7 +3442,7 @@
         }
       }
 
-      // 4. Construction des Sommets 3D (Z = hauteur verticale debout)
+      // 4. Construction des Sommets 3D et des Couleurs Vertex Pixel-Parfaites
       const withBase = chkAddBase ? chkAddBase.checked : true;
       const bThick = withBase ? baseThickness : 0.0;
       const realH = withBase ? (targetHeight - bThick) : targetHeight;
@@ -3412,6 +3450,7 @@
       const maxVolThickness = Math.max(16.0, realW * 0.38);
 
       const vertices = [];
+      const colors = [];
       const indices = [];
       const frontIdx = new Int32Array(gw * gh).fill(-1);
       const backIdx = new Int32Array(gw * gh).fill(-1);
@@ -3432,17 +3471,25 @@
           // Effet coupole sphérique douce : converge naturellement à 0 au contour
           const inflation = Math.sqrt(dNorm) * maxVolThickness;
 
-          // Sculpture des détails anatomiques sur la face avant
-          const relief = (lum[idx] - 0.5) * 2.4;
+          // Micro-sculpture fine des traits du visage (yeux, nez, bouche, contours)
+          let laplacian = 0.0;
+          if (x > 0 && x < gw - 1 && y > 0 && y < gh - 1) {
+            laplacian = (lum[idx] * 4.0 - (lum[idx - 1] + lum[idx + 1] + lum[idx - gw] + lum[idx + gw]));
+          }
+          const relief = ((lum[idx] - 0.5) * 2.6) + (laplacian * 3.2);
 
           const yFront = (inflation * 0.55) + relief;
           const vFront = vertices.length / 3;
           vertices.push(xCoord, yFront, zCoord);
+          // Couleurs vertex exactes 100% alignées sur les pixels de l'image (0% décalage)
+          colors.push(gData[idx * 4] / 255.0, gData[idx * 4 + 1] / 255.0, gData[idx * 4 + 2] / 255.0);
           frontIdx[idx] = vFront;
 
           const yBack = -(inflation * 0.45);
           const vBack = vertices.length / 3;
           vertices.push(xCoord, yBack, zCoord);
+          // Teinte douce céramique/argile pour le dos
+          colors.push(0.92, 0.90, 0.88);
           backIdx[idx] = vBack;
         }
       }
@@ -3507,19 +3554,23 @@
         const baseSegs = 64;
         const cBot = vertices.length / 3;
         vertices.push(0, 0, 0);
+        colors.push(0.15, 0.16, 0.20);
         const cTop = vertices.length / 3;
         vertices.push(0, 0, baseThickness);
+        colors.push(0.18, 0.19, 0.23);
 
         const rBot = vertices.length / 3;
         for (let s = 0; s < baseSegs; s++) {
           const a = (s / baseSegs) * Math.PI * 2;
           vertices.push(Math.cos(a) * (baseRx + 1.2), Math.sin(a) * (baseRy + 1.2), 0);
+          colors.push(0.14, 0.15, 0.18);
         }
 
         const rTop = vertices.length / 3;
         for (let s = 0; s < baseSegs; s++) {
           const a = (s / baseSegs) * Math.PI * 2;
           vertices.push(Math.cos(a) * baseRx, Math.sin(a) * baseRy, baseThickness);
+          colors.push(0.16, 0.17, 0.21);
         }
 
         for (let s = 0; s < baseSegs; s++) {
@@ -3533,6 +3584,7 @@
 
       const geom = new THREE.BufferGeometry();
       geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
       geom.setIndex(indices);
       geom.computeVertexNormals();
       return geom;
