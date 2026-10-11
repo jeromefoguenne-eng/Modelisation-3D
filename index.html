@@ -727,57 +727,57 @@
       <!-- Liste défilable des Styles Artistiques -->
       <div class="p-3.5 space-y-3 flex-1 overflow-y-auto custom-scrollbar min-h-0">
         
-        <!-- Catégorie: NOUVEAUX EFFETS PHARES -->
+        <!-- Catégorie: NOUVEAUX EFFETS PHARES (DEMANDÉS) -->
         <div class="space-y-1.5">
           <div class="flex items-center gap-1.5 px-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">⭐ Effets Spécifiques Populaires</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">⭐ Effets Phares Personnalisés</span>
           </div>
 
-          <!-- Effet Tricoté -->
+          <!-- 1. Effet Organique (Image 1) -->
+          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="sculptural">
+            <div class="w-9 h-9 rounded-lg bg-rose-500/20 flex items-center justify-center text-lg shrink-0">🏺</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Organique (Argile)</span>
+                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate">Argile veloutée, céramique mate & courbes douces (Img 1)</p>
+            </div>
+          </button>
+
+          <!-- 2. Effet Photoréaliste (Image 2) -->
+          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="photoreal">
+            <div class="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center text-lg shrink-0">📸</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Photoréaliste PBR</span>
+                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate">Textures photo source HD & micro-pores réalistes (Img 2)</p>
+            </div>
+          </button>
+
+          <!-- 3. Effet Tricoté (Image 3) -->
           <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="knitted">
             <div class="w-9 h-9 rounded-lg bg-pink-500/20 flex items-center justify-center text-lg shrink-0">🧶</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Tricoté</span>
+                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Tricoté 3D (Laine)</span>
                 <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
               </div>
-              <p class="text-[10px] text-slate-400 truncate">Mailles de laine jersey tressées & toucher textile</p>
+              <p class="text-[10px] text-slate-400 truncate">Mailles jersey en V entrelacées & relief textile (Img 3)</p>
             </div>
           </button>
 
-          <!-- Effet Petits Trous (Ajouré / Perforé) -->
+          <!-- 4. Effet Moderne FabLab (Image 4) -->
           <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="perforated">
             <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🕳️</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Petits Trous (Ajouré)</span>
+                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Moderne FabLab (Ajouré)</span>
                 <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
               </div>
-              <p class="text-[10px] text-slate-400 truncate">Micro-perforations régulières en nid d'abeille</p>
-            </div>
-          </button>
-
-          <!-- Effet Lampe (Veilleuse LED Bambu) -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lamp">
-            <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg shrink-0">💡</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Lampe (Bambu LED)</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Abat-jour opalescent lumineux & lueur interne chaude</p>
-            </div>
-          </button>
-
-          <!-- Effet Figurine Mignonne (Chibi Pop Art) -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="cute">
-            <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Figurine 3D Mignonne</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Pop Art vinyle laqué brillant miroir ultra-lisse</p>
+              <p class="text-[10px] text-slate-400 truncate">Nid d'abeille perforé & lueur interne luminaire (Img 4)</p>
             </div>
           </button>
         </div>
@@ -855,15 +855,15 @@
             </div>
           </button>
 
-          <!-- Sculptural ou Organique -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="sculptural">
-            <div class="w-9 h-9 rounded-lg bg-rose-500/20 flex items-center justify-center text-lg shrink-0">🏺</div>
+          <!-- Figurine Pop Art (Chibi Vinyle Laqué) -->
+          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="cute">
+            <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Sculptural & Organique</span>
+                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Figurine 3D Mignonne</span>
                 <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
               </div>
-              <p class="text-[10px] text-slate-400 truncate">Argile numérique douce, lissée comme de la glaise</p>
+              <p class="text-[10px] text-slate-400 truncate">Pop Art vinyle laqué brillant miroir ultra-lisse</p>
             </div>
           </button>
 
@@ -879,15 +879,15 @@
             </div>
           </button>
 
-          <!-- Photoréaliste -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="photoreal">
-            <div class="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center text-lg shrink-0">📸</div>
+          <!-- Lampe Veilleuse Bambu -->
+          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lamp">
+            <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg shrink-0">💡</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Photoréaliste PBR</span>
+                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Lampe Veilleuse Bambu</span>
                 <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
               </div>
-              <p class="text-[10px] text-slate-400 truncate">Rendu physique fidèle & micro-détails réalistes</p>
+              <p class="text-[10px] text-slate-400 truncate">Abat-jour opalescent lumineux & lueur interne chaude</p>
             </div>
           </button>
 
@@ -1657,39 +1657,126 @@
       return toonGradientMap;
     }
 
-    // 1. Texture Normal Map Tricotée (Effet Laine / Amigurumi Tressé)
+    // 1. Texture Normal Map Argile & Porcelaine Organique (Toucher Velouté Bisque - Image 1)
+    let velvetClayNormalMap = null;
+    function getVelvetClayNormalMap() {
+      if (velvetClayNormalMap) return velvetClayNormalMap;
+      const c = document.createElement("canvas");
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext("2d");
+      const imgData = ctx.createImageData(256, 256);
+      const d = imgData.data;
+      const h = new Float32Array(256 * 256);
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const idx = y * 256 + x;
+          const grain = (Math.sin(x * 0.95) * Math.cos(y * 0.95) * 0.25) + ((Math.random() - 0.5) * 0.12);
+          h[idx] = grain;
+        }
+      }
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const ym = (y - 1 + 256) % 256, yp = (y + 1) % 256;
+          const xm = (x - 1 + 256) % 256, xp = (x + 1) % 256;
+          const dx = (h[y * 256 + xp] - h[y * 256 + xm]) * 1.8;
+          const dy = (h[yp * 256 + x] - h[ym * 256 + x]) * 1.8;
+          const dz = 1.0;
+          const len = Math.hypot(dx, dy, dz);
+          const idx = (y * 256 + x) * 4;
+          d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
+          d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
+          d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
+          d[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      velvetClayNormalMap = new THREE.CanvasTexture(c);
+      velvetClayNormalMap.wrapS = THREE.RepeatWrapping;
+      velvetClayNormalMap.wrapT = THREE.RepeatWrapping;
+      velvetClayNormalMap.repeat.set(14, 14);
+      return velvetClayNormalMap;
+    }
+
+    // 2. Texture Normal Map Micro-Pores Épidermiques Photoréalistes (Peau PBR Studio - Image 2)
+    let skinPoresNormalMap = null;
+    function getSkinPoresNormalMap() {
+      if (skinPoresNormalMap) return skinPoresNormalMap;
+      const c = document.createElement("canvas");
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext("2d");
+      const imgData = ctx.createImageData(256, 256);
+      const d = imgData.data;
+      const h = new Float32Array(256 * 256);
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const idx = y * 256 + x;
+          const pores = Math.sin(x * 1.8) * Math.sin(y * 1.8) * 0.35;
+          const microGrain = Math.sin(x * 3.4 + y * 1.2) * 0.20;
+          const cellular = (Math.random() - 0.5) * 0.25;
+          h[idx] = pores + microGrain + cellular;
+        }
+      }
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const ym = (y - 1 + 256) % 256, yp = (y + 1) % 256;
+          const xm = (x - 1 + 256) % 256, xp = (x + 1) % 256;
+          const dx = (h[y * 256 + xp] - h[y * 256 + xm]) * 2.8;
+          const dy = (h[yp * 256 + x] - h[ym * 256 + x]) * 2.8;
+          const dz = 1.0;
+          const len = Math.hypot(dx, dy, dz);
+          const idx = (y * 256 + x) * 4;
+          d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
+          d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
+          d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
+          d[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      skinPoresNormalMap = new THREE.CanvasTexture(c);
+      skinPoresNormalMap.wrapS = THREE.RepeatWrapping;
+      skinPoresNormalMap.wrapT = THREE.RepeatWrapping;
+      skinPoresNormalMap.repeat.set(18, 18);
+      return skinPoresNormalMap;
+    }
+
+    // 3. Texture Normal Map Mailles de Tricot en Relief (Chunky Cable Knit V-Stitches - Image 3)
     let knittedNormalMap = null;
     function getKnittedNormalMap() {
       if (knittedNormalMap) return knittedNormalMap;
       const c = document.createElement("canvas");
-      c.width = 128;
-      c.height = 128;
+      c.width = 256; c.height = 256;
       const ctx = c.getContext("2d");
-      const imgData = ctx.createImageData(128, 128);
+      const imgData = ctx.createImageData(256, 256);
       const d = imgData.data;
-      const h = new Float32Array(128 * 128);
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const idx = y * 128 + x;
-          const u = (x % 32) / 32;
-          const v = (y % 32) / 32;
-          const vCurve = Math.abs(u - 0.5) * 2;
-          const stitch = Math.cos(v * Math.PI * 2 - vCurve * 2.5) * 0.7;
-          const rib = Math.sin(u * Math.PI * 2) * 0.3;
-          h[idx] = stitch + rib;
+      const h = new Float32Array(256 * 256);
+      const cellW = 32, cellH = 32;
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const idx = y * 256 + x;
+          const col = Math.floor(x / cellW);
+          const yOff = (col % 2) * (cellH / 2);
+          const yLoc = (y + yOff) % cellH;
+          const xLoc = x % cellW;
+          const u = (xLoc / cellW) * 2.0 - 1.0;
+          const v = (yLoc / cellH) * 2.0 - 1.0;
+          const dLeft = Math.hypot(u + 0.35, v - (u + 0.35) * 0.6);
+          const dRight = Math.hypot(u - 0.35, v + (u - 0.35) * 0.6);
+          const rStrand = 0.44;
+          const hL = Math.max(0.0, Math.sqrt(Math.max(0.0, rStrand * rStrand - dLeft * dLeft)));
+          const hR = Math.max(0.0, Math.sqrt(Math.max(0.0, rStrand * rStrand - dRight * dRight)));
+          const twist = Math.sin((x * 0.6 + y * 1.4) * 0.5) * 0.05;
+          h[idx] = Math.max(hL, hR) + twist;
         }
       }
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const ym = (y - 1 + 128) % 128;
-          const yp = (y + 1) % 128;
-          const xm = (x - 1 + 128) % 128;
-          const xp = (x + 1) % 128;
-          const dx = (h[y * 128 + xp] - h[y * 128 + xm]) * 3.5;
-          const dy = (h[yp * 128 + x] - h[ym * 128 + x]) * 3.5;
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const ym = (y - 1 + 256) % 256, yp = (y + 1) % 256;
+          const xm = (x - 1 + 256) % 256, xp = (x + 1) % 256;
+          const dx = (h[y * 256 + xp] - h[y * 256 + xm]) * 4.2;
+          const dy = (h[yp * 256 + x] - h[ym * 256 + x]) * 4.2;
           const dz = 1.0;
           const len = Math.hypot(dx, dy, dz);
-          const idx = (y * 128 + x) * 4;
+          const idx = (y * 256 + x) * 4;
           d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
           d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
           d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
@@ -1700,34 +1787,39 @@
       knittedNormalMap = new THREE.CanvasTexture(c);
       knittedNormalMap.wrapS = THREE.RepeatWrapping;
       knittedNormalMap.wrapT = THREE.RepeatWrapping;
-      knittedNormalMap.repeat.set(16, 16);
+      knittedNormalMap.repeat.set(20, 20);
       return knittedNormalMap;
     }
 
-    // 2. Texture AlphaMap Micro-Perforations (Effet Petits Trous Imprimable)
+    // 4. Texture AlphaMap Moderne FabLab (Perforations en Nid d'Abeille Hexagonal & Treillis - Image 4)
     let perforatedAlphaMap = null;
     function getPerforatedAlphaMap() {
       if (perforatedAlphaMap) return perforatedAlphaMap;
       const c = document.createElement("canvas");
-      c.width = 64;
-      c.height = 64;
+      c.width = 256; c.height = 256;
       const ctx = c.getContext("2d");
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, 64, 64);
+      ctx.fillRect(0, 0, 256, 256);
       ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.arc(32, 32, 11, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, 0, 9, 0, Math.PI * 2);
-      ctx.arc(64, 0, 9, 0, Math.PI * 2);
-      ctx.arc(0, 64, 9, 0, Math.PI * 2);
-      ctx.arc(64, 64, 9, 0, Math.PI * 2);
-      ctx.fill();
+      const cols = 8;
+      const dx = 256 / cols;
+      const dy = dx * 0.866025;
+      const rows = Math.ceil(256 / dy) + 2;
+      const radius = dx * 0.36;
+      for (let iy = -1; iy <= rows; iy++) {
+        const yCenter = iy * dy;
+        const xOffset = (iy % 2 !== 0) ? (dx * 0.5) : 0.0;
+        for (let ix = -1; ix <= cols + 1; ix++) {
+          const xCenter = ix * dx + xOffset;
+          ctx.beginPath();
+          ctx.arc(xCenter, yCenter, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
       perforatedAlphaMap = new THREE.CanvasTexture(c);
       perforatedAlphaMap.wrapS = THREE.RepeatWrapping;
       perforatedAlphaMap.wrapT = THREE.RepeatWrapping;
-      perforatedAlphaMap.repeat.set(20, 20);
+      perforatedAlphaMap.repeat.set(14, 14);
       return perforatedAlphaMap;
     }
 
@@ -2136,26 +2228,46 @@
       switch(styleKey) {
         // ⭐ Nouveaux Effets Phares Demandés
         case "knitted":
-          // Effet Tricoté : Mailles de laine jersey tressées & amigurumi
+          // Effet Tricoté 3D : Mailles de laine jersey en relief & toucher textile (Image 3)
+          const isKnitCustomColor = Boolean(currentSingleColor && currentSingleColor !== "#f8fafc");
+          const hasKnitVCol = Boolean(meshObject.userData && meshObject.userData.hasVertexColors);
+          const useKnitVCol = hasKnitVCol && !isKnitCustomColor;
           newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.85,
-            metalness: 0.02,
+            color: isKnitCustomColor ? userColor : (hasKnitVCol ? 0xffffff : new THREE.Color("#e6dcce")),
+            vertexColors: useKnitVCol,
+            roughness: 0.94,
+            metalness: 0.0,
             normalMap: getKnittedNormalMap(),
-            normalScale: new THREE.Vector2(1.5, 1.5)
+            normalScale: new THREE.Vector2(2.6, 2.6)
           });
           break;
 
         case "perforated":
-          // Effet Petits Trous : Micro-perforations régulières en nid d'abeille
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
+        case "fablab":
+          // Effet Moderne FabLab : Treillis ajouré en nid d'abeille & luminaire interne (Image 4)
+          const fablabColor = (currentSingleColor && currentSingleColor !== "#f8fafc") 
+            ? userColor 
+            : new THREE.Color("#f8fafc");
+          newMat = new THREE.MeshPhysicalMaterial({
+            color: fablabColor,
             roughness: 0.35,
-            metalness: 0.10,
+            metalness: 0.08,
+            clearcoat: 0.25,
             alphaMap: getPerforatedAlphaMap(),
-            alphaTest: 0.45,
-            side: THREE.DoubleSide
+            alphaTest: 0.38,
+            side: THREE.DoubleSide,
+            transparent: true
           });
+          let fabZCenter = 15;
+          if (meshObject.geometry) {
+            meshObject.geometry.computeBoundingBox();
+            if (meshObject.geometry.boundingBox) {
+              fabZCenter = (meshObject.geometry.boundingBox.min.z + meshObject.geometry.boundingBox.max.z) * 0.45;
+            }
+          }
+          lampLight = new THREE.PointLight(0xffaa44, 2.8, 180);
+          lampLight.position.set(0, 0, fabZCenter);
+          scene.add(lampLight);
           break;
 
         case "lamp":
@@ -2273,13 +2385,22 @@
           break;
 
         case "sculptural":
-          // Sculptural ou Organique : Argile numérique douce et glaise céramique polie
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.65,
+        case "organic":
+          // Effet Organique / Argile Bisque Douce & Porcelaine (Image 1)
+          const organicColor = (currentSingleColor && currentSingleColor !== "#f8fafc") 
+            ? userColor 
+            : new THREE.Color("#f4ede4");
+          newMat = new THREE.MeshPhysicalMaterial({
+            color: organicColor,
+            roughness: 0.52,
             metalness: 0.02,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.20, 0.20)
+            transmission: 0.10,
+            thickness: 2.2,
+            clearcoat: 0.12,
+            clearcoatRoughness: 0.45,
+            reflectivity: 0.40,
+            normalMap: getVelvetClayNormalMap(),
+            normalScale: new THREE.Vector2(0.40, 0.40)
           });
           break;
 
@@ -2296,16 +2417,18 @@
           break;
 
         case "photoreal":
-          // Photoréaliste PBR : Haute Fidélité Physique & Micro-Détails
+          // Effet Photoréaliste PBR Studio (Image 2)
+          const hasVCol = Boolean(meshObject.userData && meshObject.userData.hasVertexColors);
           newMat = new THREE.MeshPhysicalMaterial({
-            color: userColor,
-            roughness: 0.25,
-            metalness: 0.10,
-            clearcoat: 0.40,
-            clearcoatRoughness: 0.10,
-            reflectivity: 0.70,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
+            vertexColors: hasVCol,
+            color: hasVCol ? 0xffffff : userColor,
+            roughness: 0.30,
+            metalness: 0.04,
+            clearcoat: 0.35,
+            clearcoatRoughness: 0.20,
+            reflectivity: 0.65,
+            normalMap: getSkinPoresNormalMap(),
+            normalScale: new THREE.Vector2(0.45, 0.45)
           });
           break;
 
