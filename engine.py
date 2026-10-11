@@ -588,15 +588,16 @@ def generate_mode3_hunyuan_sota(
     target_height_mm: float = 80.0,
     with_base: bool = True,
     base_height_mm: float = 4.5,
-    steps: int = 30,
-    guidance_scale: float = 5.5,
-    octree_resolution: int = 384,
+    steps: int = 20,
+    guidance_scale: float = 5.0,
+    octree_resolution: int = 256,
     hf_token: Optional[str] = None,
     monochrome: bool = True,
-    single_color_rgb: tuple = (248, 250, 252)
+    single_color_rgb: tuple = (248, 250, 252),
+    space_target: str = "tencent/Hunyuan3D-2"
 ) -> trimesh.Trimesh:
-    """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2.1) :
-    Modélisation 3D neuronale haute fidélité (octree=384, steps=30) produisant des sculptures
+    """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2) :
+    Modélisation 3D neuronale haute fidélité (octree=256, steps=20) produisant des sculptures
     complètes à 360°, étanches (watertight), avec détails anatomiques fins sculptés par micro-déplacement
     normal, lissage Taubin anti-crénelage et finition monochrome studio pure pour Bambu Lab A1 Mini.
     """
@@ -618,12 +619,12 @@ def generate_mode3_hunyuan_sota(
                     token = f.read().strip()
             except Exception:
                 pass
-    print(f"[Hunyuan3D-2.1] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
+    print(f"[{space_target}] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
     
     if token:
-        client = Client("tencent/Hunyuan3D-2.1", token=token)
+        client = Client(space_target, token=token)
     else:
-        client = Client("tencent/Hunyuan3D-2.1")
+        client = Client(space_target)
         
     has_alpha = False
     try:
@@ -635,22 +636,41 @@ def generate_mode3_hunyuan_sota(
         has_alpha = False
 
     rembg_flag = False if has_alpha else True
-    print(f"[Hunyuan3D-2.1] Génération géométrique HD (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
-    res = client.predict(
-        image=handle_file(temp_in),
-        mv_image_front=None,
-        mv_image_back=None,
-        mv_image_left=None,
-        mv_image_right=None,
-        steps=steps,
-        guidance_scale=guidance_scale,
-        seed=1234,
-        octree_resolution=octree_resolution,
-        check_box_rembg=rembg_flag,
-        num_chunks=8000,
-        randomize_seed=True,
-        api_name="/shape_generation"
-    )
+    print(f"[{space_target}] Génération géométrique HD (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
+    
+    if "2.1" in space_target:
+        res = client.predict(
+            image=handle_file(temp_in),
+            mv_image_front=None,
+            mv_image_back=None,
+            mv_image_left=None,
+            mv_image_right=None,
+            steps=steps,
+            guidance_scale=guidance_scale,
+            seed=1234,
+            octree_resolution=octree_resolution,
+            check_box_rembg=rembg_flag,
+            num_chunks=8000,
+            randomize_seed=True,
+            api_name="/shape_generation"
+        )
+    else:
+        res = client.predict(
+            caption=caption,
+            image=handle_file(temp_in),
+            mv_image_front=None,
+            mv_image_back=None,
+            mv_image_left=None,
+            mv_image_right=None,
+            steps=steps,
+            guidance_scale=guidance_scale,
+            seed=1234,
+            octree_resolution=octree_resolution,
+            check_box_rembg=rembg_flag,
+            num_chunks=8000,
+            randomize_seed=True,
+            api_name="/shape_generation"
+        )
     
     raw_glb_path = res[0]["value"]
     scene = trimesh.load(raw_glb_path, force="mesh")
@@ -825,29 +845,26 @@ def generate_mode3_ultra_sculpted(
     base_height_mm: float = 4.5,
     hf_token: Optional[str] = None
 ) -> trimesh.Trimesh:
-    """Mode 3 Ultra-Précis (Qualité Studio SOTA) : Reconstruction volumétrique neuronale Hunyuan3D-2.1 avec bascule automatique."""
-    try:
-        print("[Mode 3 Ultra] Inférence Studio SOTA (Hunyuan3D-2.1)...")
-        return generate_mode3_hunyuan_sota(
-            image=image,
-            caption=caption,
-            target_height_mm=target_height_mm,
-            with_base=with_base,
-            base_height_mm=base_height_mm,
-            hf_token=hf_token
-        )
-    except Exception as e:
-        print(f"[Mode 3 Ultra] Moteur SOTA en attente de quota ({e}), bascule sur moteur local haute résolution...")
-        m = generate_mode3_volumetric(
-            image=image,
-            target_height_mm=target_height_mm,
-            with_base=with_base,
-            base_height_mm=base_height_mm,
-            resolution=288
-        )
-        smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
-        m.fix_normals()
-        return m
+    """Mode 3 Ultra-Précis (Qualité Studio SOTA) : Reconstruction volumétrique neuronale Hunyuan3D SOTA avec bascule automatique."""
+    spaces = ["tencent/Hunyuan3D-2", "tencent/Hunyuan3D-2.1"]
+    last_err = None
+    for sp in spaces:
+        try:
+            print(f"[Mode 3 Ultra] Inférence Studio SOTA sur l'espace {sp}...")
+            return generate_mode3_hunyuan_sota(
+                image=image,
+                caption=caption,
+                target_height_mm=target_height_mm,
+                with_base=with_base,
+                base_height_mm=base_height_mm,
+                hf_token=hf_token,
+                space_target=sp
+            )
+        except Exception as e:
+            print(f"[Mode 3 Ultra] Espace {sp} en attente / erreur ({e}), essai de l'espace suivant...")
+            last_err = e
+            
+    raise RuntimeError(f"Génération 3D SOTA temporairement indisponible sur les serveurs Hugging Face: {last_err}")
 
 
 def process_external_3d_file(
