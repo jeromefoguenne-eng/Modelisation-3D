@@ -725,330 +725,127 @@
       </div>
 
       <!-- Liste défilable des Styles Artistiques -->
-      <div class="p-3.5 space-y-3 flex-1 overflow-y-auto custom-scrollbar min-h-0">
+      <div class="p-3.5 space-y-2 flex-1 overflow-y-auto custom-scrollbar min-h-0">
         
-        <!-- Catégorie: NOUVEAUX EFFETS PHARES -->
-        <div class="space-y-1.5">
-          <div class="flex items-center gap-1.5 px-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">⭐ Effets Spécifiques Populaires</span>
+        <!-- Effet 1: Studio HD (Sculpture Fine Haute Précision) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border-2 border-purple-500 bg-purple-500/15 text-left transition flex items-center gap-3 relative group" data-style="original">
+          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🗿</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">Effet Studio HD (Sculpture Fine)</span>
+              <span class="active-badge text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
+            </div>
+            <p class="text-[10px] text-slate-300 truncate">Micro-reliefs faciaux préservés, ombrage studio satiné</p>
           </div>
+        </button>
 
-          <!-- Effet Tricoté -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="knitted">
-            <div class="w-9 h-9 rounded-lg bg-pink-500/20 flex items-center justify-center text-lg shrink-0">🧶</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Tricoté</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Mailles de laine jersey tressées & toucher textile</p>
+        <!-- Effet 2: Low Poly Art (Origami 3D Géométrique) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lowpoly">
+          <div class="w-9 h-9 rounded-lg bg-cyan-500/20 flex items-center justify-center text-lg shrink-0">💎</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Low Poly Art (Origami)</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
-
-          <!-- Effet Petits Trous (Ajouré / Perforé) -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="perforated">
-            <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🕳️</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Petits Trous (Ajouré)</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Micro-perforations régulières en nid d'abeille</p>
-            </div>
-          </button>
-
-          <!-- Effet Lampe (Veilleuse LED Bambu) -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lamp">
-            <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg shrink-0">💡</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Lampe (Bambu LED)</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Abat-jour opalescent lumineux & lueur interne chaude</p>
-            </div>
-          </button>
-
-          <!-- Effet Figurine Mignonne (Chibi Pop Art) -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="cute">
-            <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Figurine 3D Mignonne</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Pop Art vinyle laqué brillant miroir ultra-lisse</p>
-            </div>
-          </button>
-        </div>
-
-        <!-- Catégorie: 1. RELIEFS & VOLUMES -->
-        <div class="space-y-1.5 pt-1 border-t border-dark-700/60">
-          <div class="flex items-center gap-1.5 px-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1. Reliefs & Volumes</span>
+            <p class="text-[10px] text-slate-400 truncate">Facettes géométriques planes triangulées & arêtes vives</p>
           </div>
+        </button>
 
-          <!-- Volume Intégral Studio HD -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border-2 border-purple-500 bg-purple-500/15 text-left transition flex items-center gap-3 relative group" data-style="original">
-            <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🗿</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-white">Volume Intégral (Studio HD)</span>
-                <span class="active-badge text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-300 truncate">Modèle 3D 360° complet d'origine, sculpture satinée</p>
+        <!-- Effet 3: Manga / Cel-Shaded Anime -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="manga">
+          <div class="w-9 h-9 rounded-lg bg-pink-500/20 flex items-center justify-center text-lg shrink-0">⛩️</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Manga / Cel-Shaded</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
-
-          <!-- Bas-Relief -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="basrelief">
-            <div class="w-9 h-9 rounded-lg bg-slate-400/20 flex items-center justify-center text-lg shrink-0">🪙</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Bas-Relief Sculpté</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Médaillon ciselé & micro-reliefs sculptés</p>
-            </div>
-          </button>
-
-          <!-- Haut-Relief -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="hautrelief">
-            <div class="w-9 h-9 rounded-lg bg-orange-500/20 flex items-center justify-center text-lg shrink-0">🦁</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Haut-Relief Expressif</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Formes saillantes du support & ombres marquées</p>
-            </div>
-          </button>
-
-          <!-- Lithophanie -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lithophane">
-            <div class="w-9 h-9 rounded-lg bg-amber-300/20 flex items-center justify-center text-lg shrink-0">🖼️</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Lithophanie Rétro-Éclairée</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Porcelaine ivoire translucide révélée par la lumière</p>
-            </div>
-          </button>
-        </div>
-
-        <!-- Catégorie: 2. STYLES VISUELS -->
-        <div class="space-y-1.5 pt-1 border-t border-dark-700/60">
-          <div class="flex items-center gap-1.5 px-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">2. Styles & Transformations Visuelles</span>
+            <p class="text-[10px] text-slate-400 truncate">Contour d'encrage noir épais & ombrage Toon par bandes</p>
           </div>
+        </button>
 
-          <!-- Low-Poly -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="lowpoly">
-            <div class="w-9 h-9 rounded-lg bg-cyan-500/20 flex items-center justify-center text-lg shrink-0">💎</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Low-Poly Art (Origami)</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Facettes planes géométriques anguleuses & arêtes vives</p>
+        <!-- Effet 4: Voxel 3D / Minecraft Pixel Art -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="voxel">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg shrink-0">🧊</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Voxel 3D (Pixel Art)</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
-
-          <!-- Sculptural ou Organique -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="sculptural">
-            <div class="w-9 h-9 rounded-lg bg-rose-500/20 flex items-center justify-center text-lg shrink-0">🏺</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Sculptural & Organique</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Argile numérique douce, lissée comme de la glaise</p>
-            </div>
-          </button>
-
-          <!-- Cartoon / Manga -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="manga">
-            <div class="w-9 h-9 rounded-lg bg-pink-500/20 flex items-center justify-center text-lg shrink-0">⛩️</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Cartoon / Cel-Shaded</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Ombrage Toon par bandes & contour d'encrage noir</p>
-            </div>
-          </button>
-
-          <!-- Photoréaliste -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="photoreal">
-            <div class="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center text-lg shrink-0">📸</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Photoréaliste PBR</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Rendu physique fidèle & micro-détails réalistes</p>
-            </div>
-          </button>
-
-          <!-- Voxel 3D -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="voxel">
-            <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg shrink-0">🧊</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Voxel 3D (Minecraft)</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Quantification géométrique en cubes 3D pixelisés</p>
-            </div>
-          </button>
-        </div>
-
-        <!-- Catégorie: 3. TRANSFORMATIONS D'IMAGE -->
-        <div class="space-y-1.5 pt-1 border-t border-dark-700/60">
-          <div class="flex items-center gap-1.5 px-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">3. Transformations d'Image en 3D</span>
+            <p class="text-[10px] text-slate-400 truncate">Quantification géométrique en cubes 3D Minecraft</p>
           </div>
+        </button>
 
-          <!-- Extrusion 3D -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="extrusion">
-            <div class="w-9 h-9 rounded-lg bg-indigo-500/20 flex items-center justify-center text-lg shrink-0">📐</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Extrusion 3D Biseautée</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Arêtes vives chanfreinées & flancs saillants</p>
+        <!-- Effet 5: Figurine Chibi (Pop Art Vinyle) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="figurine">
+          <div class="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg shrink-0">🧸</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Figurine Chibi</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
-
-          <!-- Carte de Profondeur -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="depthmap">
-            <div class="w-9 h-9 rounded-lg bg-teal-500/20 flex items-center justify-center text-lg shrink-0">🌊</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Carte de Profondeur</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Relief directionnel par gradient de hauteur</p>
-            </div>
-          </button>
-
-          <!-- Gaufrage & Gravure -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="emboss">
-            <div class="w-9 h-9 rounded-lg bg-yellow-500/20 flex items-center justify-center text-lg shrink-0">🪙</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Gaufrage & Gravure</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Motif ciselé en saillie et creusé dans la matière</p>
-            </div>
-          </button>
-
-          <!-- Relief Topographique -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="topography">
-            <div class="w-9 h-9 rounded-lg bg-emerald-600/20 flex items-center justify-center text-lg shrink-0">🏔️</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Relief Topographique</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Courbes de niveau altimétriques de montagne</p>
-            </div>
-          </button>
-        </div>
-
-        <!-- Catégorie: 4. MATIÈRES & SURFACES -->
-        <div class="space-y-1.5 pt-1 border-t border-dark-700/60">
-          <div class="flex items-center gap-1.5 px-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">4. Matières & Finitions de Surface</span>
+            <p class="text-[10px] text-slate-400 truncate">Galbe curviligne épuré, style Pop Art & vernis lisse</p>
           </div>
+        </button>
 
-          <!-- Bronze Métallique -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="bronze">
-            <div class="w-9 h-9 rounded-lg bg-amber-700/20 flex items-center justify-center text-lg shrink-0">🥉</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Métallique / Bronze Antique</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Statue en bronze coulé avec reflets métalliques chauds</p>
+        <!-- Effet 6: Structure Bionique (Treillis Voronoï) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="voronoi">
+          <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">🕸️</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Structure Bionique</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
+            <p class="text-[10px] text-slate-400 truncate">Treillis ajouré haute technologie & exosquelette</p>
+          </div>
+        </button>
 
-          <!-- Pierre & Marbre -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="marble">
-            <div class="w-9 h-9 rounded-lg bg-slate-200/20 flex items-center justify-center text-lg shrink-0">🏛️</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Pierre & Marbre Blanc</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Marbre Carrare poli avec translucidité minérale</p>
+        <!-- Effet 7: Bas-Relief Antique (Gravure Romaine) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="marble">
+          <div class="w-9 h-9 rounded-lg bg-slate-200/20 flex items-center justify-center text-lg shrink-0">🏛️</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Bas-Relief Antique</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
+            <p class="text-[10px] text-slate-400 truncate">Micro-reliefs amplifiés & gravure sculpturale romaine</p>
+          </div>
+        </button>
 
-          <!-- Bois Sculpté -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="wood">
-            <div class="w-9 h-9 rounded-lg bg-amber-900/20 flex items-center justify-center text-lg shrink-0">🪵</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Bois Sculpté Noble</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Noyer noble travaillé à la gouge & veinage naturel</p>
+        <!-- Effet 8: Cyber Néon (Hologramme Filaire) -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="cyberpunk">
+          <div class="w-9 h-9 rounded-lg bg-cyan-400/20 flex items-center justify-center text-lg shrink-0">⚡</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Cyber Néon</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
+            <p class="text-[10px] text-slate-400 truncate">Maillage filaire fluorescent sur noyau sombre</p>
+          </div>
+        </button>
 
-          <!-- Ajouré / Filigrane -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="filigree">
-            <div class="w-9 h-9 rounded-lg bg-purple-400/20 flex items-center justify-center text-lg shrink-0">🪡</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Ajouré / Filigrane</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Dentelle 3D fine & résille ornementale aérée</p>
+        <!-- Style 11: Carbone Stealth -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="carbon">
+          <div class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-lg shrink-0">🖤</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Carbone Stealth</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
+            <p class="text-[10px] text-slate-400 truncate">Graphite mat ultra-sombre & absorption lumineuse</p>
+          </div>
+        </button>
 
-          <!-- Carbone Stealth -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="carbon">
-            <div class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-lg shrink-0">🖤</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Carbone Stealth</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Graphite mat ultra-sombre & absorption lumineuse</p>
+        <!-- Style 12: Cristal / Résine -->
+        <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="crystal">
+          <div class="w-9 h-9 rounded-lg bg-sky-400/20 flex items-center justify-center text-lg shrink-0">🔮</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 group-hover:text-white">Cristal / Résine</span>
+              <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
             </div>
-          </button>
-
-          <!-- Cristal / Résine -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="crystal">
-            <div class="w-9 h-9 rounded-lg bg-sky-400/20 flex items-center justify-center text-lg shrink-0">🔮</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Cristal / Résine</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Résine transparente opalescente & réfraction</p>
-            </div>
-          </button>
-
-          <!-- Cyber Néon -->
-          <button type="button" class="style-card w-full p-2.5 rounded-xl border border-dark-600 bg-dark-800 hover:bg-dark-750 text-left transition flex items-center gap-3 relative group" data-style="cyberpunk">
-            <div class="w-9 h-9 rounded-lg bg-cyan-400/20 flex items-center justify-center text-lg shrink-0">⚡</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-200 group-hover:text-white">Effet Cyber Néon</span>
-                <span class="active-badge hidden text-[9px] px-1.5 py-0.2 rounded bg-purple-500 text-white font-bold">Actif</span>
-              </div>
-              <p class="text-[10px] text-slate-400 truncate">Maillage filaire fluorescent sur noyau sombre</p>
-            </div>
-          </button>
-        </div>
+            <p class="text-[10px] text-slate-400 truncate">Résine transparente opalescente & réfraction</p>
+          </div>
+        </button>
 
       </div>
 
@@ -1161,7 +958,6 @@
     let currentVolumeCm3 = 0.0;
     let meshObject = null;
     let styleOverlayMesh = null;
-    let lampLight = null;
     let currentArtStyle = "original";
 
     // UI Elements
@@ -1657,238 +1453,6 @@
       return toonGradientMap;
     }
 
-    // 1. Texture Normal Map Tricotée (Effet Laine / Amigurumi Tressé)
-    let knittedNormalMap = null;
-    function getKnittedNormalMap() {
-      if (knittedNormalMap) return knittedNormalMap;
-      const c = document.createElement("canvas");
-      c.width = 128;
-      c.height = 128;
-      const ctx = c.getContext("2d");
-      const imgData = ctx.createImageData(128, 128);
-      const d = imgData.data;
-      const h = new Float32Array(128 * 128);
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const idx = y * 128 + x;
-          const u = (x % 32) / 32;
-          const v = (y % 32) / 32;
-          const vCurve = Math.abs(u - 0.5) * 2;
-          const stitch = Math.cos(v * Math.PI * 2 - vCurve * 2.5) * 0.7;
-          const rib = Math.sin(u * Math.PI * 2) * 0.3;
-          h[idx] = stitch + rib;
-        }
-      }
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const ym = (y - 1 + 128) % 128;
-          const yp = (y + 1) % 128;
-          const xm = (x - 1 + 128) % 128;
-          const xp = (x + 1) % 128;
-          const dx = (h[y * 128 + xp] - h[y * 128 + xm]) * 3.5;
-          const dy = (h[yp * 128 + x] - h[ym * 128 + x]) * 3.5;
-          const dz = 1.0;
-          const len = Math.hypot(dx, dy, dz);
-          const idx = (y * 128 + x) * 4;
-          d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
-          d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
-          d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
-          d[idx + 3] = 255;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      knittedNormalMap = new THREE.CanvasTexture(c);
-      knittedNormalMap.wrapS = THREE.RepeatWrapping;
-      knittedNormalMap.wrapT = THREE.RepeatWrapping;
-      knittedNormalMap.repeat.set(16, 16);
-      return knittedNormalMap;
-    }
-
-    // 2. Texture AlphaMap Micro-Perforations (Effet Petits Trous Imprimable)
-    let perforatedAlphaMap = null;
-    function getPerforatedAlphaMap() {
-      if (perforatedAlphaMap) return perforatedAlphaMap;
-      const c = document.createElement("canvas");
-      c.width = 64;
-      c.height = 64;
-      const ctx = c.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, 64, 64);
-      ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.arc(32, 32, 11, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, 0, 9, 0, Math.PI * 2);
-      ctx.arc(64, 0, 9, 0, Math.PI * 2);
-      ctx.arc(0, 64, 9, 0, Math.PI * 2);
-      ctx.arc(64, 64, 9, 0, Math.PI * 2);
-      ctx.fill();
-      perforatedAlphaMap = new THREE.CanvasTexture(c);
-      perforatedAlphaMap.wrapS = THREE.RepeatWrapping;
-      perforatedAlphaMap.wrapT = THREE.RepeatWrapping;
-      perforatedAlphaMap.repeat.set(20, 20);
-      return perforatedAlphaMap;
-    }
-
-    // 3. Texture AlphaMap Filigrane Dentelle 3D Ajourée
-    let filigreeAlphaMap = null;
-    function getFiligreeAlphaMap() {
-      if (filigreeAlphaMap) return filigreeAlphaMap;
-      const c = document.createElement("canvas");
-      c.width = 128;
-      c.height = 128;
-      const ctx = c.getContext("2d");
-      ctx.fillStyle = "#000000";
-      ctx.fillRect(0, 0, 128, 128);
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.arc(64, 64, 42, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(0, 64, 28, 0, Math.PI * 2);
-      ctx.arc(128, 64, 28, 0, Math.PI * 2);
-      ctx.arc(64, 0, 28, 0, Math.PI * 2);
-      ctx.arc(64, 128, 28, 0, Math.PI * 2);
-      ctx.stroke();
-      filigreeAlphaMap = new THREE.CanvasTexture(c);
-      filigreeAlphaMap.wrapS = THREE.RepeatWrapping;
-      filigreeAlphaMap.wrapT = THREE.RepeatWrapping;
-      filigreeAlphaMap.repeat.set(12, 12);
-      return filigreeAlphaMap;
-    }
-
-    // 4. Texture Normal Map Bois Noble Sculpté à la Gouge
-    let woodNormalMap = null;
-    function getWoodNormalMap() {
-      if (woodNormalMap) return woodNormalMap;
-      const c = document.createElement("canvas");
-      c.width = 256;
-      c.height = 256;
-      const ctx = c.getContext("2d");
-      const imgData = ctx.createImageData(256, 256);
-      const d = imgData.data;
-      const h = new Float32Array(256 * 256);
-      for (let y = 0; y < 256; y++) {
-        for (let x = 0; x < 256; x++) {
-          const idx = y * 256 + x;
-          const grain = Math.sin(x * 0.25 + Math.sin(y * 0.05) * 4.0) * 0.7;
-          const fibers = Math.sin(x * 1.8 + Math.cos(y * 0.3) * 2.0) * 0.25;
-          h[idx] = grain + fibers;
-        }
-      }
-      for (let y = 0; y < 256; y++) {
-        for (let x = 0; x < 256; x++) {
-          const ym = (y - 1 + 256) % 256;
-          const yp = (y + 1) % 256;
-          const xm = (x - 1 + 256) % 256;
-          const xp = (x + 1) % 256;
-          const dx = (h[y * 256 + xp] - h[y * 256 + xm]) * 3.0;
-          const dy = (h[yp * 256 + x] - h[ym * 256 + x]) * 3.0;
-          const dz = 1.0;
-          const len = Math.hypot(dx, dy, dz);
-          const idx = (y * 256 + x) * 4;
-          d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
-          d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
-          d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
-          d[idx + 3] = 255;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      woodNormalMap = new THREE.CanvasTexture(c);
-      woodNormalMap.wrapS = THREE.RepeatWrapping;
-      woodNormalMap.wrapT = THREE.RepeatWrapping;
-      woodNormalMap.repeat.set(8, 8);
-      return woodNormalMap;
-    }
-
-    // 5. Texture Normal Map Courbes Altimétriques Topographiques
-    let topoNormalMap = null;
-    function getTopographyNormalMap() {
-      if (topoNormalMap) return topoNormalMap;
-      const c = document.createElement("canvas");
-      c.width = 128;
-      c.height = 128;
-      const ctx = c.getContext("2d");
-      const imgData = ctx.createImageData(128, 128);
-      const d = imgData.data;
-      const h = new Float32Array(128 * 128);
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const idx = y * 128 + x;
-          const contour = Math.floor((Math.sin(x * 0.28) + Math.cos(y * 0.28) + 2) * 4) / 4;
-          h[idx] = contour;
-        }
-      }
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const ym = (y - 1 + 128) % 128;
-          const yp = (y + 1) % 128;
-          const xm = (x - 1 + 128) % 128;
-          const xp = (x + 1) % 128;
-          const dx = (h[y * 128 + xp] - h[y * 128 + xm]) * 4.0;
-          const dy = (h[yp * 128 + x] - h[ym * 128 + x]) * 4.0;
-          const dz = 1.0;
-          const len = Math.hypot(dx, dy, dz);
-          const idx = (y * 128 + x) * 4;
-          d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
-          d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
-          d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
-          d[idx + 3] = 255;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      topoNormalMap = new THREE.CanvasTexture(c);
-      topoNormalMap.wrapS = THREE.RepeatWrapping;
-      topoNormalMap.wrapT = THREE.RepeatWrapping;
-      topoNormalMap.repeat.set(10, 10);
-      return topoNormalMap;
-    }
-
-    // 6. Texture Normal Map Gaufrage & Ciselure Décorative
-    let embossNormalMap = null;
-    function getEmbossNormalMap() {
-      if (embossNormalMap) return embossNormalMap;
-      const c = document.createElement("canvas");
-      c.width = 128;
-      c.height = 128;
-      const ctx = c.getContext("2d");
-      const imgData = ctx.createImageData(128, 128);
-      const d = imgData.data;
-      const h = new Float32Array(128 * 128);
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const idx = y * 128 + x;
-          const diamond = Math.abs(Math.sin(x * 0.2)) * Math.abs(Math.cos(y * 0.2));
-          h[idx] = diamond * 0.8;
-        }
-      }
-      for (let y = 0; y < 128; y++) {
-        for (let x = 0; x < 128; x++) {
-          const ym = (y - 1 + 128) % 128;
-          const yp = (y + 1) % 128;
-          const xm = (x - 1 + 128) % 128;
-          const xp = (x + 1) % 128;
-          const dx = (h[y * 128 + xp] - h[y * 128 + xm]) * 3.5;
-          const dy = (h[yp * 128 + x] - h[ym * 128 + x]) * 3.5;
-          const dz = 1.0;
-          const len = Math.hypot(dx, dy, dz);
-          const idx = (y * 128 + x) * 4;
-          d[idx] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
-          d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
-          d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
-          d[idx + 3] = 255;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      embossNormalMap = new THREE.CanvasTexture(c);
-      embossNormalMap.wrapS = THREE.RepeatWrapping;
-      embossNormalMap.wrapT = THREE.RepeatWrapping;
-      embossNormalMap.repeat.set(12, 12);
-      return embossNormalMap;
-    }
-
     // Algorithme de Décimation Polygonale Origami pour Vrai Style Low Poly Géométrique
     function generateLowPolyGeometry(sourceGeom, voxelCount = 30) {
       if (!sourceGeom || !sourceGeom.attributes || !sourceGeom.attributes.position) return sourceGeom;
@@ -2067,7 +1631,7 @@
       return new THREE.Mesh(geom, mat);
     }
 
-    // Nettoyage des sous-maillages d'effets visuels (Contour Manga, Wireframe Cyberpunk, Treillis Voronoï, Lueur Lampe)
+    // Nettoyage des sous-maillages d'effets visuels (Contour Manga, Wireframe Cyberpunk, Treillis Voronoï)
     function clearStyleOverlays() {
       if (styleOverlayMesh && meshObject) {
         meshObject.remove(styleOverlayMesh);
@@ -2079,19 +1643,14 @@
         }
         styleOverlayMesh = null;
       }
-      if (lampLight && scene) {
-        scene.remove(lampLight);
-        lampLight = null;
-      }
     }
 
-    // Application Immédiate d'un Style 3D Artistique (100% Non-Destructif, Modélisation de Départ Préservée)
+    // Application Immédiate d'un Style 3D Artistique (Véritables Effets Géométriques & Matériaux)
     function applyArtisticStyle(styleKey) {
       currentArtStyle = styleKey;
 
-      // Mise à jour visuelle des badges et bordures de toutes les cartes du panneau droit
-      const allCards = document.querySelectorAll(".style-card");
-      allCards.forEach(card => {
+      // Mise à jour visuelle des cartes dans le volet droit
+      styleCards.forEach(card => {
         const isActive = card.dataset.style === styleKey;
         const badge = card.querySelector(".active-badge");
         if (isActive) {
@@ -2111,7 +1670,7 @@
       const normMap = getFineNoiseNormalMap();
       const userColor = new THREE.Color(currentSingleColor || "#f8fafc");
 
-      // Rétablissement STRICT et garanti de la modélisation de départ 100% intacte sans distorsion
+      // Gestion Géométrique pour Styles Modificateurs de Forme (Low Poly & Voxel vs Standard)
       if (meshObject.userData && meshObject.userData.baseGeometry) {
         if (styleKey === "lowpoly") {
           if (!meshObject.userData.lowPolyGeometry) {
@@ -2124,7 +1683,6 @@
           }
           meshObject.geometry = meshObject.userData.voxelGeometry;
         } else {
-          // Pour TOUS les autres styles, restitution intégrale de baseGeometry sans modifier un seul sommet
           if (meshObject.geometry !== meshObject.userData.baseGeometry) {
             meshObject.geometry = meshObject.userData.baseGeometry;
           }
@@ -2134,67 +1692,9 @@
       let newMat = null;
 
       switch(styleKey) {
-        // ⭐ Nouveaux Effets Phares Demandés
-        case "knitted":
-          // Effet Tricoté : Mailles de laine jersey tressées & amigurumi
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.85,
-            metalness: 0.02,
-            normalMap: getKnittedNormalMap(),
-            normalScale: new THREE.Vector2(1.5, 1.5)
-          });
-          break;
-
-        case "perforated":
-          // Effet Petits Trous : Micro-perforations régulières en nid d'abeille
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.35,
-            metalness: 0.10,
-            alphaMap: getPerforatedAlphaMap(),
-            alphaTest: 0.45,
-            side: THREE.DoubleSide
-          });
-          break;
-
-        case "lamp":
-          // Effet Lampe : Abat-jour diffuseur opalescent lumineux & veilleuse Bambu
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: userColor,
-            roughness: 0.28,
-            transmission: 0.72,
-            thickness: 2.8,
-            emissive: 0xffedd5,
-            emissiveIntensity: 0.40,
-            transparent: true,
-            opacity: 0.95
-          });
-          lampLight = new THREE.PointLight(0xffaa44, 2.0, 160);
-          lampLight.position.set(0, 0, 18);
-          scene.add(lampLight);
-          break;
-
-        case "cute":
-        case "figurine":
-          // Effet Figurine Mignonne / Chibi : Pop Art Vinyle Lisse & Vernis Laqué Brillant Miroir
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: userColor,
-            roughness: 0.10,
-            metalness: 0.02,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.03,
-            reflectivity: 0.98,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.10, 0.10)
-          });
-          break;
-
-        // 1. Reliefs & Volumes
         case "original":
         case "studio":
-        case "volume":
-          // Volume Intégral Studio HD : Sculpture Fine PBR Monochrome avec Micro-Reliefs
+          // 1. Effet Studio HD : Sculpture Fine PBR Monochrome avec Micro-Reliefs
           newMat = new THREE.MeshPhysicalMaterial({
             color: userColor,
             roughness: 0.32,
@@ -2207,48 +1707,8 @@
           });
           break;
 
-        case "basrelief":
-          // Bas-Relief Sculpté : Médaillon ciselé avec micro-reliefs ciselés
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.50,
-            metalness: 0.12,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(1.8, 1.8)
-          });
-          break;
-
-        case "hautrelief":
-          // Haut-Relief Expressif : Volumes et ombres sculpturales accentuées
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.35,
-            metalness: 0.22,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(2.5, 2.5)
-          });
-          break;
-
-        case "lithophane":
-          // Lithophanie : Porcelaine ivoire translucide rétro-éclairée
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color("#fff7ed"),
-            roughness: 0.35,
-            transmission: 0.82,
-            thickness: 3.2,
-            emissive: 0xffedd5,
-            emissiveIntensity: 0.35,
-            transparent: true,
-            opacity: 0.92
-          });
-          lampLight = new THREE.PointLight(0xffedd5, 2.0, 180);
-          lampLight.position.set(0, 50, 25);
-          scene.add(lampLight);
-          break;
-
-        // 2. Styles Artistiques
         case "lowpoly":
-          // Low-Poly Art : Facettes Triangulaires Plans Origami à Arêtes Vives
+          // 2. Effet Low Poly Art : Facettes Triangulaires Plans Origami à Arêtes Vives
           newMat = new THREE.MeshStandardMaterial({
             color: userColor,
             roughness: 0.38,
@@ -2257,19 +1717,8 @@
           });
           break;
 
-        case "sculptural":
-          // Sculptural ou Organique : Argile numérique douce et glaise céramique polie
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.65,
-            metalness: 0.02,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.20, 0.20)
-          });
-          break;
-
         case "manga":
-          // Cartoon / Manga : Ombrage Anime Steppé Toon + Encrage Noir Extrudé
+          // 3. Effet Manga Cel-Shaded : Ombrage Anime Steppé + Encrage Noir Extrudé
           newMat = new THREE.MeshToonMaterial({
             color: userColor,
             gradientMap: getToonGradientMap()
@@ -2280,22 +1729,8 @@
           }
           break;
 
-        case "photoreal":
-          // Photoréaliste PBR : Haute Fidélité Physique & Micro-Détails
-          newMat = new THREE.MeshPhysicalMaterial({
-            color: userColor,
-            roughness: 0.25,
-            metalness: 0.10,
-            clearcoat: 0.40,
-            clearcoatRoughness: 0.10,
-            reflectivity: 0.70,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.35, 0.35)
-          });
-          break;
-
         case "voxel":
-          // Voxel 3D : Cubes Minecraft Pixel Art avec Ombrage Voxelisé
+          // 4. Effet Voxel 3D : Cubes Minecraft Pixel Art avec Ombrage Voxelisé
           newMat = new THREE.MeshStandardMaterial({
             color: userColor,
             roughness: 0.65,
@@ -2304,125 +1739,57 @@
           });
           break;
 
-        // 3. Transformations d'Image
-        case "extrusion":
-          // Extrusion 3D : Arêtes biseautées et reliefs chanfreinés
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.22,
-            metalness: 0.20,
-            flatShading: true
-          });
-          break;
-
-        case "depthmap":
-          // Carte de Profondeur : Gradient altimétrique directionnel
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.28,
-            metalness: 0.15,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(1.2, 1.2)
-          });
-          break;
-
-        case "emboss":
-          // Gaufrage & Gravure : Motif ciselé en creux et relief
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.40,
-            metalness: 0.25,
-            normalMap: getEmbossNormalMap(),
-            normalScale: new THREE.Vector2(2.0, 2.0)
-          });
-          break;
-
-        case "topography":
-          // Relief Topographique : Courbes de niveau altimétriques
-          newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.45,
-            metalness: 0.10,
-            normalMap: getTopographyNormalMap(),
-            normalScale: new THREE.Vector2(2.2, 2.2)
-          });
-          break;
-
-        // 4. Matières & Surfaces
-        case "bronze":
-          // Effet Métallique / Bronze : Bronze antique coulé de musée
-          newMat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color("#cd7f32"),
-            roughness: 0.32,
-            metalness: 0.88,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.40, 0.40)
-          });
-          break;
-
-        case "marble":
-          // Pierre & Marbre : Marbre Carrare poli avec translucidité minérale
+        case "figurine":
+          // 5. Effet Figurine Chibi : Pop Art Vinyle Lisse & Vernis Brillant Miroir
           newMat = new THREE.MeshPhysicalMaterial({
             color: userColor,
-            roughness: 0.20,
-            clearcoat: 0.85,
-            clearcoatRoughness: 0.12,
-            transmission: 0.25,
-            thickness: 2.5,
+            roughness: 0.12,
+            metalness: 0.02,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.02,
+            reflectivity: 0.98,
             normalMap: normMap,
-            normalScale: new THREE.Vector2(0.45, 0.45)
+            normalScale: new THREE.Vector2(0.12, 0.12)
           });
           break;
 
-        case "wood":
-          // Bois Sculpté Noble : Noyer travaillé à la gouge & veinage naturel
-          newMat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color("#92400e"),
-            roughness: 0.60,
-            metalness: 0.04,
-            normalMap: getWoodNormalMap(),
-            normalScale: new THREE.Vector2(1.8, 1.8)
-          });
-          break;
-
-        case "filigree":
-          // Ajouré / Filigrane : Résille dentelle 3D fine
+        case "voronoi":
+          // 6. Effet Structure Bionique : Treillis Ajouré Exosquelette + Structure Interne
           newMat = new THREE.MeshStandardMaterial({
             color: userColor,
             roughness: 0.30,
-            metalness: 0.35,
-            alphaMap: getFiligreeAlphaMap(),
-            alphaTest: 0.45,
-            side: THREE.DoubleSide
+            metalness: 0.45,
+            wireframe: false
           });
+          if (meshObject.geometry) {
+            const wireMat = new THREE.MeshBasicMaterial({
+              color: 0x10b981,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.75
+            });
+            const baseGeom = meshObject.userData && meshObject.userData.baseGeometry ? meshObject.userData.baseGeometry : meshObject.geometry;
+            styleOverlayMesh = new THREE.Mesh(baseGeom.clone(), wireMat);
+            meshObject.add(styleOverlayMesh);
+          }
           break;
 
-        case "carbon":
-          // Carbone Stealth : Graphite mat ultra-sombre & absorption lumineuse
-          newMat = new THREE.MeshStandardMaterial({
-            color: 0x161a22,
-            roughness: 0.90,
-            metalness: 0.25,
-            normalMap: normMap,
-            normalScale: new THREE.Vector2(0.80, 0.80)
-          });
-          break;
-
-        case "crystal":
-          // Cristal / Résine : Résine transparente opalescente & réfraction
+        case "marble":
+          // 7. Effet Bas-Relief Antique : Gravure Romaine en Pierre Antique Translucide
           newMat = new THREE.MeshPhysicalMaterial({
             color: userColor,
-            roughness: 0.05,
-            transmission: 0.95,
-            thickness: 3.5,
-            ior: 1.52,
-            transparent: true,
-            opacity: 0.90
+            roughness: 0.22,
+            clearcoat: 0.80,
+            clearcoatRoughness: 0.15,
+            transmission: 0.22,
+            thickness: 2.5,
+            normalMap: normMap,
+            normalScale: new THREE.Vector2(0.50, 0.50)
           });
           break;
 
         case "cyberpunk":
-          // Cyber Néon : Noyau Sombre Furtif + Maillage Filaire Cyan Électrique
+          // 8. Effet Cyber Néon : Noyau Sombre Furtif + Maillage Filaire Cyan Électrique
           newMat = new THREE.MeshStandardMaterial({
             color: 0x050811,
             roughness: 0.15,
@@ -2441,25 +1808,28 @@
           }
           break;
 
-        case "voronoi":
-          // Structure Bionique : Treillis Ajouré Exosquelette
+        case "carbon":
+          // Finition Carbone Stealth
           newMat = new THREE.MeshStandardMaterial({
-            color: userColor,
-            roughness: 0.30,
-            metalness: 0.45,
-            wireframe: false
+            color: 0x161a22,
+            roughness: 0.90,
+            metalness: 0.25,
+            normalMap: normMap,
+            normalScale: new THREE.Vector2(0.80, 0.80)
           });
-          if (meshObject.geometry) {
-            const wireMat = new THREE.MeshBasicMaterial({
-              color: 0x10b981,
-              wireframe: true,
-              transparent: true,
-              opacity: 0.75
-            });
-            const baseGeom = meshObject.userData && meshObject.userData.baseGeometry ? meshObject.userData.baseGeometry : meshObject.geometry;
-            styleOverlayMesh = new THREE.Mesh(baseGeom.clone(), wireMat);
-            meshObject.add(styleOverlayMesh);
-          }
+          break;
+
+        case "crystal":
+          // Finition Cristal Translucide
+          newMat = new THREE.MeshPhysicalMaterial({
+            color: userColor,
+            roughness: 0.05,
+            transmission: 0.95,
+            thickness: 3.5,
+            ior: 1.52,
+            transparent: true,
+            opacity: 0.90
+          });
           break;
 
         default:
@@ -2689,11 +2059,9 @@
       gltfLoader.load(url, (gltf) => {
         let foundGeom = null;
         let foundMat = null;
-        gltf.scene.updateMatrixWorld(true);
         gltf.scene.traverse((child) => {
           if (child.isMesh && !foundGeom) {
             foundGeom = child.geometry.clone();
-            foundGeom.applyMatrix4(child.matrixWorld);
             foundMat = child.material;
           }
         });
@@ -3762,15 +3130,13 @@
       });
     }
 
-    // Gestionnaire des Cartes du Studio de Styles 3D (Délégation d'événements dynamique)
-    if (stylePanel) {
-      stylePanel.addEventListener("click", (e) => {
-        const card = e.target.closest(".style-card");
-        if (card && card.dataset.style) {
-          applyArtisticStyle(card.dataset.style);
-        }
+    // Gestionnaire des Cartes du Studio de Styles 3D
+    styleCards.forEach(card => {
+      card.addEventListener("click", () => {
+        const style = card.dataset.style;
+        if (style) applyArtisticStyle(style);
       });
-    }
+    });
 
     if (btnStyleSnapshot) {
       btnStyleSnapshot.addEventListener("click", download3DViewerImage);

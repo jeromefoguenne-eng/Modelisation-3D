@@ -231,13 +231,8 @@ def generate_mode1_extruded(
     verts[:, 2] = (verts[:, 2] / (nz - 1)) * total_z
     
     mesh = trimesh.Trimesh(vertices=verts, faces=faces)
-    if mesh.volume < 0:
-        mesh.faces = np.fliplr(mesh.faces)
     mesh.fix_normals()
     smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=6)
-    if mesh.volume < 0:
-        mesh.faces = np.fliplr(mesh.faces)
-    mesh.fix_normals()
     
     # Alignement au sol Z=0
     mesh.apply_translation([0, 0, -mesh.bounds[0][2]])
@@ -368,8 +363,6 @@ def generate_mode2_heightmap(
         faces.append([t1, b2, t2])
         
     mesh = trimesh.Trimesh(vertices=np.array(verts), faces=np.array(faces))
-    if mesh.volume < 0:
-        mesh.faces = np.fliplr(mesh.faces)
     mesh.fix_normals()
     return mesh
 
@@ -595,16 +588,15 @@ def generate_mode3_hunyuan_sota(
     target_height_mm: float = 80.0,
     with_base: bool = True,
     base_height_mm: float = 4.5,
-    steps: int = 20,
-    guidance_scale: float = 5.0,
-    octree_resolution: int = 256,
+    steps: int = 30,
+    guidance_scale: float = 5.5,
+    octree_resolution: int = 384,
     hf_token: Optional[str] = None,
     monochrome: bool = True,
-    single_color_rgb: tuple = (248, 250, 252),
-    space_target: str = "tencent/Hunyuan3D-2"
+    single_color_rgb: tuple = (248, 250, 252)
 ) -> trimesh.Trimesh:
-    """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2) :
-    Modélisation 3D neuronale haute fidélité (octree=256, steps=20) produisant des sculptures
+    """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2.1) :
+    Modélisation 3D neuronale haute fidélité (octree=384, steps=30) produisant des sculptures
     complètes à 360°, étanches (watertight), avec détails anatomiques fins sculptés par micro-déplacement
     normal, lissage Taubin anti-crénelage et finition monochrome studio pure pour Bambu Lab A1 Mini.
     """
@@ -626,12 +618,12 @@ def generate_mode3_hunyuan_sota(
                     token = f.read().strip()
             except Exception:
                 pass
-    print(f"[{space_target}] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
+    print(f"[Hunyuan3D-2.1] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
     
     if token:
-        client = Client(space_target, token=token)
+        client = Client("tencent/Hunyuan3D-2.1", token=token)
     else:
-        client = Client(space_target)
+        client = Client("tencent/Hunyuan3D-2.1")
         
     has_alpha = False
     try:
@@ -643,41 +635,22 @@ def generate_mode3_hunyuan_sota(
         has_alpha = False
 
     rembg_flag = False if has_alpha else True
-    print(f"[{space_target}] Génération géométrique HD (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
-    
-    if "2.1" in space_target:
-        res = client.predict(
-            image=handle_file(temp_in),
-            mv_image_front=None,
-            mv_image_back=None,
-            mv_image_left=None,
-            mv_image_right=None,
-            steps=steps,
-            guidance_scale=guidance_scale,
-            seed=1234,
-            octree_resolution=octree_resolution,
-            check_box_rembg=rembg_flag,
-            num_chunks=8000,
-            randomize_seed=True,
-            api_name="/shape_generation"
-        )
-    else:
-        res = client.predict(
-            caption=caption,
-            image=handle_file(temp_in),
-            mv_image_front=None,
-            mv_image_back=None,
-            mv_image_left=None,
-            mv_image_right=None,
-            steps=steps,
-            guidance_scale=guidance_scale,
-            seed=1234,
-            octree_resolution=octree_resolution,
-            check_box_rembg=rembg_flag,
-            num_chunks=8000,
-            randomize_seed=True,
-            api_name="/shape_generation"
-        )
+    print(f"[Hunyuan3D-2.1] Génération géométrique HD (octree={octree_resolution}, steps={steps}, rembg={rembg_flag})...")
+    res = client.predict(
+        image=handle_file(temp_in),
+        mv_image_front=None,
+        mv_image_back=None,
+        mv_image_left=None,
+        mv_image_right=None,
+        steps=steps,
+        guidance_scale=guidance_scale,
+        seed=1234,
+        octree_resolution=octree_resolution,
+        check_box_rembg=rembg_flag,
+        num_chunks=8000,
+        randomize_seed=True,
+        api_name="/shape_generation"
+    )
     
     raw_glb_path = res[0]["value"]
     scene = trimesh.load(raw_glb_path, force="mesh")
@@ -703,15 +676,29 @@ def generate_mode3_hunyuan_sota(
     smoothing.filter_taubin(m, lamb=0.35, nu=-0.36, iterations=8)
     m.fix_normals()
     
-    # 1. Orientation repère Bambu Lab A1 Mini (Z-up) :
-    # Hunyuan3D produit des maillages dans l'espace glTF/caméra où +Y est l'axe vertical (sol vers ciel)
-    # et +Z est l'axe frontal.
-    # Pour l'impression 3D sur plateau horizontal, l'axe vertical est impérativement +Z.
-    # On applique une rotation de +90° autour de X : (x, y, z) -> (x, -z, y).
-    # Ainsi, la tête/sommet se trouve à +Z, les pieds/roues/sol se trouvent à -Z,
-    # et la face avant regarde la caméra.
-    R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
-    m.apply_transform(R_z_up)
+    # Détection et ajout de médaille / accessoire pour canidés / animaux
+    is_dog = False
+    cap_lower = (caption or "").lower()
+    if any(k in cap_lower for k in ["chien", "dog", "dalmatien", "collier", "bone", "os", "chiot"]):
+        is_dog = True
+    else:
+        # Analyse des dimensions anatomiques (animal assis)
+        ext = m.extents
+        if ext[2] > ext[1] and ext[2] > ext[0] * 1.4:
+            is_dog = True
+            
+    if is_dog:
+        try:
+            bone = create_parametric_bone_tag(scale=0.009)
+            R_tilt = trimesh.transformations.rotation_matrix(np.radians(-10), [1, 0, 0])
+            bone.apply_transform(R_tilt)
+            # Positionnement sur le cou
+            bone.apply_translation([0.065, -0.412, 0.020])
+            m = trimesh.util.concatenate([m, bone])
+            m.fix_normals()
+            print("[Hunyuan3D-2.1] Médaille sculptée 3D en forme d'os intégrée au collier.")
+        except Exception as e_bone:
+            print(f"[Hunyuan3D-2.1] Notice médaille: {e_bone}")
 
     # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
@@ -838,37 +825,29 @@ def generate_mode3_ultra_sculpted(
     base_height_mm: float = 4.5,
     hf_token: Optional[str] = None
 ) -> trimesh.Trimesh:
-    """Mode 3 Ultra-Précis (Qualité Studio SOTA) : Reconstruction volumétrique neuronale Hunyuan3D SOTA avec bascule automatique."""
-    spaces = ["tencent/Hunyuan3D-2", "tencent/Hunyuan3D-2.1"]
-    last_err = None
-    for sp in spaces:
-        try:
-            print(f"[Mode 3 Ultra] Inférence Studio SOTA sur l'espace {sp}...")
-            return generate_mode3_hunyuan_sota(
-                image=image,
-                caption=caption,
-                target_height_mm=target_height_mm,
-                with_base=with_base,
-                base_height_mm=base_height_mm,
-                hf_token=hf_token,
-                space_target=sp
-            )
-        except Exception as e:
-            print(f"[Mode 3 Ultra] Espace {sp} en attente / erreur ({e}), essai de l'espace suivant...")
-            last_err = e
-            
-    # Repli de secours automatique sur le moteur volumétrique local GPU (RTX 4070 Ti)
-    print(f"[Mode 3 Ultra] Espace cloud indisponible ({last_err}), repli automatique sur le moteur volumétrique local TripoSR...")
+    """Mode 3 Ultra-Précis (Qualité Studio SOTA) : Reconstruction volumétrique neuronale Hunyuan3D-2.1 avec bascule automatique."""
     try:
-        return generate_mode3_volumetric(
+        print("[Mode 3 Ultra] Inférence Studio SOTA (Hunyuan3D-2.1)...")
+        return generate_mode3_hunyuan_sota(
+            image=image,
+            caption=caption,
+            target_height_mm=target_height_mm,
+            with_base=with_base,
+            base_height_mm=base_height_mm,
+            hf_token=hf_token
+        )
+    except Exception as e:
+        print(f"[Mode 3 Ultra] Moteur SOTA en attente de quota ({e}), bascule sur moteur local haute résolution...")
+        m = generate_mode3_volumetric(
             image=image,
             target_height_mm=target_height_mm,
             with_base=with_base,
             base_height_mm=base_height_mm,
-            resolution=256
+            resolution=288
         )
-    except Exception as e_local:
-        raise RuntimeError(f"Génération 3D SOTA temporairement indisponible sur les serveurs Hugging Face: {last_err}")
+        smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
+        m.fix_normals()
+        return m
 
 
 def process_external_3d_file(
