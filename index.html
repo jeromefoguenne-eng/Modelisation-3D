@@ -2192,6 +2192,21 @@
 
         // 1. Reliefs & Volumes
         case "original":
+          // Modélisation originale 100% fidèle avec couleurs photoréalistes PBR et textures d'origine
+          if (meshObject.userData && meshObject.userData.hasVertexColors) {
+            newMat = new THREE.MeshStandardMaterial({
+              vertexColors: true,
+              color: 0xffffff,
+              roughness: 0.35,
+              metalness: 0.05
+            });
+          } else if (meshObject.userData && meshObject.userData.originalMaterial) {
+            newMat = meshObject.userData.originalMaterial.clone();
+          } else {
+            newMat = (materials[currentMaterialName] || materials.basic).clone();
+          }
+          break;
+
         case "studio":
         case "volume":
           // Volume Intégral Studio HD : Sculpture Fine PBR Monochrome avec Micro-Reliefs
@@ -3817,16 +3832,23 @@
     const hfTokenElem = document.getElementById("hfTokenInput");
     if (hfTokenElem) {
       const cachedToken = localStorage.getItem("hf_token");
-      if (cachedToken) {
+      if (cachedToken && cachedToken.startsWith("hf_qsJJ")) {
+        localStorage.removeItem("hf_token");
+      } else if (cachedToken) {
         hfTokenElem.value = cachedToken;
       }
       hfTokenElem.addEventListener("input", (e) => {
-        localStorage.setItem("hf_token", e.target.value.trim());
+        const val = e.target.value.trim();
+        if (val) {
+          localStorage.setItem("hf_token", val);
+        } else {
+          localStorage.removeItem("hf_token");
+        }
       });
       fetch(`${API_BASE}/api/hf-token`)
         .then(r => r.json())
         .then(data => {
-          if (data && data.token && !hfTokenElem.value) {
+          if (data && data.token && !data.token.startsWith("hf_qsJJ") && !hfTokenElem.value) {
             hfTokenElem.value = data.token;
             localStorage.setItem("hf_token", data.token);
           }

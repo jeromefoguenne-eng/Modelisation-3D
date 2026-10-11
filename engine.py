@@ -600,14 +600,12 @@ def generate_mode3_hunyuan_sota(
     octree_resolution: int = 256,
     hf_token: Optional[str] = None,
     use_saved_token: bool = True,
-    monochrome: bool = True,
-    single_color_rgb: tuple = (248, 250, 252),
     space_target: str = "tencent/Hunyuan3D-2"
 ) -> trimesh.Trimesh:
     """Mode 3 Studio Ultra HD (Équivalent Meshy SOTA / Tencent Hunyuan3D-2) :
     Modélisation 3D neuronale haute fidélité (octree=256, steps=20) produisant des sculptures
-    complètes à 360°, étanches (watertight), avec détails anatomiques fins sculptés par micro-déplacement
-    normal, lissage Taubin anti-crénelage et finition monochrome studio pure pour Bambu Lab A1 Mini.
+    complètes à 360°, étanches (watertight), avec détails anatomiques fidèles à l'image 2D d'origine,
+    projection des couleurs photoréalistes et orientation Z-up pour Bambu Lab A1 Mini.
     """
     import truststore
     truststore.inject_into_ssl()
@@ -629,15 +627,15 @@ def generate_mode3_hunyuan_sota(
                         token = f.read().strip()
                 except Exception:
                     pass
-    if token == "":
+    if token == "" or (token and token.startswith("hf_qsJJ")):
         token = None
 
     print(f"[{space_target}] Connexion à l'espace SOTA (token configuré: {bool(token)})...")
     
     if token:
-        client = Client(space_target, token=token)
+        client = Client(space_target, token=token, httpx_kwargs={"timeout": 120.0})
     else:
-        client = Client(space_target)
+        client = Client(space_target, httpx_kwargs={"timeout": 120.0})
         
     has_alpha = False
     try:
@@ -669,7 +667,7 @@ def generate_mode3_hunyuan_sota(
         )
     else:
         res = client.predict(
-            caption=caption,
+            caption=caption or "high detailed 3d sculpture",
             image=handle_file(temp_in),
             mv_image_front=None,
             mv_image_back=None,
@@ -695,7 +693,11 @@ def generate_mode3_hunyuan_sota(
         
     shutil.rmtree(temp_dir, ignore_errors=True)
     
-    # Nettoyage des floaters
+    # 1. Orientation repère standard Bambu Studio (+90 deg sur X pour poser la sculpture sur ses pattes/base)
+    R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
+    raw_mesh.apply_transform(R_z_up)
+
+    # 2. Nettoyage des floaters
     components = raw_mesh.split(only_watertight=False)
     if len(components) > 1:
         components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
@@ -705,98 +707,42 @@ def generate_mode3_hunyuan_sota(
     else:
         m = raw_mesh
         
-    # Lissage anti-marches d'escalier Taubin
-    smoothing.filter_taubin(m, lamb=0.35, nu=-0.36, iterations=8)
     m.fix_normals()
     
-    # 1. Orientation repère Bambu Lab A1 Mini (Z-up) :
-    # Hunyuan3D produit des maillages dans l'espace glTF/caméra où +Y est l'axe vertical (sol vers ciel)
-    # et +Z est l'axe frontal.
-    # Pour l'impression 3D sur plateau horizontal, l'axe vertical est impérativement +Z.
-    # On applique une rotation de +90° autour de X : (x, y, z) -> (x, -z, y).
-    # Ainsi, la tête/sommet se trouve à +Z, les pieds/roues/sol se trouvent à -Z,
-    # et la face avant regarde la caméra.
-    R_z_up = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
-    m.apply_transform(R_z_up)
-
     # Repos Z=0 et centrage XY
     m.apply_translation([0, 0, -m.bounds[0][2]])
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
-    # Sculpture des détails anatomiques haute fréquence (yeux, visage, museau, babines)
-    m = enhance_anatomical_micro_relief(m, image, disp_strength=0.018)
-
-    # 3. Finition Couleur : Monochrome pur sculpteur studio (par défaut) ou projection
-    if monochrome:
-        # Couleur unique unie sélectionnée par l'utilisateur (sans artefacts multi-couleurs)
-        mono_cols = np.full((len(m.vertices), 4), list(single_color_rgb) + [255], dtype=np.uint8)
-        m.visual.vertex_colors = mono_cols
-    else:
-        try:
-            from scipy.ndimage import distance_transform_edt
-            img_rgb = image.convert("RGB")
-            w_img, h_img = image.size
-            img_arr = np.array(img_rgb)
-            
-            if image.mode == "RGBA":
-                alpha_arr = np.array(image)[:, :, 3]
-                alpha_mask = alpha_arr > 30
-                if np.any(alpha_mask):
-                    indices = distance_transform_edt(~alpha_mask, return_distances=False, return_indices=True)
-                    dilated_img = img_arr[indices[0], indices[1]]
-                else:
-                    dilated_img = img_arr
-            else:
-                dilated_img = img_arr
-                
-            fov = 38.0
-            cam_dist = 2.65
-            cam_z = m.extents[2] * 0.49
-            cam_pos = np.array([0.0, -cam_dist, cam_z])
-            
-            v = m.vertices.copy()
-            normals = m.vertex_normals
-            zc = v[:, 1] - cam_pos[1]
-            focal = (h_img / 2.0) / np.tan(np.radians(fov) / 2.0)
-            
-            px = np.clip(((v[:, 0] - cam_pos[0]) / zc * focal + (w_img * 0.50)).astype(int), 0, w_img - 1)
-            py = np.clip((-(v[:, 2] - cam_pos[2]) / zc * focal + (h_img * 0.50)).astype(int), 0, h_img - 1)
-            
-            facing = -normals[:, 1]
-            
-            flank_y0 = int(h_img * 0.50)
-            flank_y1 = int(h_img * 0.75)
-            flank_x0 = int(w_img * 0.20)
-            flank_x1 = int(w_img * 0.45)
-            flank_crop = img_arr[flank_y0:flank_y1, flank_x0:flank_x1]
-            flank_flat = flank_crop.reshape(-1, 3)
-            if len(flank_flat) > 0:
-                np.random.seed(42)
-                coat_samples = flank_flat[np.random.choice(len(flank_flat), len(v))]
-            else:
-                coat_samples = dilated_img[py, px]
-                
-            colors = np.zeros((len(v), 4), dtype=np.uint8)
-            front_colors = dilated_img[py, px]
-            
-            for i in range(len(v)):
-                f = facing[i]
-                if (f > 0.0) and (v[i, 1] < 0.15):
-                    w = np.clip(f / 0.40, 0.0, 1.0)
-                    col = (front_colors[i] * w + coat_samples[i] * (1.0 - w)).astype(np.uint8)
-                    colors[i, :3] = col
-                else:
-                    colors[i, :3] = coat_samples[i]
-                colors[i, 3] = 255
-                
-            if is_dog:
-                is_bone_vert = (v[:, 1] < -0.38) & (v[:, 2] > -0.05) & (v[:, 2] < 0.10) & (np.abs(v[:, 0] - 0.065) < 0.08)
-                colors[is_bone_vert, :3] = [235, 195, 115]
-                
-            m.visual.vertex_colors = colors
-        except Exception as e_col:
-            print(f"[Hunyuan3D-2.1] Notice texturation: {e_col}")
+    # 3. Projection photoréaliste des couleurs de l'image source sur le maillage
+    try:
+        rgb_img = image.convert("RGB")
+        w_img, h_img = rgb_img.size
+        img_arr = np.array(rgb_img)
+        v = m.vertices
+        normals = m.vertex_normals
+        
+        min_x, max_x = m.bounds[0][0], m.bounds[1][0]
+        min_z, max_z = m.bounds[0][2], m.bounds[1][2]
+        pad_x = (max_x - min_x) * 0.08
+        pad_z = (max_z - min_z) * 0.05
+        u = np.clip((v[:, 0] - (min_x - pad_x)) / ((max_x - min_x) + 2*pad_x), 0.0, 1.0)
+        v_coord = np.clip(1.0 - (v[:, 2] - (min_z - pad_z)) / ((max_z - min_z) + 2*pad_z), 0.0, 1.0)
+        px = (u * (w_img - 1)).astype(int)
+        py = (v_coord * (h_img - 1)).astype(int)
+        
+        front_colors = img_arr[py, px]
+        back_factor = np.clip(normals[:, 1], 0.0, 1.0)
+        coat_color = np.array([220, 215, 205], dtype=float)
+        
+        colors_final = np.zeros((len(v), 4), dtype=np.uint8)
+        for i in range(3):
+            blended = front_colors[:, i].astype(float) * (1.0 - 0.65 * back_factor) + coat_color[i] * (0.65 * back_factor)
+            colors_final[:, i] = np.clip(blended, 0, 255).astype(np.uint8)
+        colors_final[:, 3] = 255
+        m.visual.vertex_colors = colors_final
+    except Exception as e_col:
+        print(f"[{space_target}] Notice texturation: {e_col}")
         
     # 4. Échelle et dimensionnement pour la Bambu Lab A1 Mini (plateau 180x180x180 mm)
     current_h = max(0.001, m.extents[2])
@@ -846,11 +792,13 @@ def generate_mode3_ultra_sculpted(
 ) -> trimesh.Trimesh:
     """Mode 3 Ultra-Précis (Qualité Studio SOTA) : Reconstruction volumétrique neuronale Hunyuan3D SOTA avec bascule automatique."""
     attempts = [
-        ("tencent/Hunyuan3D-2", True),   # avec token
-        ("tencent/Hunyuan3D-2", False),  # sans token (quota IP anonyme gratuit - 7.5s, évite tout blocage ZeroGPU)
-        ("tencent/Hunyuan3D-2.1", True),
-        ("tencent/Hunyuan3D-2.1", False)
+        ("tencent/Hunyuan3D-2", False),  # Cluster anonyme haute performance (7.5s, 580k faces)
+        ("tencent/Hunyuan3D-2.1", False) # Cluster secondaire anonyme (10s, 166k faces)
     ]
+    if hf_token and hf_token.strip() and not hf_token.strip().startswith("hf_qsJJ"):
+        attempts.insert(0, ("tencent/Hunyuan3D-2", True))
+        attempts.insert(1, ("tencent/Hunyuan3D-2.1", True))
+
     last_err = None
     for sp, use_tok in attempts:
         try:
@@ -869,18 +817,11 @@ def generate_mode3_ultra_sculpted(
             print(f"[Mode 3 Ultra] Espace {sp} (token={use_tok}) indisponible ({e}), essai de la stratégie suivante...")
             last_err = e
             
-    # Repli de secours automatique sur le moteur volumétrique local GPU (RTX 4070 Ti)
-    print(f"[Mode 3 Ultra] Espace cloud indisponible ({last_err}), repli automatique sur le moteur volumétrique local TripoSR...")
-    try:
-        return generate_mode3_volumetric(
-            image=image,
-            target_height_mm=target_height_mm,
-            with_base=with_base,
-            base_height_mm=base_height_mm,
-            resolution=256
-        )
-    except Exception as e_local:
-        raise RuntimeError(f"Génération 3D SOTA temporairement indisponible sur les serveurs Hugging Face: {last_err}")
+    # Si tous les espaces Cloud sont occupés, lever une erreur claire avec instructions
+    raise RuntimeError(
+        f"Les serveurs de modélisation neuronale SOTA sont momentanément très sollicités ({last_err}). "
+        f"Veuillez réitérer votre requête dans quelques instants."
+    )
 
 
 def process_external_3d_file(

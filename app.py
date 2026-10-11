@@ -205,6 +205,37 @@ async def convert_image(
             
     im = Image.open(img_path)
     
+    import hashlib
+    with open(img_path, "rb") as f_img:
+        img_sha = hashlib.sha256(f_img.read()).hexdigest()[:12]
+
+    cache_key = f"mode{mode}_{img_sha}_h{int(target_height_mm)}_b{int(add_base)}"
+    cached_stl = os.path.join(OUTPUT_DIR, f"{cache_key}.stl")
+    cached_3mf = os.path.join(OUTPUT_DIR, f"{cache_key}.3mf")
+    cached_glb = os.path.join(OUTPUT_DIR, f"{cache_key}.glb")
+
+    if os.path.exists(cached_stl) and os.path.exists(cached_glb):
+        print(f"[Cache Hit] Modèle 3D précalculé servi instantanément ({cache_key})...")
+        stl_name = f"{cache_key}_{out_id}.stl"
+        threemf_name = f"{cache_key}_{out_id}.3mf"
+        glb_name = f"{cache_key}_{out_id}.glb"
+        shutil.copyfile(cached_stl, os.path.join(OUTPUT_DIR, stl_name))
+        shutil.copyfile(cached_3mf, os.path.join(OUTPUT_DIR, threemf_name))
+        shutil.copyfile(cached_glb, os.path.join(OUTPUT_DIR, glb_name))
+        
+        cached_mesh = trimesh.load(cached_stl, force="mesh")
+        printability = engine.check_bambu_printability(cached_mesh)
+        return {
+            "success": True,
+            "stl_filename": stl_name,
+            "threemf_filename": threemf_name,
+            "glb_filename": glb_name,
+            "stl_url": f"/outputs/{stl_name}",
+            "threemf_url": f"/outputs/{threemf_name}",
+            "glb_url": f"/outputs/{glb_name}",
+            "printability": printability
+        }
+
     try:
         if mode == 1:
             mesh = engine.generate_mode1_extruded(
@@ -262,6 +293,15 @@ async def convert_image(
         mesh.export(threemf_path)
         try:
             mesh.export(glb_path)
+        except Exception:
+            pass
+
+        # Sauvegarde en cache
+        try:
+            shutil.copyfile(stl_path, cached_stl)
+            shutil.copyfile(threemf_path, cached_3mf)
+            if os.path.exists(glb_path):
+                shutil.copyfile(glb_path, cached_glb)
         except Exception:
             pass
         
