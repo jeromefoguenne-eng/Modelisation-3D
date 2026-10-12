@@ -209,7 +209,7 @@ async def convert_image(
     with open(img_path, "rb") as f_img:
         img_sha = hashlib.sha256(f_img.read()).hexdigest()[:12]
 
-    cache_key = f"mode{mode}_{engine_mode}_{img_sha}_h{int(target_height_mm)}_b{int(add_base)}_v7_ai_verified_sota"
+    cache_key = f"mode{mode}_{engine_mode}_{img_sha}_h{int(target_height_mm)}_b{int(add_base)}_v9_alpha_sota_clean"
     cached_stl = os.path.join(OUTPUT_DIR, f"{cache_key}.stl")
     cached_3mf = os.path.join(OUTPUT_DIR, f"{cache_key}.3mf")
     cached_glb = os.path.join(OUTPUT_DIR, f"{cache_key}.glb")

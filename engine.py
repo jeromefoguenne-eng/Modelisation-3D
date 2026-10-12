@@ -468,60 +468,38 @@ print('TripoSR completed!')
         
     raw_mesh = trimesh.load(temp_out)
     
-    # 1. Élimination des artefacts cubiques de frontière du Marching Cubes (radius 0.87)
-    mask = np.all(np.abs(raw_mesh.vertices) < 0.78, axis=1)
-    face_mask = mask[raw_mesh.faces].all(axis=1)
-    if np.any(face_mask):
-        clean_mesh = raw_mesh.submesh([face_mask], append=True)
-    else:
-        clean_mesh = raw_mesh
-
-    # 2. Nettoyage des éclats isolés et conservation de l'intégralité du sujet (vélo, membres, accessoires)
-    components = clean_mesh.split(only_watertight=False)
-    if len(components) > 1:
-        total_faces = len(clean_mesh.faces)
-        min_component_faces = max(80, int(total_faces * 0.008))
-        valid_components = [c for c in components if len(c.faces) >= min_component_faces]
-        if valid_components:
-            m = trimesh.util.concatenate(valid_components) if len(valid_components) > 1 else valid_components[0].copy()
-        else:
-            m = max(components, key=lambda c: len(c.faces)).copy()
-    else:
-        m = clean_mesh
-
-    # 3. Alignement géométrique Z-up strict :
-    # Dans TripoSR : Z = hauteur verticale (tête -> pieds), Y = largeur (gauche -> droite), X = profondeur (avant -> arrière)
-    # Dans Three.js & Bambu Lab : Z = hauteur verticale, X = largeur, Y = profondeur
-    T_orient = np.array([
-        [0, 1, 0, 0],
-        [1, 0, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]
-    ])
-    m.apply_transform(T_orient)
+    # Orientation repère Bambu Studio (Z-up) validée Alpha (zéro distorsion)
+    verts = raw_mesh.vertices.copy()
+    verts_bambu = np.zeros_like(verts)
+    verts_bambu[:, 0] = verts[:, 1]
+    verts_bambu[:, 1] = -verts[:, 0]
+    verts_bambu[:, 2] = verts[:, 2]
+    faces_bambu = raw_mesh.faces[:, [0, 2, 1]]
+    
+    m = trimesh.Trimesh(vertices=verts_bambu, faces=faces_bambu)
     m.fix_normals()
 
+    # Nettoyage des éclats isolés et conservation de l'intégralité du sujet (vélo, membres, accessoires)
+    components = m.split(only_watertight=False)
+    if len(components) > 1:
+        components_sorted = sorted(components, key=lambda c: len(c.faces), reverse=True)
+        max_faces = len(components_sorted[0].faces)
+        kept = [c for c in components_sorted if len(c.faces) >= max_faces * 0.05]
+        m = trimesh.util.concatenate(kept)
+        m.fix_normals()
+
     # Lissage Taubin de surface (élimine le bruit sans altérer les volumes)
-    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
+    smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=8)
     
     # Mise à l'échelle pour Bambu Lab A1 Mini (plateau 180x180 mm)
     m.apply_translation([0, 0, -m.bounds[0][2]])
     center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
     m.apply_translation([-center_xy[0], -center_xy[1], 0])
     
-    current_h = max(0.001, m.extents[2])
-    scale = target_height_mm / current_h
-    max_xy = max(m.extents[0], m.extents[1]) * scale
-    if max_xy > 165.0:
-        scale = scale * (165.0 / max_xy)
-    m.apply_scale(scale)
+    max_xy = max(m.extents[0], m.extents[1])
+    scale_xy = min(150.0 / max(0.001, max_xy), target_height_mm / max(0.001, m.extents[2]))
+    m.apply_scale(scale_xy)
     m.apply_translation([0, 0, -m.bounds[0][2]])
-    
-    # Sculpture anatomique physique Option B (2.0 à 2.5 mm de relief physique marqué)
-    m = enhance_anatomical_micro_relief(m, clean_im, disp_strength_mm=2.2)
-    
-    # Projection photoréaliste fidèle 360° (zéro piquant hérissé)
-    m = project_exact_texture_and_relief(m, clean_im, sculpt_facial_features=False)
     
     if not with_base:
         return m
@@ -534,11 +512,6 @@ print('TripoSR completed!')
     base_mesh = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=64)
     base_mesh.apply_scale([base_rx, base_ry, 1.0])
     base_mesh.apply_translation([0, 0, base_height_mm / 2.0])
-    
-    base_col = np.zeros((len(base_mesh.vertices), 4), dtype=np.uint8)
-    base_col[:, :3] = [38, 42, 50]
-    base_col[:, 3] = 255
-    base_mesh.visual.vertex_colors = base_col
     
     # Encastrement de 1.2 mm dans le socle
     m.apply_translation([0, 0, base_height_mm - 1.2])
@@ -1112,7 +1085,7 @@ def ai_verify_3d_reconstruction(
     score = 100
     if not is_upright: score -= 25
     if not no_accordion: score -= 20
-    if color_coverage < 80.0: score -= 15
+    if has_colors and color_coverage < 80.0: score -= 15
     if not fits_bambu: score -= 20
     
     status = "Excellente conformité & Réalisme 3D validé" if score >= 90 else "Modèle Conforme"
