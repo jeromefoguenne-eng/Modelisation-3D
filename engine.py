@@ -468,6 +468,13 @@ print('TripoSR completed!')
         
     raw_mesh = trimesh.load(temp_out)
     
+    # Vérification de santé du maillage brut TripoSR :
+    # Si le modèle est fragmenté en tranches isolées (ex: vêtements noirs, rayons fins de vélo) ou incomplet :
+    raw_components = raw_mesh.split(only_watertight=False)
+    if len(raw_components) > 3 or len(raw_mesh.faces) < 45000:
+        print(f"[Mode 3 TripoSR] Maillage fragmenté détecté ({len(raw_components)} corps, {len(raw_mesh.faces)} faces). Bascule automatique sur l'inflation volumétrique solide Manifold...")
+        return generate_mode3_monobloc_organic(clean_im, target_height_mm, with_base, base_height_mm)
+    
     # Orientation repère Bambu Studio (Z-up) validée Alpha (zéro distorsion)
     verts = raw_mesh.vertices.copy()
     verts_bambu = np.zeros_like(verts)
@@ -520,6 +527,105 @@ print('TripoSR completed!')
     combined.fix_normals()
     combined.apply_translation([0, 0, -combined.bounds[0][2]])
     
+    return combined
+
+
+def generate_mode3_monobloc_organic(
+    image: Image.Image,
+    target_height_mm: float = 100.0,
+    with_base: bool = True,
+    base_height_mm: float = 4.5,
+    relief_strength_mm: float = 3.5,
+    profile_thickness_mm: float = 16.0
+) -> trimesh.Trimesh:
+    """Mode 3 Monobloc Solide : Reconstruction volumétrique organique 100% étanche par inflation Manifold et micro-relief photographique.
+    Idéal pour toutes photos (anciennes, contrastées, vélos, figurines) où les réseaux de neurones purs produisent des trous.
+    Garantit zéro trou, zéro tranche flottante, géométrie continue incassable et 100% imprimable sur Bambu Lab A1 Mini.
+    """
+    clean_im = process_image_cleanup(image, remove_bg=True)
+    arr = np.array(clean_im)
+    alpha = arr[:, :, 3] > 35
+    gray = np.array(ImageOps.grayscale(clean_im.convert('RGB')), dtype=float) / 255.0
+
+    y_idx, x_idx = np.where(alpha)
+    if len(y_idx) == 0:
+        raise ValueError("Aucun sujet détecté dans l'image.")
+        
+    y1, y2, x1, x2 = y_idx.min(), y_idx.max(), x_idx.min(), x_idx.max()
+    cropped_alpha = alpha[y1:y2+1, x1:x2+1]
+    cropped_gray = gray[y1:y2+1, x1:x2+1]
+
+    target_h = 240
+    aspect = (x2 - x1 + 1) / max(1, y2 - y1 + 1)
+    target_w = max(40, int(target_h * aspect))
+
+    alpha_res = np.array(Image.fromarray((cropped_alpha.astype(np.uint8) * 255)).resize((target_w, target_h), Image.Resampling.BILINEAR)) > 100
+    gray_res = np.array(Image.fromarray((cropped_gray * 255).astype(np.uint8)).resize((target_w, target_h), Image.Resampling.LANCZOS), dtype=float) / 255.0
+
+    # Pontage structurel des éléments fins (rayons, câbles, haubans) pour garantir un monobloc incassable
+    struct = ndi.generate_binary_structure(2, 2)
+    closed_alpha = ndi.binary_closing(alpha_res, structure=struct, iterations=3)
+
+    # Euclidean distance transform sur le masque structurel unifié
+    edt = ndi.distance_transform_edt(closed_alpha)
+    max_d = max(1.0, edt.max())
+    norm_edt = edt / max_d
+
+    depth_voxels = max(24, int(profile_thickness_mm * 2.2))
+    vol = np.zeros((target_h, target_w, depth_voxels), dtype=float)
+    center_z = depth_voxels / 2.0
+
+    for y in range(target_h):
+        for x in range(target_w):
+            if closed_alpha[y, x]:
+                d = norm_edt[y, x]
+                # Épaisseur minimale garantie pour que les roues et pièces fines ne se brisent pas
+                half_thick = max(2.5, np.sqrt(d) * (depth_voxels * 0.40))
+                # Relief photographique net sur la face avant
+                relief = (1.0 - gray_res[y, x]) * (relief_strength_mm * 1.1)
+                
+                z_front = int(np.clip(center_z + half_thick + relief, 0, depth_voxels - 1))
+                z_back = int(np.clip(center_z - half_thick, 0, depth_voxels - 1))
+                vol[y, x, z_back:z_front+1] = 1.0
+
+    # Marching cubes avec padding pour fermer les bords (Watertight 100%)
+    from skimage.measure import marching_cubes
+    vol_padded = np.pad(vol, 1, mode='constant', constant_values=0)
+    verts, faces, _, _ = marching_cubes(vol_padded, level=0.5)
+    verts -= 1.0
+
+    pixel_size = target_height_mm / target_h
+    verts_mm = np.zeros_like(verts)
+    verts_mm[:, 0] = (verts[:, 1] - target_w / 2.0) * pixel_size
+    verts_mm[:, 1] = (verts[:, 2] - center_z) * pixel_size
+    verts_mm[:, 2] = (target_h - verts[:, 0]) * pixel_size
+
+    m = trimesh.Trimesh(vertices=verts_mm, faces=faces)
+    m.apply_translation([0, 0, -m.bounds[0][2]])
+    m.fix_normals()
+    trimesh.smoothing.filter_taubin(m, lamb=0.5, nu=-0.53, iterations=6)
+
+    # Mise à l'échelle finale
+    scale = target_height_mm / max(0.001, m.extents[2])
+    m.apply_scale(scale)
+    m.apply_translation([0, 0, -m.bounds[0][2]])
+    center_xy = (m.bounds[0][:2] + m.bounds[1][:2]) / 2.0
+    m.apply_translation([-center_xy[0], -center_xy[1], 0])
+
+    if not with_base:
+        return m
+
+    # Socle Bambu Lab A1 Mini
+    base_rx = min(88.0, (m.extents[0] / 2.0) + 8.0)
+    base_ry = min(88.0, (m.extents[1] / 2.0) + 8.0)
+    base_mesh = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=64)
+    base_mesh.apply_scale([base_rx, base_ry, 1.0])
+    base_mesh.apply_translation([0, 0, base_height_mm / 2.0])
+
+    m.apply_translation([0, 0, base_height_mm - 1.5])
+    combined = trimesh.util.concatenate([m, base_mesh])
+    combined.fix_normals()
+    combined.apply_translation([0, 0, -combined.bounds[0][2]])
     return combined
 
 
@@ -1082,13 +1188,26 @@ def ai_verify_3d_reconstruction(
         valid_colored = np.sum(np.any(rgb > 15, axis=1))
         color_coverage = float(valid_colored) / max(1, len(rgb)) * 100.0
     
+    bodies = mesh.split(only_watertight=False)
+    num_bodies = len(bodies)
+    is_unified = (num_bodies <= 2) # max 2 si socle + sujet
+    is_watertight = mesh.is_watertight
+
     score = 100
     if not is_upright: score -= 25
     if not no_accordion: score -= 20
-    if has_colors and color_coverage < 80.0: score -= 15
+    if not is_unified: score -= 45 # Sanction sévère si morceaux flottants ou déconnectés
+    if not is_watertight: score -= 15
+    if has_colors and color_coverage < 80.0: score -= 10
     if not fits_bambu: score -= 20
+    score = max(10, score)
     
-    status = "Excellente conformité & Réalisme 3D validé" if score >= 90 else "Modèle Conforme"
+    if not is_unified:
+        status = "Modèle Rejeté (Morceaux flottants déconnectés)"
+    elif score >= 90:
+        status = "Excellente conformité & Réalisme 3D validé"
+    else:
+        status = "Modèle Conforme"
     
     # 2. Rendu multi-vues pour inspection visuelle
     snapshot_filename = f"ai_verification_{out_id}.png"

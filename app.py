@@ -264,7 +264,15 @@ async def convert_image(
             )
             mode_name = "Mode2_Lithophane"
         elif mode == 3:
-            if engine_mode == "ultra":
+            if engine_mode in ["monobloc", "organic", "solid"]:
+                mesh = engine.generate_mode3_monobloc_organic(
+                    image=im,
+                    target_height_mm=target_height_mm,
+                    with_base=add_base,
+                    base_height_mm=base_thickness_mm
+                )
+                mode_name = "Mode3_Monobloc_Solide"
+            elif engine_mode == "ultra":
                 mesh = engine.generate_mode3_ultra_sculpted(
                     image=im,
                     caption=prompt,
