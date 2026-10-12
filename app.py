@@ -227,6 +227,7 @@ async def convert_image(
         cached_mesh = trimesh.load(cached_stl, force="mesh")
         printability = engine.check_bambu_printability(cached_mesh)
         ai_verification = engine.ai_verify_3d_reconstruction(cached_mesh, im, OUTPUT_DIR, out_id)
+        studio_pack = engine.generate_studio_renders_pack(cached_mesh, OUTPUT_DIR, out_id, base_name=stl_name.replace('.stl', ''))
         return {
             "success": True,
             "stl_filename": stl_name,
@@ -236,7 +237,8 @@ async def convert_image(
             "threemf_url": f"/outputs/{threemf_name}",
             "glb_url": f"/outputs/{glb_name}",
             "printability": printability,
-            "ai_verification": ai_verification
+            "ai_verification": ai_verification,
+            "studio_pack": studio_pack
         }
 
     try:
@@ -310,6 +312,7 @@ async def convert_image(
         
         printability = engine.check_bambu_printability(mesh)
         ai_verification = engine.ai_verify_3d_reconstruction(mesh, im, OUTPUT_DIR, out_id)
+        studio_pack = engine.generate_studio_renders_pack(mesh, OUTPUT_DIR, out_id, base_name=stl_name.replace('.stl', ''))
         
         return {
             "success": True,
@@ -320,7 +323,8 @@ async def convert_image(
             "threemf_url": f"/outputs/{threemf_name}",
             "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
             "printability": printability,
-            "ai_verification": ai_verification
+            "ai_verification": ai_verification,
+            "studio_pack": studio_pack
         }
         
     except Exception as e:
@@ -349,28 +353,28 @@ async def generate_from_prompt(
 
     out_id = str(uuid.uuid4())[:8]
 
-    # Ingénierie de prompt spécialisée pour figurine 3D de jeu et détourage parfait
+    # Ingénierie de prompt spécialisée pour figurine 3D de jeu et sculpture monochrome (Option 3 demandée)
     if style == "figurine":
         enhanced_prompt = (
-            f"single solid plastic tabletop gaming miniature figurine of {prompt_clean}, standing upright, "
-            f"centered, clean sharp silhouette, isolated on seamless pure solid white background, high detail, "
-            f"studio lighting, smooth continuous 3d printable geometry, cute stylized vinyl sculpt, "
-            f"no frame, no borders, no arch, no background, no pedestal, no base plate, single character only"
+            f"single solid monochrome matte resin sculpt tabletop gaming miniature figurine statue of {prompt_clean}, "
+            f"standing upright, centered, clean sharp silhouette, isolated on seamless pure solid white background, "
+            f"high physical sculptural detail, neutral studio diffuse lighting, zero cast shadows, "
+            f"smooth continuous 3d printable watertight geometry, no frame, no borders, no arch, single character only"
         )
     elif style == "relief":
         enhanced_prompt = (
-            f"bas-relief carved medallion coin of {prompt_clean}, circular crest, "
-            f"isolated on pure solid white background, high depth detail, crisp contours, no frame"
+            f"monochrome bas-relief carved medallion coin crest of {prompt_clean}, circular medal, "
+            f"isolated on pure solid white background, high depth detail, crisp sharp contours, no frame"
         )
     elif style == "bust":
         enhanced_prompt = (
-            f"sculpted portrait bust statue of {prompt_clean}, museum marble sculpture, "
-            f"isolated on pure solid white background, centered, smooth lighting, no frame, no borders"
+            f"monochrome sculpted portrait bust statue of {prompt_clean}, museum marble sculpture, "
+            f"isolated on pure solid white background, centered, smooth flat studio lighting, no frame, no borders"
         )
     else:
         enhanced_prompt = (
-            f"3D printable model of {prompt_clean}, centered, isolated on pure solid white background, "
-            f"studio lighting, watertight figurine, no frame, no borders"
+            f"monochrome 3D printable solid statue model of {prompt_clean}, centered, isolated on pure solid white background, "
+            f"studio diffuse lighting, watertight figurine, no frame, no borders"
         )
 
     # Téléchargement de l'image de référence générée par IA (100% gratuit, 0 clé API)
@@ -445,6 +449,7 @@ async def generate_from_prompt(
         
         printability = engine.check_bambu_printability(mesh)
         ai_verification = engine.ai_verify_3d_reconstruction(mesh, im, OUTPUT_DIR, out_id)
+        studio_pack = engine.generate_studio_renders_pack(mesh, OUTPUT_DIR, out_id, base_name=stl_name.replace('.stl', ''))
         
         return {
             "success": True,
@@ -458,7 +463,8 @@ async def generate_from_prompt(
             "threemf_url": f"/outputs/{threemf_name}",
             "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
             "printability": printability,
-            "ai_verification": ai_verification
+            "ai_verification": ai_verification,
+            "studio_pack": studio_pack
         }
 
     except Exception as e:
@@ -626,6 +632,7 @@ async def edit_image_prompt(
 
             printability = engine.check_bambu_printability(mesh)
             ai_verification = engine.ai_verify_3d_reconstruction(mesh, im, OUTPUT_DIR, out_id)
+            studio_pack = engine.generate_studio_renders_pack(mesh, OUTPUT_DIR, out_id, base_name=stl_name.replace('.stl', ''))
 
             res_data.update({
                 "rebuilt_3d": True,
@@ -636,13 +643,42 @@ async def edit_image_prompt(
                 "threemf_url": f"/outputs/{threemf_name}",
                 "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
                 "printability": printability,
-                "ai_verification": ai_verification
+                "ai_verification": ai_verification,
+                "studio_pack": studio_pack
             })
         except Exception as e:
             res_data["rebuilt_3d"] = False
             res_data["rebuild_error"] = str(e)
 
     return res_data
+
+
+@app.post("/api/export-studio-renders")
+async def export_studio_renders(
+    model_filename: str = Form(...)
+):
+    """Génère le Pack Complet d'Images 3D Studio HD (Face, Profil, 3/4) pour un modèle existant."""
+    out_id = str(uuid.uuid4())[:8]
+    clean_name = os.path.basename(model_filename)
+    model_path = os.path.join(OUTPUT_DIR, clean_name)
+    if not os.path.exists(model_path):
+        demo_path = os.path.join(STATIC_DIR, "demo", clean_name)
+        if os.path.exists(demo_path):
+            model_path = demo_path
+        else:
+            raise HTTPException(status_code=404, detail="Modèle introuvable pour le rendu Studio.")
+            
+    mesh = trimesh.load(model_path, force="mesh")
+    if isinstance(mesh, trimesh.Scene):
+        mesh_list = [g for g in mesh.geometry.values() if isinstance(g, trimesh.Trimesh)]
+        mesh = trimesh.util.concatenate(mesh_list)
+        
+    base_name = clean_name.replace(".stl", "").replace(".glb", "")
+    pack = engine.generate_studio_renders_pack(mesh, OUTPUT_DIR, out_id, base_name=base_name)
+    return {
+        "success": True,
+        "studio_pack": pack
+    }
 
 
 @app.post("/api/import-3d")

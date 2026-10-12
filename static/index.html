@@ -225,16 +225,16 @@
 
             <!-- Style du modèle 3D -->
             <div>
-              <span class="text-[11px] font-medium text-slate-300 block mb-1.5">Style de Sculpture :</span>
+              <span class="text-[11px] font-medium text-slate-300 block mb-1.5">Style de Sculpture (Monochrome SOTA par défaut) :</span>
               <div class="grid grid-cols-3 gap-1.5">
                 <button type="button" class="prompt-style-btn py-1.5 px-2 rounded-lg border-2 border-purple-500 bg-purple-500/20 text-[11px] text-purple-200 font-bold text-center transition" data-style="figurine">
-                  🧸 Figurine 360°
+                  🗿 Statuette Monochrome
                 </button>
                 <button type="button" class="prompt-style-btn py-1.5 px-2 rounded-lg border border-dark-600 bg-dark-800 text-[11px] text-slate-400 font-medium text-center transition hover:border-slate-500 hover:text-slate-200" data-style="relief">
                   🪙 Bas-Relief
                 </button>
                 <button type="button" class="prompt-style-btn py-1.5 px-2 rounded-lg border border-dark-600 bg-dark-800 text-[11px] text-slate-400 font-medium text-center transition hover:border-slate-500 hover:text-slate-200" data-style="bust">
-                  🗿 Buste
+                  🏛️ Buste Antique
                 </button>
               </div>
             </div>
@@ -568,10 +568,16 @@
               <span>Fichier 3D GLB</span>
             </a>
           </div>
-          <button id="btnQuickSnapshot" type="button" class="w-full py-2 px-3 rounded-lg bg-dark-700 hover:bg-dark-600 border border-dark-600 text-slate-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition">
-            <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span>Télécharger l'image 3D (Capture HD)</span>
-          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnQuickSnapshot" type="button" class="py-2 px-2 rounded-lg bg-dark-700 hover:bg-dark-600 border border-dark-600 text-slate-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition" title="Capture instantanée de la vue actuelle">
+              <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Vue Active HD</span>
+            </button>
+            <button id="btnQuickStudioPack" type="button" class="py-2 px-2 rounded-lg bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-500/50 text-indigo-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow" title="Télécharger le pack complet 3 vues Studio HD (Face, Profil, 3/4)">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span>Pack 3 Vues HD</span>
+            </button>
+          </div>
         </div>
       </div>
     </aside>
@@ -616,9 +622,13 @@
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
           <div class="h-4 w-px bg-dark-600 mx-1"></div>
-          <button id="btnToolbarSnapshot" type="button" class="px-2.5 py-1 text-xs rounded-lg bg-dark-700 hover:bg-dark-600 border border-dark-600 text-cyan-300 font-semibold flex items-center gap-1.5 transition shadow" title="Télécharger l'image 3D (Capture HD)">
+          <button id="btnToolbarSnapshot" type="button" class="px-2.5 py-1 text-xs rounded-lg bg-dark-700 hover:bg-dark-600 border border-dark-600 text-cyan-300 font-semibold flex items-center gap-1.5 transition shadow" title="Télécharger l'image 3D (Vue Active HD)">
             <i data-lucide="camera" class="w-3.5 h-3.5"></i>
             <span>Capture 3D</span>
+          </button>
+          <button id="btnToolbarStudioPack" type="button" class="px-2.5 py-1 text-xs rounded-lg bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-500/50 text-indigo-200 font-bold flex items-center gap-1.5 transition shadow" title="Télécharger le Pack Multi-Vues Studio HD (Face, Profil, 3/4)">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Pack 3 Vues Studio HD</span>
           </button>
           <a id="btnToolbarDownloadSTL" href="#" download class="px-2.5 py-1 text-xs rounded-lg bg-bambu-600 hover:bg-bambu-500 text-white font-bold flex items-center gap-1.5 transition shadow hidden" title="Télécharger le STL">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
@@ -1299,6 +1309,8 @@
     const btnQuickDownloadSTL = document.getElementById("btnQuickDownloadSTL");
     const btnQuickDownloadGLB = document.getElementById("btnQuickDownloadGLB");
     const btnQuickSnapshot = document.getElementById("btnQuickSnapshot");
+    const btnToolbarStudioPack = document.getElementById("btnToolbarStudioPack");
+    const btnQuickStudioPack = document.getElementById("btnQuickStudioPack");
     const quickModelSpecs = document.getElementById("quickModelSpecs");
 
     // Éléments du Studio de Styles 3D
@@ -1500,7 +1512,7 @@
     camera.position.set(130, -180, 140);
     camera.up.set(0, 0, 1);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -2611,13 +2623,80 @@
       }
     }
 
+    let currentStudioPackZipUrl = null;
+
+    async function downloadStudioMultiviewPack() {
+      if (!meshObject || !renderer || !scene || !camera) {
+        alert("Veuillez d'abord charger ou générer un modèle 3D.");
+        return;
+      }
+
+      // Si le serveur a déjà produit un pack ZIP officiel de rendus HD, le télécharger en priorité
+      if (currentStudioPackZipUrl) {
+        const a = document.createElement("a");
+        a.href = currentStudioPackZipUrl;
+        a.download = `Pack_Images_3D_Studio_${(currentFilename || "modele_3d").replace(/\.[^/.]+$/, "")}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+
+      // Sinon, capture studio en temps réel des 3 vues HD (Face, Profil, 3/4 Perspective)
+      try {
+        const origPos = camera.position.clone();
+        const origTarget = controls.target.clone();
+        const box = new THREE.Box3().setFromObject(meshObject);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 20.0);
+        const dist = maxDim * 2.15;
+        const baseName = (currentFilename ? currentFilename.replace(/\.[^/.]+$/, "") : "Statuette_3D");
+
+        const views = [
+          { name: "Face", pos: new THREE.Vector3(0, -dist, center.z) },
+          { name: "Profil", pos: new THREE.Vector3(dist, 0, center.z) },
+          { name: "Perspective_3-4", pos: new THREE.Vector3(dist * 0.707, -dist * 0.707, center.z + dist * 0.35) }
+        ];
+
+        for (const v of views) {
+          camera.position.copy(v.pos);
+          camera.up.set(0, 0, 1);
+          controls.target.copy(center);
+          controls.update();
+          renderer.render(scene, camera);
+          
+          const dataUrl = renderer.domElement.toDataURL("image/png");
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = `${baseName}_Studio_${v.name}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          await new Promise(r => setTimeout(r, 200));
+        }
+
+        // Rétablissement de la caméra initiale
+        camera.position.copy(origPos);
+        controls.target.copy(origTarget);
+        controls.update();
+        renderer.render(scene, camera);
+      } catch (err) {
+        console.error("Erreur Pack Studio 3D:", err);
+        alert("Impossible de générer le pack d'images 3D : " + err.message);
+      }
+    }
+
     if (btnBottomSnapshot) btnBottomSnapshot.addEventListener("click", download3DViewerImage);
     if (btnToolbarSnapshot) btnToolbarSnapshot.addEventListener("click", download3DViewerImage);
     if (btnQuickSnapshot) btnQuickSnapshot.addEventListener("click", download3DViewerImage);
+    if (btnToolbarStudioPack) btnToolbarStudioPack.addEventListener("click", downloadStudioMultiviewPack);
+    if (btnQuickStudioPack) btnQuickStudioPack.addEventListener("click", downloadStudioMultiviewPack);
 
     // Mise à jour unifiée de tous les boutons de téléchargement 3D
-    function updateDownloadLinks(stlUrl, glbUrl, threemfUrl, modelName) {
+    function updateDownloadLinks(stlUrl, glbUrl, threemfUrl, modelName, studioPackUrl = null) {
       const safeName = (modelName || currentFilename || "modele_3d").replace(/\.[^/.]+$/, "");
+      currentStudioPackZipUrl = studioPackUrl;
       
       if (btnDownloadSTL) {
         btnDownloadSTL.href = stlUrl || "#";
@@ -3655,7 +3734,11 @@
           const stlUrl = `${API_BASE}${result.stl_url}`;
           const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
           const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
-          updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename);
+          const studioPackUrl = result.studio_pack ? `${API_BASE}${result.studio_pack.zip_url}` : null;
+          updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename, studioPackUrl);
+          if (result.ai_verification) {
+            updateAiVerificationUI(result.ai_verification);
+          }
           if (glbUrl) {
             loadModelGLB(glbUrl, stlUrl);
           } else {
@@ -3773,7 +3856,8 @@
             const stlUrl = `${API_BASE}${result.stl_url}`;
             const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
             const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
-            updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename);
+            const studioPackUrl = result.studio_pack ? `${API_BASE}${result.studio_pack.zip_url}` : null;
+            updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename, studioPackUrl);
             if (result.ai_verification) {
               updateAiVerificationUI(result.ai_verification);
             }

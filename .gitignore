@@ -12,3 +12,5 @@ Thumbs.db
 *.token
 hf_token.txt
 token_hf.txt
+_backups/
+inspect_app.py
