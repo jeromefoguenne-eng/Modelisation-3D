@@ -10,7 +10,7 @@ let currentTaskPollInterval = null;
 
 let selectedFile = null;
 let selectedDemoPath = null;
-let selectedMode = "manifold_hd";
+let selectedMode = "bas_relief";
 
 // Initialisation au chargement de la page
 window.addEventListener("DOMContentLoaded", () => {
@@ -95,18 +95,23 @@ function initThreeJS() {
 function initEventListeners() {
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("file-input");
-  const btnGenerate = document.getElementById("btn-generate");
-  const heightSlider = document.getElementById("height-slider");
-  const heightVal = document.getElementById("height-val");
-  const thicknessSlider = document.getElementById("thickness-slider");
-  const thicknessVal = document.getElementById("thickness-val");
+  const widthSlider = document.getElementById("width-slider");
+  const widthVal = document.getElementById("width-val");
+  const reliefSlider = document.getElementById("relief-slider");
+  const reliefVal = document.getElementById("relief-val");
+  const curveSlider = document.getElementById("curve-slider");
+  const curveVal = document.getElementById("curve-val");
 
-  // Sliders
-  heightSlider.addEventListener("input", (e) => {
-    heightVal.textContent = `${e.target.value} mm`;
+  // Sliders Voie 2
+  widthSlider.addEventListener("input", (e) => {
+    widthVal.textContent = `${e.target.value} mm`;
   });
-  thicknessSlider.addEventListener("input", (e) => {
-    thicknessVal.textContent = `${e.target.value} mm`;
+  reliefSlider.addEventListener("input", (e) => {
+    reliefVal.textContent = `${e.target.value} mm`;
+  });
+  curveSlider.addEventListener("input", (e) => {
+    const val = parseInt(e.target.value);
+    curveVal.textContent = val === 0 ? "0° (Plat)" : `${val}° (Courbé)`;
   });
 
   // Drag & drop
@@ -255,9 +260,9 @@ async function startConversionProcess() {
   }
 
   formData.append("mode", selectedMode);
-  formData.append("target_height_mm", document.getElementById("height-slider").value);
-  formData.append("thickness_mm", document.getElementById("thickness-slider").value);
-  formData.append("include_base", document.getElementById("check-base").checked);
+  formData.append("target_width_mm", document.getElementById("width-slider").value);
+  formData.append("relief_depth_mm", document.getElementById("relief-slider").value);
+  formData.append("curvature_deg", document.getElementById("curve-slider").value);
 
   try {
     const res = await fetch("/api/convert", {

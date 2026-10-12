@@ -47,35 +47,26 @@
         </div>
       </section>
 
-      <!-- 2. Choix de l'Algorithme 3D -->
+      <!-- 2. Choix du Style Haute Fidélité (Voie 2) -->
       <section class="panel-section">
-        <div class="panel-title">2. Moteur de Sculpture 3D</div>
+        <div class="panel-title">2. Mode Haute Fidélité (1:1 Pixel)</div>
         <div class="mode-selector">
-          <div class="mode-card active" data-mode="manifold_hd">
+          <div class="mode-card active" data-mode="bas_relief">
             <div class="mode-card-header">
-              <span>Manifold HD Volumétrique</span>
-              <span class="badge-rec">RECOMMANDÉ GPU</span>
+              <span>Bas-Relief Sculpté (Trophée)</span>
+              <span class="badge-rec">RECOMMANDÉ</span>
             </div>
             <div class="mode-card-desc">
-              Figurine monobloc étanche avec pontage morphologique pour vélos, rayons et membres fins. Sculpture du relief photonique sur RTX 4070 Ti.
+              Plaque sculptée avec cadre biseauté. Respecte 100% des détails et des proportions sans déformation. Idéal en rendu Marbre ou Bronze.
             </div>
           </div>
 
-          <div class="mode-card" data-mode="bas_relief">
+          <div class="mode-card" data-mode="lithophane">
             <div class="mode-card-header">
-              <span>Bas-Relief / Trophée</span>
+              <span>Lithophanie Rétro-éclairée</span>
             </div>
             <div class="mode-card-desc">
-              Plaque sculptée haute résolution. Zéro support nécessaire. Idéal pour les photos d'époque (ex: Robert Wancour 1906).
-            </div>
-          </div>
-
-          <div class="mode-card" data-mode="hunyuan_cloud">
-            <div class="mode-card-header">
-              <span>Tencent Hunyuan3D-2.1</span>
-            </div>
-            <div class="mode-card-desc">
-              Génération Cloud IA 360° complète (Diffusion Transformer). Repli automatique si indisponible.
+              Photo révélée par la lumière. Épaisseurs calibrées (0.8 à 3.2mm) pour révéler l'image en transparence avec du PLA Blanc.
             </div>
           </div>
         </div>
@@ -87,31 +78,33 @@
         
         <div class="form-group">
           <div class="form-row">
-            <label for="height-slider">Hauteur de pièce :</label>
-            <span id="height-val" style="font-weight: 600; color: var(--accent-bambu);">120 mm</span>
+            <label for="width-slider">Largeur de pièce :</label>
+            <span id="width-val" style="font-weight: 600; color: var(--accent-bambu);">120 mm</span>
           </div>
-          <input type="range" id="height-slider" min="50" max="175" value="120" step="5">
+          <input type="range" id="width-slider" min="60" max="175" value="120" step="5">
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="group-relief">
           <div class="form-row">
-            <label for="thickness-slider">Épaisseur Z :</label>
-            <span id="thickness-val" style="font-weight: 600; color: var(--accent-bambu);">24 mm</span>
+            <label for="relief-slider">Profondeur de relief :</label>
+            <span id="relief-val" style="font-weight: 600; color: var(--accent-bambu);">4.5 mm</span>
           </div>
-          <input type="range" id="thickness-slider" min="10" max="40" value="24" step="2">
+          <input type="range" id="relief-slider" min="2.0" max="8.0" value="4.5" step="0.5">
         </div>
 
         <div class="form-group" style="margin-top: 10px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="check-base" checked style="accent-color: var(--accent-bambu);">
-            <span>Intégrer le socle d'adhérence stable</span>
-          </label>
+          <div class="form-row">
+            <label for="curve-slider">Courbure autoportante :</label>
+            <span id="curve-val" style="font-weight: 600; color: var(--accent-bambu);">0° (Plat)</span>
+          </div>
+          <input type="range" id="curve-slider" min="0" max="30" value="0" step="5">
+          <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">20° permet à la plaque de tenir debout toute seule sur une table sans support !</span>
         </div>
       </section>
 
       <!-- Bouton d'action -->
       <button class="btn-generate" id="btn-generate" disabled>
-        <span>Générer le Modèle 3D Ultra-Précis</span>
+        <span>Générer le Modèle 3D Haute Fidélité</span>
       </button>
     </aside>
 

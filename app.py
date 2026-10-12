@@ -15,10 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import torch
 
-from core.image_processor import process_input_image
-from core.engine_manifold_hd import generate_manifold_hd_mesh
-from core.engine_bas_relief import generate_bas_relief_mesh
-from core.engine_hunyuan import generate_hunyuan_mesh
+from core.engine_lithophane import create_pure_relief_mesh
 from core.bambu_validator import validate_and_scale_for_bambu, export_all_formats
 from core.studio_renderer import render_mesh_preview
 
@@ -99,66 +96,35 @@ def background_generation_task(
     task_id: str,
     image_path: str,
     mode: str,
-    target_height_mm: float,
-    include_base: bool,
-    thickness_mm: float
+    target_width_mm: float,
+    relief_depth_mm: float,
+    curvature_deg: float
 ):
     try:
         task_dir = os.path.join(OUTPUTS_DIR, task_id)
         os.makedirs(task_dir, exist_ok=True)
         
-        # Étape 1 : Détourage IA et extraction
-        TASKS[task_id]["progress"] = 15
-        TASKS[task_id]["step"] = "Détourage IA haute fidélité (rembg u2net)..."
-        rgba_out = os.path.join(task_dir, "input_rgba.png")
-        img_data = process_input_image(image_path, rgba_out)
+        TASKS[task_id]["progress"] = 20
+        mode_label = "Bas-Relief Sculpté" if mode == "bas_relief" else "Lithophanie Rétro-éclairée"
+        TASKS[task_id]["step"] = f"Génération Haute Fidélité ({mode_label}) au pixel près..."
         
-        # Étape 2 : Reconstruction 3D selon le mode
-        TASKS[task_id]["progress"] = 40
-        mesh = None
+        # Génération directe pure sans déformation
+        mesh = create_pure_relief_mesh(
+            image_path=image_path,
+            target_width_mm=target_width_mm,
+            mode=mode,
+            base_thickness_mm=2.5 if mode == "bas_relief" else 0.8,
+            relief_depth_mm=relief_depth_mm,
+            curvature_angle_deg=curvature_deg,
+            resolution_dpi=450
+        )
         
-        if mode == "manifold_hd":
-            TASKS[task_id]["step"] = "Génération volumétrique Manifold HD sur GPU RTX 4070 Ti..."
-            mesh = generate_manifold_hd_mesh(
-                mask_np=img_data["mask"],
-                luminance_np=img_data["grayscale"],
-                target_thickness_mm=thickness_mm,
-                relief_depth_mm=5.0,
-                include_base=include_base,
-                grid_resolution=400
-            )
-        elif mode == "bas_relief":
-            TASKS[task_id]["step"] = "Sculpture du Bas-Relief / Médaillon haute précision..."
-            mesh = generate_bas_relief_mesh(
-                mask_np=img_data["mask"],
-                luminance_np=img_data["grayscale"],
-                base_plate_thickness_mm=3.5,
-                max_relief_height_mm=8.5,
-                grid_resolution=450
-            )
-        elif mode == "hunyuan_cloud":
-            TASKS[task_id]["step"] = "Génération 3D complète via Tencent Hunyuan3D-2.1 Cloud..."
-            try:
-                mesh = generate_hunyuan_mesh(img_data["rgba_path"], task_dir)
-            except Exception as e:
-                print(f"[App] Fallback sur Manifold HD local suite à erreur Cloud: {e}")
-                TASKS[task_id]["step"] = "Repli sur Manifold HD local RTX 4070 Ti..."
-                mesh = generate_manifold_hd_mesh(
-                    mask_np=img_data["mask"],
-                    luminance_np=img_data["grayscale"],
-                    target_thickness_mm=thickness_mm,
-                    relief_depth_mm=5.0,
-                    include_base=include_base
-                )
-        else:
-            raise ValueError(f"Mode inconnu : {mode}")
-            
-        # Étape 3 : Calibrage Bambu Lab A1 Mini
-        TASKS[task_id]["progress"] = 75
-        TASKS[task_id]["step"] = "Calibrage d'échelle (Bambu A1 Mini <= 180mm) et vérification étanchéité..."
+        # Étape 2 : Calibrage Bambu Lab A1 Mini
+        TASKS[task_id]["progress"] = 65
+        TASKS[task_id]["step"] = "Calibrage Bambu Lab A1 Mini (plateau 180mm, solidité étanche)..."
         metrics = validate_and_scale_for_bambu(
             mesh,
-            target_height_mm=target_height_mm,
+            target_height_mm=0,  # Le moteur gère déjà l'échelle exacte en conservant le ratio
             enforce_watertight=True
         )
         
@@ -204,10 +170,10 @@ async def start_conversion(
     background_tasks: BackgroundTasks,
     file: Optional[UploadFile] = File(None),
     demo_image_path: Optional[str] = Form(None),
-    mode: str = Form("manifold_hd"),
-    target_height_mm: float = Form(120.0),
-    include_base: bool = Form(True),
-    thickness_mm: float = Form(24.0)
+    mode: str = Form("bas_relief"),
+    target_width_mm: float = Form(120.0),
+    relief_depth_mm: float = Form(4.5),
+    curvature_deg: float = Form(0.0)
 ):
     """
     Lance une tâche de modélisation 3D en arrière-plan.
@@ -227,12 +193,10 @@ async def start_conversion(
         if os.path.exists(demo_image_path):
             local_img_path = demo_image_path
         else:
-            # Recherche relative
             possible = os.path.join(BASE_DIR, demo_image_path.lstrip("/\\"))
             if os.path.exists(possible):
                 local_img_path = possible
             else:
-                # Chercher dans uploads
                 basename = os.path.basename(demo_image_path)
                 candidate = os.path.join(UPLOADS_DIR, basename)
                 if os.path.exists(candidate):
@@ -246,7 +210,7 @@ async def start_conversion(
         "id": task_id,
         "status": "processing",
         "progress": 5,
-        "step": "Tâche enregistrée. Initialisation du GPU...",
+        "step": "Tâche enregistrée. Démarrage de la modélisation...",
         "created_at": time.time(),
         "result": None,
         "error": None
@@ -258,9 +222,9 @@ async def start_conversion(
         task_id=task_id,
         image_path=local_img_path,
         mode=mode,
-        target_height_mm=target_height_mm,
-        include_base=include_base,
-        thickness_mm=thickness_mm
+        target_width_mm=target_width_mm,
+        relief_depth_mm=relief_depth_mm,
+        curvature_deg=curvature_deg
     )
     
     return {
