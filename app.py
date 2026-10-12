@@ -40,6 +40,7 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 # Mount static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+app.mount("/demo", StaticFiles(directory=os.path.join(STATIC_DIR, "demo")), name="demo")
 
 
 @app.get("/api/presets")

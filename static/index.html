@@ -3445,19 +3445,22 @@
         if (res.ok) {
           isBackendConnected = true;
           if (badgeBackendStatus) {
-            badgeBackendStatus.textContent = "GPU RTX 4070 Ti Actif";
-            badgeBackendStatus.className = "text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+            badgeBackendStatus.textContent = "GPU RTX 4070 Ti Connecté";
+            badgeBackendStatus.className = "text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold";
           }
+        } else {
+          throw new Error("HTTP " + res.status);
         }
       } catch (e) {
         isBackendConnected = false;
         if (badgeBackendStatus) {
-          badgeBackendStatus.textContent = "Mode Web Hybride";
-          badgeBackendStatus.className = "text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30";
+          badgeBackendStatus.textContent = "Serveur Hors Ligne (Port 8080)";
+          badgeBackendStatus.className = "text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold";
         }
       }
     }
     checkBackendAvailable();
+    setInterval(checkBackendAvailable, 3000);
 
     // MOTEUR CLIENT-SIDE EUCLIDEAN DISTANCE FIELD (EDT) ORGANIC INFLATION
     // Transforme toute silhouette 2D en véritable figurine 3D arrondie et étanche (Zéro bloc difforme)
@@ -3832,71 +3835,52 @@
           }
         }
 
-        if (isBackendConnected && fileToSend) {
-          document.getElementById("loadingSubtitle").textContent = "Génération neuronale SOTA (Qualité Studio / Meshy) en cours (~15s)...";
-          const formData = new FormData();
-          formData.append("file", fileToSend, currentFilename || "model_source.png");
-          formData.append("mode", currentMode);
-          formData.append("engine_mode", currentEngine);
-          formData.append("target_height_mm", targetH);
-          formData.append("base_thickness_mm", baseThickness);
-          formData.append("add_base", chkAddBase.checked ? "true" : "false");
-          formData.append("invert", chkInvert.checked ? "true" : "false");
-          const hfTokenVal = document.getElementById("hfTokenInput") ? document.getElementById("hfTokenInput").value.trim() : "";
-          if (hfTokenVal) formData.append("hf_token", hfTokenVal);
+        if (!isBackendConnected) {
+          throw new Error("Le serveur local (GPU NVIDIA RTX 4070 Ti) n'est pas joignable sur le port 8080. Vérifiez que l'application est bien lancée.");
+        }
 
-          const response = await fetch(`${API_BASE}/api/convert`, {
-            method: "POST",
-            body: formData,
-            mode: "cors"
-          });
+        if (!fileToSend) {
+          throw new Error("Aucune image valide à traiter. Veuillez sélectionner une image.");
+        }
 
-          if (response.ok) {
-            const result = await response.json();
-            const stlUrl = `${API_BASE}${result.stl_url}`;
-            const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
-            const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
-            const studioPackUrl = result.studio_pack ? `${API_BASE}${result.studio_pack.zip_url}` : null;
-            updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename, studioPackUrl);
-            if (result.ai_verification) {
-              updateAiVerificationUI(result.ai_verification);
-            }
-            if (glbUrl) {
-              loadModelGLB(glbUrl, stlUrl);
-            } else {
-              loadModelSTL(stlUrl);
-            }
-            return;
-          } else {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || `Erreur serveur lors de la modélisation 3D (${response.status})`);
+        document.getElementById("loadingSubtitle").textContent = "Génération neuronale et volumétrique en cours sur votre GPU RTX 4070 Ti (~15s)...";
+        const formData = new FormData();
+        formData.append("file", fileToSend, currentFilename || "model_source.png");
+        formData.append("mode", currentMode);
+        formData.append("engine_mode", currentEngine);
+        formData.append("target_height_mm", targetH);
+        formData.append("base_thickness_mm", baseThickness);
+        formData.append("add_base", chkAddBase.checked ? "true" : "false");
+        formData.append("invert", chkInvert.checked ? "true" : "false");
+        const hfTokenVal = document.getElementById("hfTokenInput") ? document.getElementById("hfTokenInput").value.trim() : "";
+        if (hfTokenVal) formData.append("hf_token", hfTokenVal);
+
+        const response = await fetch(`${API_BASE}/api/convert`, {
+          method: "POST",
+          body: formData,
+          mode: "cors"
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const stlUrl = `${API_BASE}${result.stl_url}`;
+          const glbUrl = result.glb_url ? `${API_BASE}${result.glb_url}` : null;
+          const threemfUrl = result.threemf_url ? `${API_BASE}${result.threemf_url}` : null;
+          const studioPackUrl = result.studio_pack ? `${API_BASE}${result.studio_pack.zip_url}` : null;
+          updateDownloadLinks(stlUrl, glbUrl, threemfUrl, result.stl_filename, studioPackUrl);
+          if (result.ai_verification) {
+            updateAiVerificationUI(result.ai_verification);
           }
-        }
-
-        // Cas B : Démo Chien, Van Aert ou Babel intégrée
-        if (currentFilename && currentFilename.toLowerCase().includes("van_aert")) {
-          loadDemoVanAertModel();
+          if (glbUrl) {
+            loadModelGLB(glbUrl, stlUrl);
+          } else {
+            loadModelSTL(stlUrl);
+          }
           return;
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.detail || `Erreur serveur lors de la modélisation 3D (${response.status})`);
         }
-        if (currentFilename && currentFilename.toLowerCase().includes("chien")) {
-          loadDemoDogModel();
-          return;
-        }
-        if (currentFilename && (currentFilename.toLowerCase().includes("babel") || currentFilename.toLowerCase().includes("sans titre") || currentFilename.toLowerCase().includes("sans_titre"))) {
-          loadModelSTL("./outputs/Babel_Ultra_Detail_MeshyGrade_10cm.stl");
-          return;
-        }
-
-        // Cas C : Moteur Organique Client-Side (EDT Distance Field Inflation)
-        const canvasCalc = document.createElement("canvas");
-        const img = currentImageElement || imagePreview;
-        canvasCalc.width = img.naturalWidth || img.width || 512;
-        canvasCalc.height = img.naturalHeight || img.height || 512;
-        const ctx = canvasCalc.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-
-        const geom = generateClientOrganicFigurine(canvasCalc, targetH, baseThickness);
-        setActiveMesh(geom);
 
       } catch (err) {
         console.error("Génération locale:", err);
