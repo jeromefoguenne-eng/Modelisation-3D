@@ -430,14 +430,21 @@ async def generate_from_prompt(
 
         stl_name = f"{mode_prefix}_{out_id}.stl"
         threemf_name = f"{mode_prefix}_{out_id}.3mf"
+        glb_name = f"{mode_prefix}_{out_id}.glb"
         
         stl_path = os.path.join(OUTPUT_DIR, stl_name)
         threemf_path = os.path.join(OUTPUT_DIR, threemf_name)
+        glb_path = os.path.join(OUTPUT_DIR, glb_name)
         
         mesh.export(stl_path)
         mesh.export(threemf_path)
+        try:
+            mesh.export(glb_path)
+        except Exception:
+            pass
         
         printability = engine.check_bambu_printability(mesh)
+        ai_verification = engine.ai_verify_3d_reconstruction(mesh, im, OUTPUT_DIR, out_id)
         
         return {
             "success": True,
@@ -446,9 +453,12 @@ async def generate_from_prompt(
             "preview_image_url": f"/outputs/{preview_name}",
             "stl_filename": stl_name,
             "threemf_filename": threemf_name,
+            "glb_filename": glb_name if os.path.exists(glb_path) else None,
             "stl_url": f"/outputs/{stl_name}",
             "threemf_url": f"/outputs/{threemf_name}",
-            "printability": printability
+            "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
+            "printability": printability,
+            "ai_verification": ai_verification
         }
 
     except Exception as e:
@@ -601,22 +611,32 @@ async def edit_image_prompt(
 
             stl_name = f"{mode_prefix}_{out_id}.stl"
             threemf_name = f"{mode_prefix}_{out_id}.3mf"
+            glb_name = f"{mode_prefix}_{out_id}.glb"
 
             stl_path = os.path.join(OUTPUT_DIR, stl_name)
             threemf_path = os.path.join(OUTPUT_DIR, threemf_name)
+            glb_path = os.path.join(OUTPUT_DIR, glb_name)
 
             mesh.export(stl_path)
             mesh.export(threemf_path)
+            try:
+                mesh.export(glb_path)
+            except Exception:
+                pass
 
             printability = engine.check_bambu_printability(mesh)
+            ai_verification = engine.ai_verify_3d_reconstruction(mesh, im, OUTPUT_DIR, out_id)
 
             res_data.update({
                 "rebuilt_3d": True,
                 "stl_filename": stl_name,
                 "threemf_filename": threemf_name,
+                "glb_filename": glb_name if os.path.exists(glb_path) else None,
                 "stl_url": f"/outputs/{stl_name}",
                 "threemf_url": f"/outputs/{threemf_name}",
-                "printability": printability
+                "glb_url": f"/outputs/{glb_name}" if os.path.exists(glb_path) else None,
+                "printability": printability,
+                "ai_verification": ai_verification
             })
         except Exception as e:
             res_data["rebuilt_3d"] = False

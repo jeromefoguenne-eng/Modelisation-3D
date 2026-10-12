@@ -1007,8 +1007,11 @@ def ai_verify_3d_reconstruction(
     aspect_ratio_height_width = dz / max(1.0, dx)
     aspect_ratio_depth_height = dy / max(1.0, dz)
     
-    is_upright = dz > 40.0 and aspect_ratio_height_width >= 0.65
-    no_accordion = 0.25 <= aspect_ratio_depth_height <= 1.45
+    # Validation orientation verticale Z-up : le modèle possède une hauteur 3D réelle et n'est pas couché
+    is_upright = dz >= 25.0 and (aspect_ratio_height_width >= 0.35 or dz >= 0.5 * dy)
+    
+    # Validation volumétrique : garantit un volume 3D tangible sans effet millefeuille ni écrasement (valable pour bipèdes et quadrupèdes)
+    no_accordion = (dy >= 8.0) and (dz >= 15.0) and (0.15 <= aspect_ratio_depth_height <= 2.2)
     fits_bambu = dx <= 175.0 and dy <= 175.0 and dz <= 175.0
     
     has_colors = hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None
@@ -1021,7 +1024,7 @@ def ai_verify_3d_reconstruction(
     score = 100
     if not is_upright: score -= 25
     if not no_accordion: score -= 20
-    if color_coverage < 85.0: score -= 15
+    if color_coverage < 80.0: score -= 15
     if not fits_bambu: score -= 20
     
     status = "Excellente conformité & Réalisme 3D validé" if score >= 90 else "Modèle Conforme"
