@@ -139,6 +139,63 @@ def build_heroic_ultra_hd():
     disp_mm = sampled_relief * front_weight * relief_amp_mm
     m.vertices = verts + norms * disp_mm[:, None]
 
+    # SCULPTURE ANATOMIQUE FIDÈLE DES FORMES DU VISAGE (Élimination du "Raccrapoté")
+    print("      Sculpture géométrique des polygones du visage (cavité buccale, nez, visière, menton)...")
+    v_head = m.vertices.copy()
+    face_mask = (v_head[:, 1] >= 87.0) & (v_head[:, 1] <= 108.0) & (v_head[:, 2] >= -8.0) & (np.abs(v_head[:, 0] - (-1.1)) <= 9.5)
+    
+    fx = v_head[face_mask, 0] - (-1.1)
+    fy = v_head[face_mask, 1]
+    dz_face = np.zeros(face_mask.sum(), dtype=np.float32)
+
+    # 1. Cavité buccale réelle (Cri de victoire, bouche grande ouverte à Y=94.0)
+    mouth_rx = np.abs(fx) / 3.4
+    mouth_ry = np.abs(fy - 94.0) / 2.2
+    in_mouth = (mouth_rx**2 + mouth_ry**2) < 1.0
+    mouth_depth = np.maximum(0.0, 1.0 - (mouth_rx**2 + mouth_ry**2)**1.1)
+    dz_face -= 2.6 * mouth_depth
+
+    # Lèvres saillantes encadrant la bouche
+    lip_dist = np.hypot(mouth_rx, mouth_ry)
+    lip_ridge = np.maximum(0.0, np.sin(np.clip((lip_dist - 0.75) * np.pi / 0.55, 0.0, np.pi)))
+    dz_face += 1.2 * lip_ridge
+
+    # 2. Menton héroïque saillant à Y=91.0
+    chin_dist = np.hypot(fx / 3.0, (fy - 91.0) / 1.7)
+    chin_profile = np.maximum(0.0, 1.0 - chin_dist**2)
+    dz_face += 1.8 * chin_profile
+
+    # 3. Pyramide nasale saillante à Y=97.0
+    nose_rx = np.abs(fx) / 1.6
+    nose_ry = np.abs(fy - 97.0) / 1.8
+    nose_profile = np.maximum(0.0, 1.0 - (nose_rx**1.4 + nose_ry**1.4))
+    dz_face += 2.0 * nose_profile
+
+    # 4. Visière galbée des lunettes de soleil à Y=100.0 (wrapping aérodynamique)
+    visor_ry = np.abs(fy - 100.0) / 2.2
+    visor_rx = np.abs(fx) / 7.2
+    visor_protrusion = np.maximum(0.0, 1.0 - visor_ry**2) * np.maximum(0.0, 1.0 - (visor_rx * 0.6)**2)
+    nose_cutout = np.maximum(0.0, 1.0 - np.hypot(fx / 1.3, (fy - 98.6) / 1.1)**2)
+    dz_face += 1.7 * visor_protrusion * (1.0 - 0.6 * nose_cutout)
+
+    # 5. Casque Red Bull : auvent frontal à Y=103.5 et écopes d'aération creusées à Y=105.5
+    brow_y = np.abs(fy - 103.5) / 1.8
+    brow_x = np.abs(fx) / 8.0
+    brow_profile = np.maximum(0.0, 1.0 - brow_y**2) * np.maximum(0.0, 1.0 - brow_x**2)
+    dz_face += 1.9 * brow_profile
+
+    for slot_x in [-4.2, 0.0, 4.2]:
+        slot_dist = np.hypot((fx - slot_x) / 1.0, (fy - 105.5) / 1.2)
+        slot_scoop = np.maximum(0.0, 1.0 - slot_dist**2)
+        dz_face -= 1.3 * slot_scoop
+
+    # Courbure crânienne (wrapping latéral fluide vers les tempes/oreilles)
+    cranial_wrap = np.maximum(0.0, 1.0 - (fx / 8.8)**2)
+    v_head[face_mask, 2] += dz_face * cranial_wrap
+
+    m.vertices = v_head
+    m.fix_normals()
+
     # Micro-lissage de surface pour intégration organique parfaite
     trimesh.smoothing.filter_taubin(m, lamb=0.32, nu=-0.34, iterations=2)
 
@@ -170,6 +227,12 @@ def build_heroic_ultra_hd():
     print(f"\n>>> EXPORT SANS SOCLE : {len(m_nobase.vertices):,} sommets, {len(m_nobase.faces):,} faces")
     validate_and_scale_for_bambu(m_nobase, target_height_mm=0, enforce_watertight=True)
     export_all_formats(m_nobase, os.path.join(dir_nobase, "model_bambu"))
+
+    # Copie dans static/demo pour affichage immédiat dans l'interface web
+    demo_dir = os.path.join(BASE_DIR, "static", "demo")
+    os.makedirs(demo_dir, exist_ok=True)
+    m_nobase.export(os.path.join(demo_dir, "Van_Aert_Figurine_A1_Mini.glb"))
+    m_nobase.export(os.path.join(demo_dir, "Van_Aert_Figurine_A1_Mini.stl"))
 
     # B) Version AVEC SOCLE (2.69M faces)
     dir_withbase = os.path.join(OUTPUTS_DIR, "vanaert_2.7m_with_base")
@@ -220,7 +283,18 @@ def build_heroic_ultra_hd():
     head_mesh.remove_unreferenced_vertices()
     p_head_zoom = os.path.join(BRAIN_DIR, "sota_2.7m_macro_head_zoom.png")
     render_mesh_preview(head_mesh, p_head_zoom, img_size=1024, angle_deg=18.0)
-    print(f"      Aperçu Zoom Macro Tête : {p_head_zoom}")
+    print(f"      Aperçu Zoom Macro Tête (Couleur) : {p_head_zoom}")
+
+    # Aperçu Zoom Macro Tête en Argile Pure (Preuve des polygones sculptés)
+    clay_head_mesh = trimesh.Trimesh(
+        vertices=head_mesh.vertices,
+        faces=head_mesh.faces,
+        process=False
+    )
+    clay_head_mesh.visual.vertex_colors = [185, 185, 190, 255]
+    p_head_clay = os.path.join(BRAIN_DIR, "sota_2.7m_macro_head_clay.png")
+    render_mesh_preview(clay_head_mesh, p_head_clay, img_size=1024, angle_deg=18.0)
+    print(f"      Aperçu Zoom Macro Tête (Pure Clay) : {p_head_clay}")
 
     print("=" * 70)
     print(f"PIPELINE HEROIQUE 2.7M TERMINE AVEC SUCCES EN {time.time()-t_start:.1f}s !")

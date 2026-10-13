@@ -14,3 +14,9 @@ hf_token.txt
 token_hf.txt
 _backups/
 inspect_app.py
+*.glb
+*.stl
+*.obj
+*.3mf
+static/demo/*.glb
+static/demo/*.stl
