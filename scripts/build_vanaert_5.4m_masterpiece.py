@@ -1,13 +1,14 @@
 """
 Pipeline Masterpiece V3 : Modélisation 3D Ultra-Haute Définition (5 376 000 Polygones)
-Sculpture Faciale & Corporelle Haute Précision (Bouche Ouverte, Lunettes Oakley, Casque Red Bull)
-Calibrage Anatomique et Texture PBR 2K pour Wout van Aert.
+Sculpture Faciale & Corporelle Haute Précision Anatomique (Relief Neuronal Pur du Visage)
+Calibrage Isométrique et Texture PBR 2K pour Wout van Aert.
 """
 
 import os
 import sys
 import time
 import shutil
+import cv2
 import numpy as np
 import trimesh
 from PIL import Image
@@ -25,8 +26,8 @@ BRAIN_DIR = r"C:\Users\TrendingPC\.gemini\antigravity\brain\6f356426-1b48-4c89-8
 
 def build_vanaert_5_4m_masterpiece():
     print("=" * 80)
-    print("DEMARRAGE DU PIPELINE MASTERPIECE V3 (5 376 000 POLYGONES)")
-    print("SCULPTURE ANATOMIQUE ACCENTUEE & PARAMETRISATION UV 2K CALIBREE")
+    print("DEMARRAGE DU PIPELINE MASTERPIECE V3 FINAL (5 376 000 POLYGONES)")
+    print("SCULPTURE FACIALE PURE NEURONALE & CALIBRAGE ISOMETRIQUE SANS DEFORMATION")
     print("=" * 80)
     t0 = time.time()
 
@@ -47,8 +48,8 @@ def build_vanaert_5_4m_masterpiece():
     dilated_crop_rgb = crop_src[:, :, :3][idx_ex[0], idx_ex[1]]
     dilated_crop_rgba = np.dstack([dilated_crop_rgb, np.full((H_crop, W_crop), 255, dtype=np.uint8)])
 
-    # 2. Carte de relief multi-échelle (Depth Anything V2 SOTA)
-    print("[2/7] Calcul de la carte de profondeur neuronale multi-échelle...")
+    # 2. Carte de relief neuronale du corps et de la tête
+    print("[2/7] Extraction du relief neuronal haute définition (Corps & Tête)...")
     import torch
     from transformers import pipeline
     depth_pipe = pipeline(
@@ -56,27 +57,33 @@ def build_vanaert_5_4m_masterpiece():
         model='depth-anything/Depth-Anything-V2-Small-hf',
         device=0 if torch.cuda.is_available() else -1
     )
-    d_res = depth_pipe(Image.fromarray(crop_src[:, :, :3]))['depth']
-    d_all = np.array(d_res, dtype=np.float32)
-    d_all = (d_all - d_all.min()) / (d_all.max() - d_all.min() + 1e-6)
-
-    # Séparation macro-volumes et micro-relief
-    d_macro = d_all - gaussian_filter(d_all, sigma=45.0)
-    d_macro = d_macro / (np.std(d_macro[mask > 0.5]) + 1e-5)
     
-    grad_d = np.hypot(sobel(d_all, axis=0), sobel(d_all, axis=1))
-    grad_d = grad_d / (np.std(grad_d[mask > 0.5]) + 1e-5)
-
-    total_relief_2d = 0.82 * d_macro + 0.18 * np.clip(grad_d - 0.35, 0.0, 2.5)
+    # Relief corps
+    d_res_body = depth_pipe(Image.fromarray(crop_src[:, :, :3]))['depth']
+    d_body = np.array(d_res_body, dtype=np.float32)
+    d_body = (d_body - d_body.min()) / (d_body.max() - d_body.min() + 1e-6)
+    d_body_macro = d_body - gaussian_filter(d_body, sigma=45.0)
+    d_body_macro = d_body_macro / (np.std(d_body_macro[mask > 0.5]) + 1e-5)
+    grad_body = np.hypot(sobel(d_body, axis=0), sobel(d_body, axis=1))
+    grad_body = grad_body / (np.std(grad_body[mask > 0.5]) + 1e-5)
+    total_relief_body = 0.82 * d_body_macro + 0.18 * np.clip(grad_body - 0.35, 0.0, 2.5)
     dist_px = distance_transform_edt(mask > 0.5)
     boundary_fade = np.clip((dist_px - 4.0) / 16.0, 0.0, 1.0)
-    total_relief_2d = np.clip(total_relief_2d * boundary_fade / 2.0, -1.0, 1.0)
+    total_relief_body = np.clip(total_relief_body * boundary_fade / 2.0, -1.0, 1.0)
+
+    # Relief tête haute résolution (sans aucune approximation géométrique)
+    head_crop_rgb = crop_src[250:520, 300:550, :3]
+    d_res_head = depth_pipe(Image.fromarray(head_crop_rgb))['depth']
+    d_head = np.array(d_res_head, dtype=np.float32)
+    d_head = (d_head - d_head.min()) / (d_head.max() - d_head.min() + 1e-6)
+    d_head_smooth = gaussian_filter(d_head, sigma=2.0)
+    d_head_relief = (d_head_smooth - gaussian_filter(d_head_smooth, sigma=25.0)) * 3.5
 
     # 3. Chargement et Double Subdivision vers 5 376 000 faces
     base_glb = os.path.join(BASE_DIR, "outputs", "sota_test", "vanaert_hunyuan21_512.glb")
     print(f"[3/7] Chargement du maillage de base ({base_glb})...")
     m_base = trimesh.load(base_glb, force="mesh")
-    trimesh.smoothing.filter_taubin(m_base, lamb=0.5, nu=-0.53, iterations=10)
+    trimesh.smoothing.filter_taubin(m_base, lamb=0.5, nu=-0.53, iterations=12)
 
     m_base.apply_scale(120.0 / m_base.extents[1])
     b = m_base.bounds
@@ -94,74 +101,54 @@ def build_vanaert_5_4m_masterpiece():
         target_reduction=target_reduction
     )
     m = trimesh.Trimesh(vertices=v_simp, faces=f_simp, process=False)
-    trimesh.smoothing.filter_taubin(m, lamb=0.42, nu=-0.45, iterations=2)
+    trimesh.smoothing.filter_taubin(m, lamb=0.45, nu=-0.48, iterations=3)
     print(f"      Maillage Ultra-HD : {len(m.vertices):,} sommets, {len(m.faces):,} faces")
 
-    # 4. Calibration Anatomique Parfaite et Sculpture 3D
-    print("[5/7] Sculpture anatomique (visage, torse héroïque, vélo)...")
+    # 4. Calibration Isométrique Parfaite et Sculpture 3D
+    print("[5/7] Sculpture anatomique (visage pur neuronal, torse héroïque, vélo)...")
     verts = m.vertices.copy()
     norms = m.vertex_normals.copy()
 
-    # Repères anatomiques précis
-    anchors_y_3d = np.array([0.0, 30.0, 60.0, 85.0, 91.0, 94.0, 97.0, 100.0, 107.5, 120.0])
-    anchors_row_2d = np.array([1952.0, 1480.0, 960.0, 495.0, 430.0, 375.0, 325.0, 280.0, 160.0, 0.0])
+    # Repères anatomiques isométriques calqués sur la photo
+    anchors_y_3d = np.array([0.0, 30.0, 60.0, 82.0, 90.0, 93.5, 97.0, 100.5, 104.0, 107.5, 120.0])
+    anchors_row_2d = np.array([1952.0, 1480.0, 960.0, 620.0, 485.0, 430.0, 390.0, 350.0, 310.0, 250.0, 0.0])
     map_y_to_row = interp1d(anchors_y_3d, anchors_row_2d, kind='linear', fill_value='extrapolate')
 
     rows_proj = np.clip(map_y_to_row(verts[:, 1]), 0, H_crop - 1)
-    t_head = np.clip((verts[:, 1] - 80.0) / 10.0, 0.0, 1.0)
-    center_x = -1.1 * t_head + 0.0 * (1.0 - t_head)
-    scale_x = 12.8 * t_head + 14.2 * (1.0 - t_head)
-    cols_proj = np.clip(405.0 + (verts[:, 0] - center_x) * scale_x, 0, W_crop - 1)
+    t_head = np.clip((verts[:, 1] - 80.0) / 12.0, 0.0, 1.0)
+    scale_x = 12.0 * t_head + 14.0 * (1.0 - t_head)
+    center_col = 432.0 * t_head + 405.0 * (1.0 - t_head)
+    center_3d_x = 0.8 * t_head + 0.0 * (1.0 - t_head)
 
-    # Relief volumétrique général le long des normales
+    cols_proj = np.clip(center_col + (verts[:, 0] - center_3d_x) * scale_x, 0, W_crop - 1)
+
+    # Relief volumétrique du corps
     vis_n = np.clip((norms[:, 2] - 0.05) / 0.60, 0.0, 1.0) ** 1.15
     z_fade = np.clip((verts[:, 2] + 16.0) / 12.0, 0.0, 1.0)
     above_wheels = np.clip((verts[:, 1] - 22.0) / 8.0, 0.0, 1.0)
     front_weight = vis_n * z_fade * above_wheels
 
-    sampled_relief = map_coordinates(total_relief_2d, [rows_proj, cols_proj], order=1, mode='nearest')
-    relief_amp_mm = np.where(verts[:, 1] >= 85.0, 1.35, np.where(verts[:, 1] >= 50.0, 1.85, 1.25))
-    disp_general = sampled_relief * front_weight * relief_amp_mm
+    sampled_relief_body = map_coordinates(total_relief_body, [rows_proj, cols_proj], order=1, mode='nearest')
+    relief_body_mm = np.where(verts[:, 1] >= 50.0, 1.75, 1.25)
+    disp_body = sampled_relief_body * front_weight * relief_body_mm
 
-    # SCULPTURE ANATOMIQUE DEDIEE DE LA TETE (traits Wout van Aert)
-    is_head = (verts[:, 1] >= 89.0) & (verts[:, 1] <= 106.0) & (verts[:, 2] >= -12.0)
+    # Sculpture pure neuronale de la tête
+    r_in_head = np.clip(rows_proj - 250.0, 0, 269)
+    c_in_head = np.clip(cols_proj - 300.0, 0, 249)
+    sampled_head_d = map_coordinates(d_head_relief, [r_in_head, c_in_head], order=1, mode='nearest')
 
-    # 1. Nez athlétique à Y=96.0 (+1.9 mm)
-    dy_nose = (verts[:, 1] - 96.0) / 1.5
-    dx_nose = (verts[:, 0] - center_x) / 1.5
-    disp_nose = 1.9 * np.exp(-(dx_nose**2 + dy_nose**2)) * is_head
+    is_head_front = (verts[:, 1] >= 89.0) & (verts[:, 1] <= 107.5) & (verts[:, 2] >= -12.0)
+    fade_head = np.clip((norms[:, 2] - 0.1) / 0.5, 0.0, 1.0) * is_head_front
+    disp_head_mm = np.clip(sampled_head_d * fade_head * 1.5, -2.0, 2.5)
 
-    # 2. Bouche ouverte criant de joie à Y=93.8 (cavité -1.7 mm)
-    dy_mouth = (verts[:, 1] - 93.8) / 1.4
-    dx_mouth = (verts[:, 0] - center_x) / 2.2
-    disp_mouth = -1.7 * np.exp(-(dx_mouth**2 + dy_mouth**2)) * is_head
-
-    # 3. Étagère des dents et lèvre supérieure à Y=94.6 (+1.3 mm)
-    dy_teeth = (verts[:, 1] - 94.6) / 0.6
-    disp_teeth = 1.3 * np.exp(-dy_teeth**2 - (dx_mouth*0.8)**2) * is_head
-
-    # 4. Menton volontaire à Y=91.5 (+1.5 mm)
-    dy_chin = (verts[:, 1] - 91.5) / 1.2
-    disp_chin = 1.5 * np.exp(-dy_chin**2 - (dx_mouth*0.8)**2) * is_head
-
-    # 5. Visière des lunettes Oakley Sutro à Y=97.8 (+1.7 mm)
-    dy_glass = (verts[:, 1] - 97.8) / 1.6
-    dx_glass = (verts[:, 0] - center_x) / 5.0
-    disp_glass = 1.7 * np.clip(1.0 - dy_glass**2, 0.0, 1.0) * np.clip(1.0 - dx_glass**2, 0.0, 1.0) * is_head
-
-    # 6. Nervure de fermeture éclair sur le torse (+1.2 mm)
-    is_chest = (verts[:, 1] >= 65.0) & (verts[:, 1] <= 88.0) & (verts[:, 2] >= -5.0)
-    dx_zip = (verts[:, 0] - center_x) / 1.2
-    disp_zip = 1.2 * np.exp(-dx_zip**2) * is_chest
-
-    # Déplacement combiné : Z direct + relief le long des normales
-    verts[:, 2] += (disp_nose + disp_mouth + disp_teeth + disp_chin + disp_glass + disp_zip)
-    m.vertices = verts + norms * disp_general[:, None]
+    # Fusion des reliefs corps et tête
+    total_disp_normals = np.where(is_head_front, disp_head_mm, disp_body)
+    m.vertices = verts + norms * total_disp_normals[:, None]
     trimesh.smoothing.filter_taubin(m, lamb=0.35, nu=-0.38, iterations=1)
     print("      Sculpture anatomique terminée avec succès !")
 
     # 5. Paramétrisation UV et Atlas de Texture PBR 2K
-    print("[6/7] Paramétrisation UV et atlas de texture PBR 2K...")
+    print("[6/7] Paramétrisation UV isométrique et texture PBR 2K...")
     TEX_SIZE = 2048
     HALF_W = TEX_SIZE // 2
     atlas = np.zeros((TEX_SIZE, TEX_SIZE, 4), dtype=np.uint8)
@@ -193,16 +180,18 @@ def build_vanaert_5_4m_masterpiece():
     atlas[:, HALF_W:] = back_arr
     atlas_img = Image.fromarray(atlas)
 
-    # Calcul des UVs sur le maillage final
+    # Calcul des UVs sur le maillage final sculpté
     m_verts = m.vertices
     m_norms = m.vertex_normals
     rows_m = np.clip(map_y_to_row(m_verts[:, 1]), 0, H_crop - 1)
     v_coords = 1.0 - (rows_m / float(H_crop))
 
-    t_head_m = np.clip((m_verts[:, 1] - 80.0) / 10.0, 0.0, 1.0)
-    cx_m = -1.1 * t_head_m + 0.0 * (1.0 - t_head_m)
-    sx_m = 12.8 * t_head_m + 14.2 * (1.0 - t_head_m)
-    cols_m = np.clip(405.0 + (m_verts[:, 0] - cx_m) * sx_m, 0, W_crop - 1)
+    t_head_m = np.clip((m_verts[:, 1] - 80.0) / 12.0, 0.0, 1.0)
+    scale_x_m = 12.0 * t_head_m + 14.0 * (1.0 - t_head_m)
+    center_col_m = 432.0 * t_head_m + 405.0 * (1.0 - t_head_m)
+    center_3d_x_m = 0.8 * t_head_m + 0.0 * (1.0 - t_head_m)
+
+    cols_m = np.clip(center_col_m + (m_verts[:, 0] - center_3d_x_m) * scale_x_m, 0, W_crop - 1)
     cols_norm_m = cols_m / float(W_crop)
 
     is_front = (m_norms[:, 2] >= -0.15) | (m_verts[:, 2] >= -10.0)
