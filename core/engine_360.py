@@ -220,13 +220,32 @@ def generate_figurine_360_hunyuan(
         hy_file = hy_file["path"]
 
     if progress_callback:
-        progress_callback(75, "Maillage Ultra-HD reçu ! Lissage Taubin anti-facettes et projection des couleurs 360°...")
+        progress_callback(75, "Maillage Ultra-HD reçu ! Densification x3 (2.7M faces) et texturation 360° Voronoi...")
 
     mesh = trimesh.load(hy_file, force="mesh")
 
-    # Projection des couleurs sommets haute définition depuis l'image source
+    # 1. Subdivision et lissage haute définition vers 2.7M faces
     try:
-        from scipy.ndimage import map_coordinates
+        import fast_simplification
+        trimesh.smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=8)
+        v_sub, f_sub = trimesh.remesh.subdivide(mesh.vertices, mesh.faces)
+        target_f = min(2688000, len(f_sub))
+        if len(f_sub) > target_f:
+            v_simp, f_simp = fast_simplification.simplify(
+                v_sub.astype(np.float32),
+                f_sub.astype(np.int64),
+                target_reduction=1.0 - (target_f / len(f_sub))
+            )
+            mesh = trimesh.Trimesh(vertices=v_simp, faces=f_simp, process=False)
+        else:
+            mesh = trimesh.Trimesh(vertices=v_sub, faces=f_sub, process=False)
+        trimesh.smoothing.filter_taubin(mesh, lamb=0.45, nu=-0.47, iterations=3)
+    except Exception as e_sub:
+        print(f"[Engine360] Subdivision notice: {e_sub}")
+
+    # 2. Texturation 360° Voronoi sans couture (aucun artefact noir sur les tranches ou le dos)
+    try:
+        from scipy.ndimage import map_coordinates, distance_transform_edt
         src_img = Image.open(image_path).convert("RGBA")
         arr = np.array(src_img)
         alpha = arr[:, :, 3] > 30
@@ -234,7 +253,11 @@ def generate_figurine_360_hunyuan(
             ys, xs = np.where(alpha)
             crop = arr[ys.min():ys.max()+1, xs.min():xs.max()+1]
             H_c, W_c = crop.shape[:2]
-            rgb_c = crop[:, :, :3].astype(np.float32) / 255.0
+            mask_c = crop[:, :, 3] > 30
+
+            # Extrapolation Voronoi 2D
+            dist_ex, idx_ex = distance_transform_edt(~mask_c, return_indices=True)
+            extrap_rgb = crop[:, :, :3][idx_ex[0], idx_ex[1]].astype(np.float32) / 255.0
 
             v = mesh.vertices
             n = mesh.vertex_normals
@@ -244,11 +267,12 @@ def generate_figurine_360_hunyuan(
             u_c = np.clip((v[:, 0] - xmin) / (xmax - xmin + 1e-6) * (W_c - 1), 0, W_c - 1)
             v_c = np.clip((1.0 - (v[:, 1] - ymin) / (ymax - ymin + 1e-6)) * (H_c - 1), 0, H_c - 1)
 
-            front_factor = np.clip((n[:, 2] + 0.35) / 0.70, 0.55, 1.0)
+            # Éclairage doux 360° studio
+            ao_light = np.clip(0.75 + 0.25 * np.maximum(0.0, n[:, 2]), 0.68, 1.0)
             v_col = np.zeros((len(v), 4), dtype=np.uint8)
             for ch in range(3):
-                sc = map_coordinates(rgb_c[:, :, ch], [v_c, u_c], order=1, mode='nearest')
-                v_col[:, ch] = np.clip(sc * front_factor * 255.0, 0, 255).astype(np.uint8)
+                sc = map_coordinates(extrap_rgb[:, :, ch], [v_c, u_c], order=1, mode='nearest')
+                v_col[:, ch] = np.clip(sc * ao_light * 255.0, 0, 255).astype(np.uint8)
             v_col[:, 3] = 255
             mesh.visual.vertex_colors = v_col
     except Exception as e_col:
@@ -259,7 +283,7 @@ def generate_figurine_360_hunyuan(
         target_height_mm=target_height_mm,
         include_base=include_base,
         base_height_mm=base_height_mm,
-        smooth_iterations=12
+        smooth_iterations=0
     )
     return mesh
 
