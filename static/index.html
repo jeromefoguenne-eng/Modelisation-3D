@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studio 3D - Modélisation Haute Précision Bambu Lab A1 Mini</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>Studio 3D Figurine 360° — Bambu Lab A1 Mini</title>
+  <link rel="stylesheet" href="/static/style.css?v=4.0">
   <!-- Three.js et OrbitControls -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -14,8 +14,8 @@
 
   <header>
     <div class="logo-container">
-      <span class="logo-badge">BAMBU A1 MINI</span>
-      <h1>Studio 3D Haute Précision</h1>
+      <span class="logo-badge">FIGURINE 360°</span>
+      <h1>Studio 3D Haute Précision — Bambu Lab A1 Mini</h1>
     </div>
     <div class="gpu-status">
       <div class="status-dot" id="gpu-dot"></div>
@@ -31,7 +31,7 @@
         <div class="panel-title">1. Image Source (2D)</div>
         <div class="dropzone" id="dropzone">
           <div class="dropzone-icon">📷</div>
-          <p>Glissez-déposez une image ou <span class="highlight">parcourez</span></p>
+          <p>Glissez-déposez une photo ou <span class="highlight">parcourez</span></p>
           <input type="file" id="file-input" accept="image/*" style="display: none;">
         </div>
 
@@ -40,71 +40,84 @@
         </div>
 
         <div style="margin-top: 14px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Ou choisir une démo :</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Ou cliquez sur une image de démo :</div>
           <div class="demo-strip" id="demo-strip">
             <!-- Détecté dynamiquement -->
           </div>
         </div>
       </section>
 
-      <!-- 2. Choix du Style Haute Fidélité (Voie 2) -->
+      <!-- 2. Choix du Moteur 360° -->
       <section class="panel-section">
-        <div class="panel-title">2. Mode Haute Fidélité (1:1 Pixel)</div>
+        <div class="panel-title">2. Moteur Figurine 3D (360°)</div>
         <div class="mode-selector">
-          <div class="mode-card active" data-mode="bas_relief">
+          <div class="mode-card active" data-mode="triposr_360">
             <div class="mode-card-header">
-              <span>Bas-Relief Sculpté (Trophée)</span>
-              <span class="badge-rec">RECOMMANDÉ</span>
+              <span>Figurine 360° GPU Local (RTX 4070 Ti)</span>
+              <span class="badge-rec">RAPIDE & LOCAL</span>
             </div>
             <div class="mode-card-desc">
-              Plaque sculptée avec cadre biseauté. Respecte 100% des détails et des proportions sans déformation. Idéal en rendu Marbre ou Bronze.
+              Vraie statuette 360° complète (face, profils, dos) propulsée par TripoSR local corrigé (100% des 549 poids DINO actifs). Génération en ~5 à 15s.
             </div>
           </div>
 
-          <div class="mode-card" data-mode="lithophane">
+          <div class="mode-card" data-mode="hunyuan_360">
             <div class="mode-card-header">
-              <span>Lithophanie Rétro-éclairée</span>
+              <span>Figurine 360° Tencent Hunyuan3D-2</span>
+              <span class="badge-rec">ULTRA-HD</span>
             </div>
             <div class="mode-card-desc">
-              Photo révélée par la lumière. Épaisseurs calibrées (0.8 à 3.2mm) pour révéler l'image en transparence avec du PLA Blanc.
+              Sculpture neuronale 360° haute densité par Diffusion Transformer (avec repli automatique sur GPU RTX 4070 Ti en 320³).
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 3. Paramètres Bambu Lab A1 Mini -->
+      <!-- 3. Socle & Dimensions Bambu Lab A1 Mini -->
       <section class="panel-section">
-        <div class="panel-title">3. Calibrage Bambu Lab A1 Mini</div>
-        
+        <div class="panel-title">3. Socle & Dimensions (Bambu A1 Mini)</div>
+
+        <!-- Option Avec ou Sans Socle -->
+        <div class="form-group" style="margin-top: 0; margin-bottom: 14px;">
+          <label style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Configuration du Socle :</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" class="tool-btn active" id="btn-with-base" style="border: 1px solid var(--border-color); padding: 10px; font-weight: 600;">
+              🟢 Avec Socle
+            </button>
+            <button type="button" class="tool-btn" id="btn-without-base" style="border: 1px solid var(--border-color); padding: 10px; font-weight: 600;">
+              ⚪ Sans Socle
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group" id="base-height-group">
+          <div class="form-row">
+            <label for="base-slider">Épaisseur du socle :</label>
+            <span id="base-val" style="font-weight: 600; color: var(--accent-bambu);">5 mm</span>
+          </div>
+          <input type="range" id="base-slider" min="3" max="10" value="5" step="1">
+        </div>
+
         <div class="form-group">
           <div class="form-row">
-            <label for="width-slider">Largeur de pièce :</label>
-            <span id="width-val" style="font-weight: 600; color: var(--accent-bambu);">120 mm</span>
+            <label for="height-slider">Hauteur de la figurine :</label>
+            <span id="height-val" style="font-weight: 600; color: var(--accent-bambu);">120 mm</span>
           </div>
-          <input type="range" id="width-slider" min="60" max="175" value="120" step="5">
+          <input type="range" id="height-slider" min="50" max="175" value="120" step="5">
         </div>
 
-        <div class="form-group" id="group-relief">
+        <div class="form-group">
           <div class="form-row">
-            <label for="relief-slider">Profondeur de relief :</label>
-            <span id="relief-val" style="font-weight: 600; color: var(--accent-bambu);">4.5 mm</span>
+            <label for="res-slider">Finesse de grille 360° :</label>
+            <span id="res-val" style="font-weight: 600; color: var(--accent-bambu);">300³ (Haute Définition)</span>
           </div>
-          <input type="range" id="relief-slider" min="2.0" max="8.0" value="4.5" step="0.5">
-        </div>
-
-        <div class="form-group" style="margin-top: 10px;">
-          <div class="form-row">
-            <label for="curve-slider">Courbure autoportante :</label>
-            <span id="curve-val" style="font-weight: 600; color: var(--accent-bambu);">0° (Plat)</span>
-          </div>
-          <input type="range" id="curve-slider" min="0" max="30" value="0" step="5">
-          <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">20° permet à la plaque de tenir debout toute seule sur une table sans support !</span>
+          <input type="range" id="res-slider" min="256" max="320" value="300" step="32">
         </div>
       </section>
 
       <!-- Bouton d'action -->
-      <button class="btn-generate" id="btn-generate" disabled>
-        <span>Générer le Modèle 3D Haute Fidélité</span>
+      <button type="button" class="btn-generate" id="btn-generate" disabled>
+        <span>🧊 Générer la Figurine 3D (360°)</span>
       </button>
     </aside>
 
@@ -113,23 +126,25 @@
       <!-- Barre d'outils 3D -->
       <div class="viewport-toolbar">
         <div class="toolbar-group">
-          <button class="tool-btn active" data-mat="white">PLA Blanc</button>
-          <button class="tool-btn" data-mat="bambu-green">Vert Bambu</button>
-          <button class="tool-btn" data-mat="bronze">Bronze Antique</button>
-          <button class="tool-btn" data-mat="marble">Marbre</button>
-          <button class="tool-btn" data-mat="wireframe">Maillage</button>
+          <button type="button" class="tool-btn active" data-mat="vertex">Couleurs 360°</button>
+          <button type="button" class="tool-btn" data-mat="white">PLA Blanc</button>
+          <button type="button" class="tool-btn" data-mat="bambu-green">Vert Bambu</button>
+          <button type="button" class="tool-btn" data-mat="bronze">Bronze</button>
+          <button type="button" class="tool-btn" data-mat="marble">Marbre</button>
+          <button type="button" class="tool-btn" data-mat="wireframe">Maillage</button>
         </div>
         <div class="toolbar-group">
-          <button class="tool-btn" id="btn-reset-cam">Recentrer la vue</button>
+          <button type="button" class="tool-btn active" id="btn-autorotate">🔄 Rotation 360°: ON</button>
+          <button type="button" class="tool-btn" id="btn-reset-cam">Recentrer</button>
         </div>
       </div>
 
       <!-- Container Canvas Three.js -->
       <div id="canvas-container">
         <div class="empty-viewport" id="empty-viewport">
-          <div class="empty-icon">🧊</div>
-          <h3>Aucun modèle 3D chargé</h3>
-          <p>Importez une image à gauche pour lancer la modélisation haute précision.</p>
+          <div class="empty-icon">🧍</div>
+          <h3>Prêt pour la modélisation 360°</h3>
+          <p>Sélectionnez une image à gauche (ou une démo) puis cliquez sur <strong>Générer la Figurine 3D (360°)</strong>.</p>
         </div>
       </div>
 
@@ -137,7 +152,7 @@
       <div class="progress-overlay" id="progress-overlay">
         <div class="progress-card">
           <div class="spinner"></div>
-          <h3 id="progress-title">Calcul de la géométrie 3D...</h3>
+          <h3 id="progress-title">Sculpture de la Figurine 360°...</h3>
           <div class="progress-bar-container">
             <div class="progress-bar-fill" id="progress-bar"></div>
           </div>
@@ -148,11 +163,11 @@
       <!-- Panneau des métriques physiques Bambu A1 Mini -->
       <div class="metrics-panel" id="metrics-panel">
         <div class="metric-item">
-          <span class="metric-label">Dimensions (X×Y×Z)</span>
+          <span class="metric-label">Dimensions (L×P×H)</span>
           <span class="metric-value" id="val-dims">-- × -- × -- mm</span>
         </div>
         <div class="metric-item">
-          <span class="metric-label">Volume Plein</span>
+          <span class="metric-label">Volume 3D</span>
           <span class="metric-value" id="val-volume">-- cm³</span>
         </div>
         <div class="metric-item">
@@ -164,8 +179,8 @@
           <span class="metric-value" id="val-time">-- min</span>
         </div>
         <div class="metric-item">
-          <span class="metric-label">Statut Maillage</span>
-          <span class="badge-watertight" id="val-watertight">✔ Watertight (Étanche)</span>
+          <span class="metric-label">Géométrie</span>
+          <span class="badge-watertight" id="val-watertight">✔ Prêt Bambu Studio</span>
         </div>
         <div class="metric-item" style="flex-direction: row; gap: 8px;">
           <a class="btn-download-stl" id="btn-dl-stl" href="#" download>
@@ -179,6 +194,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=4.0"></script>
 </body>
 </html>

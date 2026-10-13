@@ -1,18 +1,17 @@
 /**
- * Application Client Bambu Lab A1 Mini - Studio 3D
- * Gestion Three.js, communication asynchrone FastAPI, zéro fallback dégradé.
+ * Application Client Studio 3D Figurine 360° (Bambu Lab A1 Mini)
+ * Gestion Three.js 360°, Avec ou Sans Socle, GPU RTX 4070 Ti & Hunyuan3D-2.
  */
 
 let scene, camera, renderer, controls;
 let currentMesh = null;
-let currentGLBUrl = null;
 let currentTaskPollInterval = null;
 
 let selectedFile = null;
 let selectedDemoPath = null;
-let selectedMode = "bas_relief";
+let selectedMode = "triposr_360";
+let includeBase = true;
 
-// Initialisation au chargement de la page
 window.addEventListener("DOMContentLoaded", () => {
   initThreeJS();
   initEventListeners();
@@ -23,14 +22,14 @@ window.addEventListener("DOMContentLoaded", () => {
 // 1. Initialisation Three.js
 function initThreeJS() {
   const container = document.getElementById("canvas-container");
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+  const width = container.clientWidth || 800;
+  const height = container.clientHeight || 600;
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f1115);
 
-  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-  camera.position.set(0, 40, 220);
+  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+  camera.position.set(0, 80, 210);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(width, height);
@@ -38,34 +37,33 @@ function initThreeJS() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.15;
 
   container.appendChild(renderer.domElement);
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.maxDistance = 500;
+  controls.maxDistance = 600;
   controls.minDistance = 20;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 2.0;
 
-  // Éclairage Studio PBR
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  // Éclairage Studio PBR 360°
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambientLight);
 
-  // Lumière principale (Key light)
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  keyLight.position.set(100, 150, 100);
+  const keyLight = new THREE.DirectionalLight(0xfff6ea, 1.4);
+  keyLight.position.set(120, 180, 120);
   keyLight.castShadow = true;
   scene.add(keyLight);
 
-  // Lumière de débouchage (Fill light bleue)
-  const fillLight = new THREE.DirectionalLight(0x90b0e0, 0.7);
-  fillLight.position.set(-100, 80, -80);
+  const fillLight = new THREE.DirectionalLight(0x90b4e8, 0.85);
+  fillLight.position.set(-120, 100, -100);
   scene.add(fillLight);
 
-  // Lumière de contour (Rim light)
-  const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  rimLight.position.set(0, -100, -100);
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  rimLight.position.set(0, 120, -150);
   scene.add(rimLight);
 
   // Plateau d'impression Bambu Lab A1 Mini (Grille 180x180 mm)
@@ -73,7 +71,6 @@ function initThreeJS() {
   gridHelper.position.y = 0;
   scene.add(gridHelper);
 
-  // Boucle de rendu
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
@@ -81,7 +78,6 @@ function initThreeJS() {
   }
   animate();
 
-  // Redimensionnement réactif
   window.addEventListener("resize", () => {
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -95,23 +91,47 @@ function initThreeJS() {
 function initEventListeners() {
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("file-input");
-  const widthSlider = document.getElementById("width-slider");
-  const widthVal = document.getElementById("width-val");
-  const reliefSlider = document.getElementById("relief-slider");
-  const reliefVal = document.getElementById("relief-val");
-  const curveSlider = document.getElementById("curve-slider");
-  const curveVal = document.getElementById("curve-val");
+  const btnGenerate = document.getElementById("btn-generate");
 
-  // Sliders Voie 2
-  widthSlider.addEventListener("input", (e) => {
-    widthVal.textContent = `${e.target.value} mm`;
+  const btnWithBase = document.getElementById("btn-with-base");
+  const btnWithoutBase = document.getElementById("btn-without-base");
+  const baseHeightGroup = document.getElementById("base-height-group");
+
+  const baseSlider = document.getElementById("base-slider");
+  const baseVal = document.getElementById("base-val");
+  const heightSlider = document.getElementById("height-slider");
+  const heightVal = document.getElementById("height-val");
+  const resSlider = document.getElementById("res-slider");
+  const resVal = document.getElementById("res-val");
+
+  // Boutons Avec / Sans Socle
+  btnWithBase.addEventListener("click", () => {
+    includeBase = true;
+    btnWithBase.classList.add("active");
+    btnWithoutBase.classList.remove("active");
+    baseHeightGroup.style.display = "flex";
   });
-  reliefSlider.addEventListener("input", (e) => {
-    reliefVal.textContent = `${e.target.value} mm`;
+
+  btnWithoutBase.addEventListener("click", () => {
+    includeBase = false;
+    btnWithoutBase.classList.add("active");
+    btnWithBase.classList.remove("active");
+    baseHeightGroup.style.display = "none";
   });
-  curveSlider.addEventListener("input", (e) => {
-    const val = parseInt(e.target.value);
-    curveVal.textContent = val === 0 ? "0° (Plat)" : `${val}° (Courbé)`;
+
+  // Sliders
+  baseSlider.addEventListener("input", (e) => {
+    baseVal.textContent = `${e.target.value} mm`;
+  });
+
+  heightSlider.addEventListener("input", (e) => {
+    heightVal.textContent = `${e.target.value} mm`;
+  });
+
+  resSlider.addEventListener("input", (e) => {
+    const r = parseInt(e.target.value);
+    const label = r <= 260 ? "Standard" : (r <= 300 ? "Haute Définition" : "Ultra-HD");
+    resVal.textContent = `${r}³ (${label})`;
   });
 
   // Drag & drop
@@ -135,7 +155,7 @@ function initEventListeners() {
     }
   });
 
-  // Sélection de mode
+  // Sélection du moteur 360°
   document.querySelectorAll(".mode-card").forEach((card) => {
     card.addEventListener("click", () => {
       document.querySelectorAll(".mode-card").forEach((c) => c.classList.remove("active"));
@@ -153,16 +173,24 @@ function initEventListeners() {
     });
   });
 
+  // Auto-rotation 360°
+  const btnAutoRotate = document.getElementById("btn-autorotate");
+  btnAutoRotate.addEventListener("click", () => {
+    controls.autoRotate = !controls.autoRotate;
+    btnAutoRotate.textContent = controls.autoRotate ? "🔄 Rotation 360°: ON" : "⏸ Rotation 360°: OFF";
+    btnAutoRotate.classList.toggle("active", controls.autoRotate);
+  });
+
   // Recentrer vue
   document.getElementById("btn-reset-cam").addEventListener("click", () => {
     if (currentMesh) {
       const box = new THREE.Box3().setFromObject(currentMesh);
-      const center = box.getCenter(new THREE.Vector3());
-      controls.target.copy(center);
-      camera.position.set(center.x, center.y + 40, center.z + 180);
+      const size = box.getSize(new THREE.Vector3());
+      controls.target.set(0, size.y * 0.48, 0);
+      camera.position.set(0, size.y * 0.65, Math.max(size.x, size.y, size.z) * 1.75);
     } else {
-      camera.position.set(0, 40, 220);
-      controls.target.set(0, 0, 0);
+      camera.position.set(0, 80, 210);
+      controls.target.set(0, 40, 0);
     }
     controls.update();
   });
@@ -187,7 +215,7 @@ function handleFileSelected(file) {
   reader.readAsDataURL(file);
 }
 
-// 4. Galerie Démo
+// 4. Galerie Démo (sélectionne automatiquement la première démo pour permettre un clic immédiat)
 async function loadDemoGallery() {
   try {
     const res = await fetch("/api/demo-images");
@@ -196,7 +224,7 @@ async function loadDemoGallery() {
     strip.innerHTML = "";
 
     if (data.demos && data.demos.length > 0) {
-      data.demos.forEach((d) => {
+      data.demos.forEach((d, idx) => {
         const img = document.createElement("img");
         img.src = d.url;
         img.className = "demo-thumb";
@@ -213,6 +241,11 @@ async function loadDemoGallery() {
           document.getElementById("btn-generate").disabled = false;
         });
         strip.appendChild(img);
+
+        // Pré-sélectionner Van Aert ou la première image par défaut pour que le bouton soit actif d'office
+        if (idx === 0 || d.name.toLowerCase().includes("van aert")) {
+          img.click();
+        }
       });
     }
   } catch (err) {
@@ -230,14 +263,14 @@ async function loadSystemHealth() {
       document.getElementById("gpu-text").textContent = `${data.gpu.device_name} (${data.gpu.vram_gb} Go VRAM)`;
     } else {
       document.getElementById("gpu-dot").style.backgroundColor = "var(--accent-amber)";
-      document.getElementById("gpu-text").textContent = "Mode CPU (Pas de GPU CUDA détecté)";
+      document.getElementById("gpu-text").textContent = "Mode CPU";
     }
   } catch (err) {
     console.error("Health check error :", err);
   }
 }
 
-// 6. Lancement de la conversion
+// 6. Lancement de la conversion 360°
 async function startConversionProcess() {
   const btn = document.getElementById("btn-generate");
   btn.disabled = true;
@@ -248,21 +281,27 @@ async function startConversionProcess() {
   const progressTitle = document.getElementById("progress-title");
 
   overlay.style.display = "flex";
-  progressBar.style.width = "5%";
-  progressStep.textContent = "Préparation de la requête...";
-  progressTitle.textContent = "Calcul de la géométrie 3D...";
+  progressBar.style.width = "10%";
+  progressStep.textContent = "Envoi de l'image au moteur 360°...";
+  progressTitle.textContent = "Sculpture de la Figurine 3D (360°)...";
 
   const formData = new FormData();
   if (selectedFile) {
     formData.append("file", selectedFile);
   } else if (selectedDemoPath) {
     formData.append("demo_image_path", selectedDemoPath);
+  } else {
+    overlay.style.display = "none";
+    btn.disabled = false;
+    alert("Veuillez d'abord choisir une image ou cliquer sur une image de démo.");
+    return;
   }
 
   formData.append("mode", selectedMode);
-  formData.append("target_width_mm", document.getElementById("width-slider").value);
-  formData.append("relief_depth_mm", document.getElementById("relief-slider").value);
-  formData.append("curvature_deg", document.getElementById("curve-slider").value);
+  formData.append("target_height_mm", document.getElementById("height-slider").value);
+  formData.append("include_base", includeBase ? "true" : "false");
+  formData.append("base_height_mm", document.getElementById("base-slider").value);
+  formData.append("resolution", document.getElementById("res-slider").value);
 
   try {
     const res = await fetch("/api/convert", {
@@ -272,14 +311,11 @@ async function startConversionProcess() {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.detail || "Erreur lors de l'initialisation de la tâche");
+      throw new Error(errData.detail || "Erreur lors du lancement de la modélisation 360°");
     }
 
     const data = await res.json();
-    const taskId = data.task_id;
-
-    // Polling régulier de la tâche
-    pollTaskStatus(taskId);
+    pollTaskStatus(data.task_id);
 
   } catch (err) {
     overlay.style.display = "none";
@@ -288,7 +324,7 @@ async function startConversionProcess() {
   }
 }
 
-// 7. Polling de la tâche
+// 7. Suivi temps réel de la tâche
 function pollTaskStatus(taskId) {
   if (currentTaskPollInterval) {
     clearInterval(currentTaskPollInterval);
@@ -306,33 +342,30 @@ function pollTaskStatus(taskId) {
 
       const task = await res.json();
       progressBar.style.width = `${task.progress}%`;
-      progressStep.textContent = task.step || "Traitement en cours...";
+      progressStep.textContent = task.step || "Calcul 360° en cours...";
 
       if (task.status === "completed") {
         clearInterval(currentTaskPollInterval);
         overlay.style.display = "none";
         btn.disabled = false;
-
-        // Afficher les résultats
         handleTaskSuccess(task.result);
 
       } else if (task.status === "failed") {
         clearInterval(currentTaskPollInterval);
         overlay.style.display = "none";
         btn.disabled = false;
-        alert(`Échec de la modélisation 3D : ${task.error || "Erreur inconnue"}`);
+        alert(`Échec de la modélisation : ${task.error || "Erreur inconnue"}`);
       }
     } catch (err) {
       console.error("Erreur de suivi :", err);
     }
-  }, 1200);
+  }, 1000);
 }
 
-// 8. Succès de la modélisation et affichage 3D
+// 8. Affichage du résultat 360°
 function handleTaskSuccess(result) {
   document.getElementById("empty-viewport").style.display = "none";
 
-  // Mise à jour des métriques Bambu Lab A1 Mini
   const m = result.metrics;
   document.getElementById("val-dims").textContent = `${m.dimensions_mm.x} × ${m.dimensions_mm.y} × ${m.dimensions_mm.z} mm`;
   document.getElementById("val-volume").textContent = `${m.volume_cm3} cm³`;
@@ -340,30 +373,22 @@ function handleTaskSuccess(result) {
   document.getElementById("val-time").textContent = `${m.print_time_estimate}`;
 
   const watertightBadge = document.getElementById("val-watertight");
-  if (m.is_watertight) {
-    watertightBadge.textContent = "✔ Watertight (Solide Étanche)";
-    watertightBadge.className = "badge-watertight";
-  } else {
-    watertightBadge.textContent = "⚠ Géométrie non étanche";
-    watertightBadge.className = "badge-watertight warning";
-  }
+  const socleText = result.include_base ? "Avec Socle" : "Sans Socle";
+  watertightBadge.textContent = `✔ 360° (${socleText})`;
 
-  // Configuration des téléchargements
   document.getElementById("btn-dl-stl").href = result.files.stl;
   document.getElementById("btn-dl-glb").href = result.files.glb;
   document.getElementById("metrics-panel").style.display = "flex";
 
-  // Chargement du GLB dans Three.js
   loadGLBModel(result.files.glb);
 }
 
-// 9. Chargement Three.js du fichier GLB
+// 9. Chargement Three.js du modèle 360° GLB
 function loadGLBModel(glbUrl) {
-  currentGLBUrl = glbUrl;
   const loader = new THREE.GLTFLoader();
 
   loader.load(
-    glbUrl,
+    `${glbUrl}?t=${Date.now()}`,
     (gltf) => {
       if (currentMesh) {
         scene.remove(currentMesh);
@@ -371,32 +396,38 @@ function loadGLBModel(glbUrl) {
 
       currentMesh = gltf.scene;
 
-      // Centrage géométrique
       const box = new THREE.Box3().setFromObject(currentMesh);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
 
-      // Poser la base au sol (Z = 0)
+      // Poser exactement sur la grille (Y = 0)
       currentMesh.position.x = -center.x;
       currentMesh.position.y = -box.min.y;
       currentMesh.position.z = -center.z;
 
-      // Matériau par défaut PLA blanc Bambu
-      applyMaterial("white");
+      // Sauvegarder le matériau vertex color d'origine sur chaque sous-maillage
+      currentMesh.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.userData.hasVertexColors = !!(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
+        }
+      });
+
+      // Appliquer le matériau actif dans la barre d'outils
+      const activeMatBtn = document.querySelector(".tool-btn[data-mat].active");
+      const matType = activeMatBtn ? activeMatBtn.getAttribute("data-mat") : "vertex";
+      applyMaterial(matType);
 
       scene.add(currentMesh);
 
-      // Cadrage de caméra
+      // Cadrage caméra idéal pour statuette 360°
       const maxDim = Math.max(size.x, size.y, size.z);
-      camera.position.set(0, size.y * 0.6, maxDim * 1.8);
-      controls.target.set(0, size.y * 0.45, 0);
+      camera.position.set(0, size.y * 0.65, maxDim * 1.75);
+      controls.target.set(0, size.y * 0.48, 0);
       controls.update();
-
-      console.log("[ThreeJS] Modèle chargé avec succès :", glbUrl);
     },
-    (xhr) => {
-      console.log(`[ThreeJS] Chargement GLB : ${(xhr.loaded / xhr.total * 100)}%`);
-    },
+    undefined,
     (err) => {
       console.error("[ThreeJS] Erreur chargement GLB :", err);
       alert("Erreur de chargement du modèle 3D dans le visualiseur.");
@@ -410,40 +441,42 @@ function applyMaterial(type) {
 
   currentMesh.traverse((child) => {
     if (child.isMesh) {
-      let mat;
-      if (type === "white") {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0xf5f5f7,
-          roughness: 0.35,
+      if (type === "vertex" && child.userData.hasVertexColors) {
+        child.material = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.45,
           metalness: 0.05
         });
+      } else if (type === "white" || (type === "vertex" && !child.userData.hasVertexColors)) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0xf0f2f5,
+          roughness: 0.35,
+          metalness: 0.08
+        });
       } else if (type === "bambu-green") {
-        mat = new THREE.MeshStandardMaterial({
+        child.material = new THREE.MeshStandardMaterial({
           color: 0x00ae42,
           roughness: 0.3,
           metalness: 0.1
         });
       } else if (type === "bronze") {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0x9c7a4b,
-          roughness: 0.45,
-          metalness: 0.8
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0xad8347,
+          roughness: 0.38,
+          metalness: 0.78
         });
       } else if (type === "marble") {
-        mat = new THREE.MeshStandardMaterial({
+        child.material = new THREE.MeshStandardMaterial({
           color: 0xeae8e1,
-          roughness: 0.2,
-          metalness: 0.0
+          roughness: 0.22,
+          metalness: 0.02
         });
       } else if (type === "wireframe") {
-        mat = new THREE.MeshBasicMaterial({
+        child.material = new THREE.MeshBasicMaterial({
           color: 0x00ae42,
           wireframe: true
         });
       }
-      child.material = mat;
-      child.castShadow = true;
-      child.receiveShadow = true;
     }
   });
 }
