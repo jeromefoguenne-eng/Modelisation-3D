@@ -74,14 +74,21 @@ def render_mesh_preview(
         fig.patch.set_facecolor('#1e1e24')
         ax.set_facecolor('#1e1e24')
         
-        # Calcul des couleurs par face (Lambertian shading)
-        dot_products = np.clip(np.dot(normals, light_dir), 0.15, 1.0)
-        # Teinte Bambu PLA Gris Studio
-        colors = np.zeros((len(faces), 4), dtype=np.float32)
-        colors[:, 0] = np.clip(dot_products * 0.80 + 0.1, 0.0, 1.0)  # R
-        colors[:, 1] = np.clip(dot_products * 0.83 + 0.1, 0.0, 1.0)  # G
-        colors[:, 2] = np.clip(dot_products * 0.87 + 0.1, 0.0, 1.0)  # B
-        colors[:, 3] = 1.0
+        # Calcul des couleurs par face avec éclairage studio diffus (Lambertian shading)
+        dot_products = np.clip(np.dot(normals, light_dir), 0.25, 1.0)
+        
+        if hasattr(m.visual, 'vertex_colors') and m.visual.vertex_colors is not None:
+            v_col = m.visual.vertex_colors[:, :3].astype(np.float32) / 255.0
+            face_col = np.mean(v_col[faces], axis=1)
+            colors = np.clip(face_col * (0.35 + 0.75 * dot_products[:, None]), 0.0, 1.0)
+            colors = np.column_stack([colors, np.ones(len(faces), dtype=np.float32)])
+        else:
+            # Teinte Bambu PLA Gris Studio
+            colors = np.zeros((len(faces), 4), dtype=np.float32)
+            colors[:, 0] = np.clip(dot_products * 0.80 + 0.1, 0.0, 1.0)  # R
+            colors[:, 1] = np.clip(dot_products * 0.83 + 0.1, 0.0, 1.0)  # G
+            colors[:, 2] = np.clip(dot_products * 0.87 + 0.1, 0.0, 1.0)  # B
+            colors[:, 3] = 1.0
         
         # Extraction des polygones 2D
         polys = proj_verts[faces]
