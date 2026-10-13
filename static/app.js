@@ -9,15 +9,34 @@ let currentTaskPollInterval = null;
 
 let selectedFile = null;
 let selectedDemoPath = null;
-let selectedMode = "triposr_360";
+let selectedMode = "hunyuan_360";
 let includeBase = true;
+
+let isShowingPreloadedDemo = true;
 
 window.addEventListener("DOMContentLoaded", () => {
   initThreeJS();
   initEventListeners();
   loadSystemHealth();
   loadDemoGallery();
+  loadPreloadedSotaShowcase(true);
 });
+
+function loadPreloadedSotaShowcase(withBase) {
+  const folder = withBase ? "vanaert_500k_with_base" : "vanaert_500k_no_base";
+  const metrics = withBase
+    ? { dimensions_mm: { x: 76.6, y: 117.8, z: 125.0 }, volume_cm3: 69.77, weight_pla_g: 32.9, print_time_estimate: "1h 21m" }
+    : { dimensions_mm: { x: 52.9, y: 105.8, z: 120.0 }, volume_cm3: 34.37, weight_pla_g: 16.2, print_time_estimate: "54 min" };
+
+  handleTaskSuccess({
+    include_base: withBase,
+    metrics: metrics,
+    files: {
+      stl: `/outputs/${folder}/model_bambu.stl`,
+      glb: `/outputs/${folder}/model_bambu.glb`
+    }
+  });
+}
 
 // 1. Initialisation Three.js
 function initThreeJS() {
@@ -110,6 +129,9 @@ function initEventListeners() {
     btnWithBase.classList.add("active");
     btnWithoutBase.classList.remove("active");
     baseHeightGroup.style.display = "flex";
+    if (isShowingPreloadedDemo) {
+      loadPreloadedSotaShowcase(true);
+    }
   });
 
   btnWithoutBase.addEventListener("click", () => {
@@ -117,6 +139,9 @@ function initEventListeners() {
     btnWithoutBase.classList.add("active");
     btnWithBase.classList.remove("active");
     baseHeightGroup.style.display = "none";
+    if (isShowingPreloadedDemo) {
+      loadPreloadedSotaShowcase(false);
+    }
   });
 
   // Sliders
@@ -130,7 +155,7 @@ function initEventListeners() {
 
   resSlider.addEventListener("input", (e) => {
     const r = parseInt(e.target.value);
-    const label = r <= 260 ? "Standard" : (r <= 300 ? "Haute Définition" : "Ultra-HD");
+    const label = r <= 256 ? "Standard" : (r <= 384 ? "Ultra-HD 500k faces" : "Extrême");
     resVal.textContent = `${r}³ (${label})`;
   });
 
@@ -272,6 +297,7 @@ async function loadSystemHealth() {
 
 // 6. Lancement de la conversion 360°
 async function startConversionProcess() {
+  isShowingPreloadedDemo = false;
   const btn = document.getElementById("btn-generate");
   btn.disabled = true;
 

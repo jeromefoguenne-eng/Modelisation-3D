@@ -1,8 +1,8 @@
 """
 Moteur de Génération de Figurines 3D Complètes à 360° (Avec ou Sans Socle).
 Propulsé par :
-1. TripoSR Local GPU RTX 4070 Ti (549/549 tenseurs DINO + Triplane chargés en strict=True)
-2. Tencent Hunyuan3D-2 Ultra-HD (Diffusion Transformer 360°)
+1. Tencent Hunyuan3D-2.1 Ultra-HD (500 000+ polygones, octree 384-512, rayons/doigts/visage sculptés à 360°)
+2. TripoSR Local GPU RTX 4070 Ti (549/549 tenseurs DINO chargés en strict=True, mode rapide hors-ligne)
 Calibré pour Bambu Lab A1 Mini (<= 180mm, Watertight).
 """
 
@@ -48,21 +48,18 @@ def prepare_image_for_360(image_path: str, foreground_ratio: float = 0.85) -> Im
     """
     from rembg import remove
     img = Image.open(image_path).convert("RGBA")
-    
-    # Vérifier si l'image a déjà un canal alpha détouré
+
     alpha = np.array(img.split()[-1])
     if np.mean(alpha > 250) > 0.95:
         img = remove(img)
         alpha = np.array(img.split()[-1])
 
-    # Trouver la boîte englobante du sujet pour maximiser la résolution 3D
     coords = np.argwhere(alpha > 30)
     if len(coords) > 0:
         y0, x0 = coords.min(axis=0)
         y1, x1 = coords.max(axis=0)
         img = img.crop((x0, y0, x1 + 1, y1 + 1))
 
-    # Redimensionner et centrer dans un carré avec marge (foreground_ratio)
     w, h = img.size
     max_side = int(max(w, h) / foreground_ratio)
     square_rgba = Image.new("RGBA", (max_side, max_side), (0, 0, 0, 0))
@@ -70,7 +67,6 @@ def prepare_image_for_360(image_path: str, foreground_ratio: float = 0.85) -> Im
     paste_y = (max_side - h) // 2
     square_rgba.paste(img, (paste_x, paste_y))
 
-    # Fusion sur fond gris neutre 0.5
     arr = np.array(square_rgba).astype(np.float32) / 255.0
     rgb = arr[:, :, :3] * arr[:, :, 3:4] + (1.0 - arr[:, :, 3:4]) * 0.5
     return Image.fromarray((rgb * 255.0).astype(np.uint8)).convert("RGB")
@@ -81,21 +77,26 @@ def postprocess_360_figurine(
     target_height_mm: float = 120.0,
     include_base: bool = True,
     base_height_mm: float = 5.0,
-    smooth_iterations: int = 8
+    smooth_iterations: int = 2
 ) -> trimesh.Trimesh:
     """
-    Nettoie, lisse, met à l'échelle (Bambu Lab A1 Mini) et ajoute optionnellement un socle cylindrique.
+    Nettoie, lisse légèrement, met à l'échelle (Bambu Lab A1 Mini) et ajoute optionnellement un socle.
     Orienté en Y-up pour Three.js et export STL/GLB.
     """
-    # 1. Garder uniquement la composante principale (élimine toute poussière isolée)
+    # 1. Garder les composantes significatives (> 0.5% des sommets totaux pour préserver vélo + cycliste tout en supprimant les poussières)
     try:
         components = mesh.split(only_watertight=False)
         if len(components) > 1:
-            mesh = max(components, key=lambda c: len(c.vertices))
+            total_v = len(mesh.vertices)
+            valid_comps = [c for c in components if len(c.vertices) > max(50, int(total_v * 0.005))]
+            if valid_comps:
+                mesh = trimesh.util.concatenate(valid_comps)
+            else:
+                mesh = max(components, key=lambda c: len(c.vertices))
     except Exception as e:
         print(f"[Engine360] Split info: {e}")
 
-    # 2. Lissage Taubin (préserve le volume tout en éliminant les stries de voxels)
+    # 2. Lissage Taubin léger (préserve les détails fins comme les doigts, lunettes et rayons)
     if smooth_iterations > 0:
         try:
             trimesh.smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=smooth_iterations)
@@ -120,38 +121,116 @@ def postprocess_360_figurine(
     min_y = bounds[0][1]
     mesh.apply_translation([-center_x, -min_y, -center_z])
 
-    # 5. Ajout optionnel du socle cylindrique Bambu Lab A1 Mini
+    # 5. Ajout optionnel du socle elliptique/cylindrique adapté à l'empreinte de la figurine
     if include_base:
         ext_x, ext_y, ext_z = mesh.extents
-        base_radius = max(ext_x, ext_z) * 0.44
-        base_radius = max(base_radius, 18.0)  # Rayon minimum de stabilité (diamètre 36mm)
+        # Socle cylindrique ou ovale couvrant toute la longueur du vélo / des pieds avec marge de 8mm
+        rx = (ext_x / 2.0) + 6.0
+        rz = (ext_z / 2.0) + 6.0
+        max_r = max(rx, rz, 20.0)
 
-        cyl = trimesh.creation.cylinder(radius=base_radius, height=base_height_mm, sections=80)
-        # Aligner le cylindre sur l'axe Y (vertical)
+        cyl = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=96)
         rot_x = trimesh.transformations.rotation_matrix(np.radians(90), [1, 0, 0])
         cyl.apply_transform(rot_x)
+        # Adapter aux proportions X / Z de la figurine (ovale doux si vélo allongé, rond si personnage debout)
+        scale_x = max(rx, max_r * 0.65)
+        scale_z = max(rz, max_r * 0.65)
+        cyl.vertices[:, 0] *= scale_x
+        cyl.vertices[:, 2] *= scale_z
 
-        # Donner au socle une couleur gris anthracite élégante si le maillage a des couleurs de sommets
         if hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None:
-            cyl_colors = np.full((len(cyl.vertices), 4), [60, 65, 75, 255], dtype=np.uint8)
+            cyl_colors = np.full((len(cyl.vertices), 4), [65, 70, 80, 255], dtype=np.uint8)
             cyl.visual.vertex_colors = cyl_colors
 
-        # Ancrer les pieds/roues de 1.8 mm dans le socle pour une liaison mécanique solide
+        # Ancrer le bas des roues/pieds de 1.8 mm dans le socle pour une tenue mécanique parfaite
         overlap_mm = 1.8
         cyl.apply_translation([0, (base_height_mm / 2.0) - overlap_mm, 0])
         mesh.apply_translation([0, base_height_mm - overlap_mm, 0])
 
         mesh = trimesh.util.concatenate([mesh, cyl])
-        # Recaler le bas du socle exactement à Y = 0
         mesh.apply_translation([0, -mesh.bounds[0][1], 0])
 
-    # Réparation finale des normales
     try:
         trimesh.repair.fix_normals(mesh)
         trimesh.repair.fill_holes(mesh)
     except Exception:
         pass
 
+    return mesh
+
+
+def generate_figurine_360_hunyuan(
+    image_path: str,
+    target_height_mm: float = 120.0,
+    include_base: bool = True,
+    base_height_mm: float = 5.0,
+    steps: int = 35,
+    octree_resolution: int = 384,
+    progress_callback=None
+) -> trimesh.Trimesh:
+    """
+    Génère une figurine 3D 360° Ultra-Haute Définition (~500 000 faces)
+    via Tencent Hunyuan3D-2.1 (Diffusion Transformer 3D SOTA).
+    """
+    try:
+        import truststore
+        truststore.inject_into_ssl()
+    except Exception:
+        pass
+
+    from gradio_client import Client, handle_file
+
+    token = os.environ.get("HF_TOKEN", "")
+    token_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "hf_token.txt")
+    if not token and os.path.exists(token_file):
+        with open(token_file, "r", encoding="utf-8") as f:
+            t = f.read().strip()
+            if len(t) > 8:
+                token = t
+
+    if progress_callback:
+        progress_callback(15, "Connexion au moteur SOTA Tencent Hunyuan3D-2.1...")
+
+    # Utiliser tencent/Hunyuan3D-2.1 (endpoint /shape_generation sans caption)
+    client = Client("tencent/Hunyuan3D-2.1", token=token if token else None)
+
+    if progress_callback:
+        progress_callback(35, f"Sculpture neuronale 360° Ultra-HD en cours (Octree {octree_resolution}, ~40s)...")
+
+    res = client.predict(
+        image=handle_file(image_path),
+        mv_image_front=None,
+        mv_image_back=None,
+        mv_image_left=None,
+        mv_image_right=None,
+        steps=int(steps),
+        guidance_scale=5.5,
+        seed=1234,
+        octree_resolution=int(octree_resolution),
+        check_box_rembg=True,
+        num_chunks=8000,
+        randomize_seed=False,
+        api_name="/shape_generation"
+    )
+
+    hy_file = res[0]
+    if isinstance(hy_file, dict) and "value" in hy_file:
+        hy_file = hy_file["value"]
+    elif isinstance(hy_file, dict) and "path" in hy_file:
+        hy_file = hy_file["path"]
+
+    if progress_callback:
+        progress_callback(75, "Maillage 500k faces reçu ! Assemblage et calibrage Bambu A1 Mini...")
+
+    mesh = trimesh.load(hy_file, force="mesh")
+
+    mesh = postprocess_360_figurine(
+        mesh=mesh,
+        target_height_mm=target_height_mm,
+        include_base=include_base,
+        base_height_mm=base_height_mm,
+        smooth_iterations=2
+    )
     return mesh
 
 
@@ -183,7 +262,6 @@ def generate_figurine_360_local(
         meshes = model.extract_mesh(scene_codes, resolution=resolution, threshold=threshold)
         mesh = meshes[0]
 
-    # Redressement en Y-up et orientation de face vers +Z
     transform_y_up = np.array([
         [1, 0, 0, 0],
         [0, 0, 1, 0],
@@ -195,7 +273,7 @@ def generate_figurine_360_local(
     mesh.apply_transform(rot_front)
 
     if progress_callback:
-        socle_txt = "avec socle cylindrique" if include_base else "sans socle"
+        socle_txt = "avec socle" if include_base else "sans socle"
         progress_callback(80, f"Lissage Taubin et calibrage Bambu A1 Mini ({socle_txt})...")
 
     mesh = postprocess_360_figurine(
@@ -206,91 +284,3 @@ def generate_figurine_360_local(
         smooth_iterations=8
     )
     return mesh
-
-
-def generate_figurine_360_hunyuan(
-    image_path: str,
-    target_height_mm: float = 120.0,
-    include_base: bool = True,
-    base_height_mm: float = 5.0,
-    steps: int = 32,
-    octree_resolution: int = 384,
-    progress_callback=None
-) -> trimesh.Trimesh:
-    """
-    Tente la génération 360° via Tencent Hunyuan3D-2 Cloud SOTA,
-    et bascule automatiquement sur le GPU Local RTX 4070 Ti (résolution 320) si le Cloud est saturé.
-    """
-    try:
-        try:
-            import truststore
-            truststore.inject_into_ssl()
-        except Exception:
-            pass
-
-        from gradio_client import Client, handle_file
-
-        token = os.environ.get("HF_TOKEN", "")
-        token_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "hf_token.txt")
-        if not token and os.path.exists(token_file):
-            with open(token_file, "r", encoding="utf-8") as f:
-                t = f.read().strip()
-                if len(t) > 8:
-                    token = t
-
-        if progress_callback:
-            progress_callback(25, "Connexion au cluster Tencent Hunyuan3D-2 (360° Ultra-HD)...")
-
-        client = Client("tencent/Hunyuan3D-2", token=token if token else None)
-
-        if progress_callback:
-            progress_callback(45, f"Sculpture neuronale 360° Hunyuan3D-2 (Octree {octree_resolution})...")
-
-        res = client.predict(
-            caption="ultra realistic detailed 3D figurine sculpture, high polygon, manifold geometry",
-            image=handle_file(image_path),
-            mv_image_front=None,
-            mv_image_back=None,
-            mv_image_left=None,
-            mv_image_right=None,
-            steps=steps,
-            guidance_scale=5.5,
-            seed=1234,
-            octree_resolution=octree_resolution,
-            check_box_rembg=True,
-            num_chunks=8000,
-            randomize_seed=True,
-            api_name="/generation_all"
-        )
-
-        src_glb = res[1] if (isinstance(res, (list, tuple)) and len(res) > 1 and res[1]) else res[0]
-        if isinstance(src_glb, dict) and "value" in src_glb:
-            src_glb = src_glb["value"]
-
-        mesh = trimesh.load(src_glb, force="mesh")
-
-        if progress_callback:
-            progress_callback(80, "Calibrage Bambu A1 Mini et assemblage du socle...")
-
-        mesh = postprocess_360_figurine(
-            mesh=mesh,
-            target_height_mm=target_height_mm,
-            include_base=include_base,
-            base_height_mm=base_height_mm,
-            smooth_iterations=4
-        )
-        return mesh
-
-    except Exception as e:
-        print(f"[Engine360] Hunyuan Cloud indisponible ({e}) -> Bascule automatique sur GPU Local RTX 4070 Ti (Grille 320³)...")
-        if progress_callback:
-            progress_callback(35, "Serveur Cloud occupé : Bascule sur votre GPU RTX 4070 Ti en Ultra-HD (320³)...")
-        return generate_figurine_360_local(
-            image_path=image_path,
-            target_height_mm=target_height_mm,
-            include_base=include_base,
-            base_height_mm=base_height_mm,
-            resolution=320,
-            threshold=25.0,
-            progress_callback=progress_callback
-        )

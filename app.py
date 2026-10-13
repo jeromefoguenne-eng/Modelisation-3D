@@ -107,24 +107,25 @@ def background_generation_task(
             TASKS[task_id]["progress"] = pct
             TASKS[task_id]["step"] = step_msg
 
-        if mode == "triposr_360":
-            mesh = generate_figurine_360_local(
-                image_path=image_path,
-                target_height_mm=target_height_mm,
-                include_base=include_base,
-                base_height_mm=base_height_mm,
-                resolution=resolution,
-                threshold=25.0,
-                progress_callback=update_progress
-            )
-        elif mode == "hunyuan_360":
+        if mode == "hunyuan_360":
+            octree_res = max(256, min(512, int(resolution)))
             mesh = generate_figurine_360_hunyuan(
                 image_path=image_path,
                 target_height_mm=target_height_mm,
                 include_base=include_base,
                 base_height_mm=base_height_mm,
-                steps=32,
-                octree_resolution=384,
+                steps=35,
+                octree_resolution=octree_res,
+                progress_callback=update_progress
+            )
+        elif mode == "triposr_360":
+            mesh = generate_figurine_360_local(
+                image_path=image_path,
+                target_height_mm=target_height_mm,
+                include_base=include_base,
+                base_height_mm=base_height_mm,
+                resolution=min(320, int(resolution)),
+                threshold=25.0,
                 progress_callback=update_progress
             )
         elif mode == "bas_relief":
@@ -139,13 +140,14 @@ def background_generation_task(
                 resolution_dpi=400
             )
         else:
-            mesh = generate_figurine_360_local(
+            octree_res = max(256, min(512, int(resolution)))
+            mesh = generate_figurine_360_hunyuan(
                 image_path=image_path,
                 target_height_mm=target_height_mm,
                 include_base=include_base,
                 base_height_mm=base_height_mm,
-                resolution=resolution,
-                threshold=25.0,
+                steps=35,
+                octree_resolution=octree_res,
                 progress_callback=update_progress
             )
 
@@ -193,11 +195,11 @@ async def start_conversion(
     background_tasks: BackgroundTasks,
     file: Optional[UploadFile] = File(None),
     demo_image_path: Optional[str] = Form(None),
-    mode: str = Form("triposr_360"),
+    mode: str = Form("hunyuan_360"),
     target_height_mm: float = Form(120.0),
     include_base: str = Form("true"),
     base_height_mm: float = Form(5.0),
-    resolution: int = Form(300)
+    resolution: int = Form(384)
 ):
     """
     Lance une tâche de modélisation de figurine 3D 360° en arrière-plan.

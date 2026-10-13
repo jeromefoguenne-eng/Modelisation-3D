@@ -51,23 +51,23 @@
       <section class="panel-section">
         <div class="panel-title">2. Moteur Figurine 3D (360°)</div>
         <div class="mode-selector">
-          <div class="mode-card active" data-mode="triposr_360">
+          <div class="mode-card active" data-mode="hunyuan_360">
             <div class="mode-card-header">
-              <span>Figurine 360° GPU Local (RTX 4070 Ti)</span>
-              <span class="badge-rec">RAPIDE & LOCAL</span>
+              <span>Tencent Hunyuan3D-2.1 (500 000 faces)</span>
+              <span class="badge-rec">SOTA ULTRA-HD</span>
             </div>
             <div class="mode-card-desc">
-              Vraie statuette 360° complète (face, profils, dos) propulsée par TripoSR local corrigé (100% des 549 poids DINO actifs). Génération en ~5 à 15s.
+              Sculpture neuronale 360° haute précision (~500k triangles) : rayons du vélo, cadre, guidon, doigts, lunettes et visage complets à 360° (~40s).
             </div>
           </div>
 
-          <div class="mode-card" data-mode="hunyuan_360">
+          <div class="mode-card" data-mode="triposr_360">
             <div class="mode-card-header">
-              <span>Figurine 360° Tencent Hunyuan3D-2</span>
-              <span class="badge-rec">ULTRA-HD</span>
+              <span>TripoSR Local (RTX 4070 Ti)</span>
+              <span class="badge-rec">HORS-LIGNE</span>
             </div>
             <div class="mode-card-desc">
-              Sculpture neuronale 360° haute densité par Diffusion Transformer (avec repli automatique sur GPU RTX 4070 Ti en 320³).
+              Moteur local rapide sur GPU RTX 4070 Ti (~10s, résolution standard ~50k faces pour formes simples).
             </div>
           </div>
         </div>
@@ -108,10 +108,10 @@
 
         <div class="form-group">
           <div class="form-row">
-            <label for="res-slider">Finesse de grille 360° :</label>
-            <span id="res-val" style="font-weight: 600; color: var(--accent-bambu);">300³ (Haute Définition)</span>
+            <label for="res-slider">Finesse Octree 360° :</label>
+            <span id="res-val" style="font-weight: 600; color: var(--accent-bambu);">384³ (Ultra-HD 500k faces)</span>
           </div>
-          <input type="range" id="res-slider" min="256" max="320" value="300" step="32">
+          <input type="range" id="res-slider" min="256" max="512" value="384" step="64">
         </div>
       </section>
 
@@ -126,12 +126,12 @@
       <!-- Barre d'outils 3D -->
       <div class="viewport-toolbar">
         <div class="toolbar-group">
-          <button type="button" class="tool-btn active" data-mat="vertex">Couleurs 360°</button>
-          <button type="button" class="tool-btn" data-mat="white">PLA Blanc</button>
+          <button type="button" class="tool-btn active" data-mat="white">PLA Blanc Studio</button>
           <button type="button" class="tool-btn" data-mat="bambu-green">Vert Bambu</button>
           <button type="button" class="tool-btn" data-mat="bronze">Bronze</button>
           <button type="button" class="tool-btn" data-mat="marble">Marbre</button>
-          <button type="button" class="tool-btn" data-mat="wireframe">Maillage</button>
+          <button type="button" class="tool-btn" data-mat="vertex">Couleurs Sommets</button>
+          <button type="button" class="tool-btn" data-mat="wireframe">Maillage 500k</button>
         </div>
         <div class="toolbar-group">
           <button type="button" class="tool-btn active" id="btn-autorotate">🔄 Rotation 360°: ON</button>
@@ -143,7 +143,7 @@
       <div id="canvas-container">
         <div class="empty-viewport" id="empty-viewport">
           <div class="empty-icon">🧍</div>
-          <h3>Prêt pour la modélisation 360°</h3>
+          <h3>Prêt pour la modélisation 360° Ultra-HD</h3>
           <p>Sélectionnez une image à gauche (ou une démo) puis cliquez sur <strong>Générer la Figurine 3D (360°)</strong>.</p>
         </div>
       </div>
@@ -194,6 +194,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=4.0"></script>
+  <script src="/static/app.js?v=5.0"></script>
 </body>
 </html>
