@@ -77,8 +77,21 @@ def render_mesh_preview(
         # Calcul des couleurs par face avec éclairage studio diffus (Lambertian shading)
         dot_products = np.clip(np.dot(normals, light_dir), 0.25, 1.0)
         
-        if hasattr(m.visual, 'vertex_colors') and m.visual.vertex_colors is not None:
-            v_col = m.visual.vertex_colors[:, :3].astype(np.float32) / 255.0
+        # Gestion des couleurs : textures UV PBR ou couleurs de sommets
+        v_col = None
+        if hasattr(m.visual, 'to_color'):
+            try:
+                cv = m.visual.to_color()
+                if hasattr(cv, 'vertex_colors') and cv.vertex_colors is not None and len(cv.vertex_colors) == len(m.vertices):
+                    v_col = cv.vertex_colors[:, :3].astype(np.float32) / 255.0
+            except Exception:
+                pass
+        
+        if v_col is None and hasattr(m.visual, 'vertex_colors') and m.visual.vertex_colors is not None:
+            if len(m.visual.vertex_colors) == len(m.vertices):
+                v_col = m.visual.vertex_colors[:, :3].astype(np.float32) / 255.0
+        
+        if v_col is not None:
             face_col = np.mean(v_col[faces], axis=1)
             colors = np.clip(face_col * (0.35 + 0.75 * dot_products[:, None]), 0.0, 1.0)
             colors = np.column_stack([colors, np.ones(len(faces), dtype=np.float32)])

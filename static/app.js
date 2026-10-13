@@ -431,11 +431,13 @@ function loadGLBModel(glbUrl) {
       currentMesh.position.y = -box.min.y;
       currentMesh.position.z = -center.z;
 
-      // Sauvegarder le matériau vertex color d'origine sur chaque sous-maillage
+      // Sauvegarder le matériau d'origine sur chaque sous-maillage
       currentMesh.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
+          child.userData.originalMaterial = child.material;
+          child.userData.hasTexture = !!(child.material && child.material.map);
           child.userData.hasVertexColors = !!(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
         }
       });
@@ -467,13 +469,20 @@ function applyMaterial(type) {
 
   currentMesh.traverse((child) => {
     if (child.isMesh) {
-      if (type === "vertex" && child.userData.hasVertexColors) {
-        child.material = new THREE.MeshStandardMaterial({
-          vertexColors: true,
-          roughness: 0.45,
-          metalness: 0.05
-        });
-      } else if (type === "white" || (type === "vertex" && !child.userData.hasVertexColors)) {
+      if (type === "vertex") {
+        if (child.userData.hasTexture && child.userData.originalMaterial) {
+          child.material = child.userData.originalMaterial;
+          child.material.roughness = 0.38;
+          child.material.metalness = 0.05;
+          child.material.needsUpdate = true;
+        } else if (child.userData.hasVertexColors) {
+          child.material = new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            roughness: 0.45,
+            metalness: 0.05
+          });
+        }
+      } else if (type === "white" || (type === "vertex" && !child.userData.hasVertexColors && !child.userData.hasTexture)) {
         child.material = new THREE.MeshStandardMaterial({
           color: 0xf0f2f5,
           roughness: 0.35,
