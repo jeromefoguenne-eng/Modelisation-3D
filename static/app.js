@@ -23,10 +23,10 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadPreloadedSotaShowcase(withBase) {
-  const folder = withBase ? "vanaert_500k_with_base" : "vanaert_500k_no_base";
+  const folder = withBase ? "vanaert_896k_with_base" : "vanaert_896k_no_base";
   const metrics = withBase
-    ? { dimensions_mm: { x: 76.6, y: 117.8, z: 125.0 }, volume_cm3: 69.77, weight_pla_g: 32.9, print_time_estimate: "1h 21m" }
-    : { dimensions_mm: { x: 52.9, y: 105.8, z: 120.0 }, volume_cm3: 34.37, weight_pla_g: 16.2, print_time_estimate: "54 min" };
+    ? { dimensions_mm: { x: 77.0, y: 118.5, z: 125.0 }, volume_cm3: 70.11, weight_pla_g: 33.0, print_time_estimate: "1h 21m", face_count: 896194 }
+    : { dimensions_mm: { x: 52.8, y: 106.5, z: 120.0 }, volume_cm3: 34.29, weight_pla_g: 16.2, print_time_estimate: "54 min", face_count: 895810 };
 
   handleTaskSuccess({
     include_base: withBase,

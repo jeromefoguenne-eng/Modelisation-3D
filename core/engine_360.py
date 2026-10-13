@@ -220,16 +220,46 @@ def generate_figurine_360_hunyuan(
         hy_file = hy_file["path"]
 
     if progress_callback:
-        progress_callback(75, "Maillage 500k faces reçu ! Assemblage et calibrage Bambu A1 Mini...")
+        progress_callback(75, "Maillage Ultra-HD reçu ! Lissage Taubin anti-facettes et projection des couleurs 360°...")
 
     mesh = trimesh.load(hy_file, force="mesh")
+
+    # Projection des couleurs sommets haute définition depuis l'image source
+    try:
+        from scipy.ndimage import map_coordinates
+        src_img = Image.open(image_path).convert("RGBA")
+        arr = np.array(src_img)
+        alpha = arr[:, :, 3] > 30
+        if np.any(alpha):
+            ys, xs = np.where(alpha)
+            crop = arr[ys.min():ys.max()+1, xs.min():xs.max()+1]
+            H_c, W_c = crop.shape[:2]
+            rgb_c = crop[:, :, :3].astype(np.float32) / 255.0
+
+            v = mesh.vertices
+            n = mesh.vertex_normals
+            xmin, ymin, zmin = mesh.bounds[0]
+            xmax, ymax, zmax = mesh.bounds[1]
+
+            u_c = np.clip((v[:, 0] - xmin) / (xmax - xmin + 1e-6) * (W_c - 1), 0, W_c - 1)
+            v_c = np.clip((1.0 - (v[:, 1] - ymin) / (ymax - ymin + 1e-6)) * (H_c - 1), 0, H_c - 1)
+
+            front_factor = np.clip((n[:, 2] + 0.35) / 0.70, 0.55, 1.0)
+            v_col = np.zeros((len(v), 4), dtype=np.uint8)
+            for ch in range(3):
+                sc = map_coordinates(rgb_c[:, :, ch], [v_c, u_c], order=1, mode='nearest')
+                v_col[:, ch] = np.clip(sc * front_factor * 255.0, 0, 255).astype(np.uint8)
+            v_col[:, 3] = 255
+            mesh.visual.vertex_colors = v_col
+    except Exception as e_col:
+        print(f"[Engine360] Vertex color notice: {e_col}")
 
     mesh = postprocess_360_figurine(
         mesh=mesh,
         target_height_mm=target_height_mm,
         include_base=include_base,
         base_height_mm=base_height_mm,
-        smooth_iterations=2
+        smooth_iterations=12
     )
     return mesh
 

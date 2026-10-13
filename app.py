@@ -114,7 +114,7 @@ def background_generation_task(
                 target_height_mm=target_height_mm,
                 include_base=include_base,
                 base_height_mm=base_height_mm,
-                steps=35,
+                steps=45,
                 octree_resolution=octree_res,
                 progress_callback=update_progress
             )
