@@ -32,8 +32,8 @@ COPY --chown=user:user . .
 # Création des dossiers de travail avec permissions d'écriture
 RUN mkdir -p uploads outputs && chmod 777 uploads outputs
 
-# Port standard requis par Hugging Face Spaces
-EXPOSE 7860
+# Port d'écoute (dynamique pour Render $PORT ou 7860 pour Hugging Face)
+EXPOSE 7860 10000 8080
 
 # Lancement du serveur FastAPI
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-7860}"]
