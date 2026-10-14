@@ -14,7 +14,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import torch
 
-from core.engine_360 import generate_figurine_360_local, generate_figurine_360_hunyuan
+from core.engine_360 import (
+    generate_figurine_360_local,
+    generate_figurine_360_hunyuan,
+    generate_figurine_360_hunyuan_local,
+    generate_figurine_360_sf3d
+)
 from core.engine_lithophane import create_pure_relief_mesh
 from core.bambu_validator import validate_and_scale_for_bambu, export_all_formats
 from core.studio_renderer import render_mesh_preview
@@ -97,7 +102,10 @@ def background_generation_task(
     target_height_mm: float,
     include_base: bool,
     base_height_mm: float,
-    resolution: int
+    base_size_mm: float,
+    base_shape: str,
+    resolution: int,
+    hf_token: Optional[str] = None
 ):
     try:
         task_dir = os.path.join(OUTPUTS_DIR, task_id)
@@ -107,25 +115,76 @@ def background_generation_task(
             TASKS[task_id]["progress"] = pct
             TASKS[task_id]["step"] = step_msg
 
-        if mode == "hunyuan_360":
+        if mode == "hunyuan_360_local":
             octree_res = max(256, min(512, int(resolution)))
-            mesh = generate_figurine_360_hunyuan(
+            mesh = generate_figurine_360_hunyuan_local(
                 image_path=image_path,
                 target_height_mm=target_height_mm,
                 include_base=include_base,
                 base_height_mm=base_height_mm,
-                steps=45,
+                base_size_mm=base_size_mm,
+                base_shape=base_shape,
+                steps=30,
                 octree_resolution=octree_res,
                 progress_callback=update_progress
             )
+        elif mode == "hunyuan_360":
+            try:
+                octree_res = max(256, min(512, int(resolution)))
+                mesh = generate_figurine_360_hunyuan(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    steps=45,
+                    octree_resolution=octree_res,
+                    hf_token=hf_token,
+                    progress_callback=update_progress
+                )
+            except Exception as e_hy:
+                err_str = str(e_hy)
+                quota_terms = ["zerogpu", "quota", "exceeded", "429", "rate limit", "hour", "gpu quota"]
+                if any(t in err_str.lower() for t in quota_terms):
+                    print(f"[App] Quota ZeroGPU Hugging Face atteint ({err_str}).")
+                    print("[App] Bascule de secours automatique vers le moteur local Hunyuan3D-2 GPU RTX 4070 Ti...")
+                    update_progress(35, "Quota Cloud Hugging Face atteint : bascule automatique sur votre moteur local Hunyuan3D-2 (GPU RTX 4070 Ti)...")
+                    TASKS[task_id]["warning"] = "Quota gratuit quotidien Hugging Face ZeroGPU atteint. Modélisation effectuée avec succès via le moteur local Hunyuan3D-2 sur votre GPU RTX 4070 Ti (Illimité & Gratuit)."
+                    mesh = generate_figurine_360_hunyuan_local(
+                        image_path=image_path,
+                        target_height_mm=target_height_mm,
+                        include_base=include_base,
+                        base_height_mm=base_height_mm,
+                        base_size_mm=base_size_mm,
+                        base_shape=base_shape,
+                        steps=30,
+                        octree_resolution=octree_res,
+                        progress_callback=update_progress
+                    )
+                else:
+                    raise e_hy
         elif mode == "triposr_360":
             mesh = generate_figurine_360_local(
                 image_path=image_path,
                 target_height_mm=target_height_mm,
                 include_base=include_base,
                 base_height_mm=base_height_mm,
-                resolution=min(320, int(resolution)),
-                threshold=25.0,
+                base_size_mm=base_size_mm,
+                base_shape=base_shape,
+                resolution=max(384, min(512, int(resolution))),
+                threshold=20.0,
+                progress_callback=update_progress
+            )
+        elif mode == "sf3d":
+            mesh = generate_figurine_360_sf3d(
+                image_path=image_path,
+                target_height_mm=target_height_mm,
+                include_base=include_base,
+                base_height_mm=base_height_mm,
+                base_size_mm=base_size_mm,
+                base_shape=base_shape,
+                hf_token=hf_token,
                 progress_callback=update_progress
             )
         elif mode == "bas_relief":
@@ -146,8 +205,11 @@ def background_generation_task(
                 target_height_mm=target_height_mm,
                 include_base=include_base,
                 base_height_mm=base_height_mm,
+                base_size_mm=base_size_mm,
+                base_shape=base_shape,
                 steps=35,
                 octree_resolution=octree_res,
+                hf_token=hf_token,
                 progress_callback=update_progress
             )
 
@@ -171,6 +233,7 @@ def background_generation_task(
         TASKS[task_id]["result"] = {
             "task_id": task_id,
             "mode": mode,
+            "warning": TASKS[task_id].get("warning"),
             "include_base": include_base,
             "metrics": metrics,
             "files": {
@@ -195,11 +258,14 @@ async def start_conversion(
     background_tasks: BackgroundTasks,
     file: Optional[UploadFile] = File(None),
     demo_image_path: Optional[str] = Form(None),
-    mode: str = Form("hunyuan_360"),
+    mode: str = Form("hunyuan_360_local"),
     target_height_mm: float = Form(120.0),
     include_base: str = Form("true"),
     base_height_mm: float = Form(5.0),
-    resolution: int = Form(384)
+    base_size_mm: float = Form(60.0),
+    base_shape: str = Form("auto"),
+    resolution: int = Form(384),
+    hf_token: Optional[str] = Form(None)
 ):
     """
     Lance une tâche de modélisation de figurine 3D 360° en arrière-plan.
@@ -251,7 +317,10 @@ async def start_conversion(
         target_height_mm=float(target_height_mm),
         include_base=has_base,
         base_height_mm=float(base_height_mm),
-        resolution=int(resolution)
+        base_size_mm=float(base_size_mm),
+        base_shape=str(base_shape),
+        resolution=int(resolution),
+        hf_token=hf_token
     )
 
     return {

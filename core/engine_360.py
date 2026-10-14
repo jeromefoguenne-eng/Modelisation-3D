@@ -15,6 +15,7 @@ import numpy as np
 from PIL import Image
 import torch
 import trimesh
+from typing import Optional
 
 # Ajout du chemin ComfyUI-Flowty-TripoSR
 COMFY_NODE_PATH = Path(r"E:\ComfyUI\custom_nodes\ComfyUI-Flowty-TripoSR")
@@ -77,13 +78,16 @@ def postprocess_360_figurine(
     target_height_mm: float = 120.0,
     include_base: bool = True,
     base_height_mm: float = 5.0,
+    base_size_mm: float = 60.0,
+    base_shape: str = "auto",
     smooth_iterations: int = 2
 ) -> trimesh.Trimesh:
     """
-    Nettoie, lisse légèrement, met à l'échelle (Bambu Lab A1 Mini) et ajoute optionnellement un socle.
+    Nettoie, lisse légèrement, met à l'échelle (Bambu Lab A1 Mini) et ajoute optionnellement un socle
+    au diamètre / forme réglables par l'utilisateur.
     Orienté en Y-up pour Three.js et export STL/GLB.
     """
-    # 1. Garder les composantes significatives (> 0.5% des sommets totaux pour préserver vélo + cycliste tout en supprimant les poussières)
+    # 1. Garder les composantes significatives (> 0.5% des sommets totaux)
     try:
         components = mesh.split(only_watertight=False)
         if len(components) > 1:
@@ -96,7 +100,7 @@ def postprocess_360_figurine(
     except Exception as e:
         print(f"[Engine360] Split info: {e}")
 
-    # 2. Lissage Taubin léger (préserve les détails fins comme les doigts, lunettes et rayons)
+    # 2. Lissage Taubin léger
     if smooth_iterations > 0:
         try:
             trimesh.smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=smooth_iterations)
@@ -121,29 +125,50 @@ def postprocess_360_figurine(
     min_y = bounds[0][1]
     mesh.apply_translation([-center_x, -min_y, -center_z])
 
-    # 5. Ajout optionnel du socle elliptique/cylindrique adapté à l'empreinte de la figurine
+    # 5. Ajout optionnel du socle selon la taille choisie par l'utilisateur
     if include_base:
         ext_x, ext_y, ext_z = mesh.extents
-        # Socle cylindrique ou ovale couvrant toute la longueur du vélo / des pieds avec marge de 8mm
-        rx = (ext_x / 2.0) + 6.0
-        rz = (ext_z / 2.0) + 6.0
-        max_r = max(rx, rz, 20.0)
+        target_diam = max(20.0, min(175.0, float(base_size_mm)))
+        aspect_ratio = ext_z / max(ext_x, 1e-4)
+
+        if base_shape == "round":
+            rx = target_diam / 2.0
+            rz = target_diam / 2.0
+        elif base_shape == "oval":
+            if aspect_ratio > 1.2:
+                rz = target_diam / 2.0
+                rx = max((ext_x / 2.0) + 3.0, (target_diam / 2.0) * 0.55)
+            elif aspect_ratio < 0.8:
+                rx = target_diam / 2.0
+                rz = max((ext_z / 2.0) + 3.0, (target_diam / 2.0) * 0.55)
+            else:
+                rx = target_diam / 2.0
+                rz = target_diam / 2.0
+        else:  # "auto"
+            # Si modèle allongé (ex: vélo en longueur Z)
+            if aspect_ratio > 1.35:
+                rz = max((ext_z / 2.0) + 4.0, target_diam / 2.0)
+                rx = max((ext_x / 2.0) + 4.0, rz * 0.50)
+            elif aspect_ratio < 0.7:
+                rx = max((ext_x / 2.0) + 4.0, target_diam / 2.0)
+                rz = max((ext_z / 2.0) + 4.0, rx * 0.50)
+            else:
+                # Modèle debout / équilibré (clown, personnage, animal) : Disque rond paramétrable
+                rx = target_diam / 2.0
+                rz = target_diam / 2.0
 
         cyl = trimesh.creation.cylinder(radius=1.0, height=base_height_mm, sections=96)
         rot_x = trimesh.transformations.rotation_matrix(np.radians(90), [1, 0, 0])
         cyl.apply_transform(rot_x)
-        # Adapter aux proportions X / Z de la figurine (ovale doux si vélo allongé, rond si personnage debout)
-        scale_x = max(rx, max_r * 0.65)
-        scale_z = max(rz, max_r * 0.65)
-        cyl.vertices[:, 0] *= scale_x
-        cyl.vertices[:, 2] *= scale_z
+        cyl.vertices[:, 0] *= rx
+        cyl.vertices[:, 2] *= rz
 
         if hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None:
             cyl_colors = np.full((len(cyl.vertices), 4), [65, 70, 80, 255], dtype=np.uint8)
             cyl.visual.vertex_colors = cyl_colors
 
         # Ancrer le bas des roues/pieds de 1.8 mm dans le socle pour une tenue mécanique parfaite
-        overlap_mm = 1.8
+        overlap_mm = min(1.8, base_height_mm * 0.4)
         cyl.apply_translation([0, (base_height_mm / 2.0) - overlap_mm, 0])
         mesh.apply_translation([0, base_height_mm - overlap_mm, 0])
 
@@ -164,13 +189,17 @@ def generate_figurine_360_hunyuan(
     target_height_mm: float = 120.0,
     include_base: bool = True,
     base_height_mm: float = 5.0,
+    base_size_mm: float = 60.0,
+    base_shape: str = "auto",
     steps: int = 35,
     octree_resolution: int = 384,
+    hf_token: Optional[str] = None,
     progress_callback=None
 ) -> trimesh.Trimesh:
     """
     Génère une figurine 3D 360° Ultra-Haute Définition (~500 000 faces)
     via Tencent Hunyuan3D-2.1 (Diffusion Transformer 3D SOTA).
+    Accepte la clé API personnalisée de l'étudiant/utilisateur (hf_token).
     """
     try:
         import truststore
@@ -180,25 +209,72 @@ def generate_figurine_360_hunyuan(
 
     from gradio_client import Client, handle_file
 
-    token = os.environ.get("HF_TOKEN", "")
-    token_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "hf_token.txt")
-    if not token and os.path.exists(token_file):
-        with open(token_file, "r", encoding="utf-8") as f:
-            t = f.read().strip()
-            if len(t) > 8:
-                token = t
+    # 1. Gestion de la clé API / Token Hugging Face (priorité au token de l'étudiant)
+    token = (hf_token or "").strip()
+    if not token:
+        token = os.environ.get("HF_TOKEN", "")
+    if not token:
+        token_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "hf_token.txt")
+        if os.path.exists(token_file):
+            with open(token_file, "r", encoding="utf-8") as f:
+                t = f.read().strip()
+                if len(t) > 8:
+                    token = t
+
+    # 2. Détourage IA local automatique du sujet pour éliminer tout arrière-plan ou table parasite
+    clean_image_path = image_path
+    try:
+        from rembg import remove
+        raw_img = Image.open(image_path).convert("RGBA")
+        alpha_arr = np.array(raw_img.split()[-1])
+        # Si image avec fond opaque (ex: JPG ou PNG plein)
+        if np.mean(alpha_arr > 240) > 0.80:
+            if progress_callback:
+                progress_callback(10, "Détourage IA local du sujet (suppression de la table ou du fond)...")
+            clean_img = remove(raw_img)
+            arr_c = np.array(clean_img)
+            coords = np.argwhere(arr_c[:, :, 3] > 30)
+            if len(coords) > 0:
+                y0, x0 = coords.min(axis=0)
+                y1, x1 = coords.max(axis=0)
+                pad_h = int((y1 - y0) * 0.05)
+                pad_w = int((x1 - x0) * 0.05)
+                y0 = max(0, y0 - pad_h)
+                x0 = max(0, x0 - pad_w)
+                y1 = min(arr_c.shape[0], y1 + pad_h)
+                x1 = min(arr_c.shape[1], x1 + pad_w)
+                clean_img = clean_img.crop((x0, y0, x1, y1))
+
+            clean_image_path = os.path.splitext(image_path)[0] + "_clean_subject.png"
+            clean_img.save(clean_image_path, format="PNG")
+    except Exception as e_rembg:
+        print(f"[Engine360] Rembg local notice: {e_rembg}")
 
     if progress_callback:
-        progress_callback(15, "Connexion au moteur SOTA Tencent Hunyuan3D-2.1...")
+        progress_callback(20, "Connexion au moteur SOTA Tencent Hunyuan3D (2.5 / 2.1)...")
 
-    # Utiliser tencent/Hunyuan3D-2.1 (endpoint /shape_generation sans caption)
-    client = Client("tencent/Hunyuan3D-2.1", token=token if token else None)
+    # Cascade de connexion : tente Hunyuan3D-2.5 (si accessible avec le token), puis 2.1, puis 2.0
+    client = None
+    target_space = "tencent/Hunyuan3D-2.1"
+    for space_id in ["tencent/Hunyuan3D-2.5", "tencent/Hunyuan3D-2.1", "tencent/Hunyuan3D-2"]:
+        try:
+            client = Client(space_id, token=token if token else None)
+            target_space = space_id
+            print(f"[Engine360] Connecté avec succès au Space Tencent : {space_id}")
+            break
+        except Exception as e_space:
+            print(f"[Engine360] Tentative sur {space_id} : {e_space}")
+
+    if client is None:
+        client = Client("tencent/Hunyuan3D-2.1", token=token if token else None)
+        target_space = "tencent/Hunyuan3D-2.1"
 
     if progress_callback:
-        progress_callback(35, f"Sculpture neuronale 360° Ultra-HD en cours (Octree {octree_resolution}, ~40s)...")
+        space_name = target_space.split("/")[-1]
+        progress_callback(35, f"Sculpture neuronale 360° en cours ({space_name}, Octree {octree_resolution}, ~40s)...")
 
     res = client.predict(
-        image=handle_file(image_path),
+        image=handle_file(clean_image_path),
         mv_image_front=None,
         mv_image_back=None,
         mv_image_left=None,
@@ -243,10 +319,10 @@ def generate_figurine_360_hunyuan(
     except Exception as e_sub:
         print(f"[Engine360] Subdivision notice: {e_sub}")
 
-    # 2. Texturation 360° Voronoi sans couture (aucun artefact noir sur les tranches ou le dos)
+    # 2. Texturation 360° Voronoi sans couture
     try:
         from scipy.ndimage import map_coordinates, distance_transform_edt
-        src_img = Image.open(image_path).convert("RGBA")
+        src_img = Image.open(clean_image_path if os.path.exists(clean_image_path) else image_path).convert("RGBA")
         arr = np.array(src_img)
         alpha = arr[:, :, 3] > 30
         if np.any(alpha):
@@ -283,6 +359,8 @@ def generate_figurine_360_hunyuan(
         target_height_mm=target_height_mm,
         include_base=include_base,
         base_height_mm=base_height_mm,
+        base_size_mm=base_size_mm,
+        base_shape=base_shape,
         smooth_iterations=0
     )
     return mesh
@@ -293,29 +371,40 @@ def generate_figurine_360_local(
     target_height_mm: float = 120.0,
     include_base: bool = True,
     base_height_mm: float = 5.0,
-    resolution: int = 300,
-    threshold: float = 25.0,
+    base_size_mm: float = 60.0,
+    base_shape: str = "auto",
+    resolution: int = 450,
+    threshold: float = 20.0,
     progress_callback=None
 ) -> trimesh.Trimesh:
     """
-    Génère une figurine 3D 360° complète sur le GPU local RTX 4070 Ti via TripoSR corrigé.
+    Génère une figurine 3D 360° Boostée sur le GPU local RTX 4070 Ti :
+    - Grille Voxel Haute Densité (450³ au lieu de 300³ -> ~185k faces)
+    - Seuil affiné (threshold=20.0 pour préserver les doigts, visages et arêtes fines)
+    - Lissage Taubin anti-facettes
+    - Texturation 360° Voronoi HD issue directement des pixels de la photo source
     """
     if progress_callback:
-        progress_callback(20, "Détourage IA et cadrage optimal du sujet...")
-    in_img = prepare_image_for_360(image_path, foreground_ratio=0.85)
+        progress_callback(15, "Détourage IA chirurgical et recadrage optimisé DINO (88%)...")
+    in_img = prepare_image_for_360(image_path, foreground_ratio=0.88)
 
     if progress_callback:
-        progress_callback(40, "Chargement du réseau neuronal 360° sur GPU RTX 4070 Ti...")
+        progress_callback(35, "Chargement du réseau TripoSR en VRAM RTX 4070 Ti...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = get_triposr_model(device=device)
 
+    # Grille haute précision
+    grid_res = max(350, min(512, int(resolution)))
+    th_val = float(threshold) if threshold is not None else 20.0
+
     if progress_callback:
-        progress_callback(60, f"Reconstruction volumétrique 360° (Grille {resolution}³)...")
+        progress_callback(55, f"Reconstruction volumétrique HD (Grille {grid_res}³, Seuil {th_val})...")
     with torch.no_grad():
         scene_codes = model([in_img], device=device)
-        meshes = model.extract_mesh(scene_codes, resolution=resolution, threshold=threshold)
+        meshes = model.extract_mesh(scene_codes, resolution=grid_res, threshold=th_val)
         mesh = meshes[0]
 
+    # Alignement Y-up (Three.js & impression 3D)
     transform_y_up = np.array([
         [1, 0, 0, 0],
         [0, 0, 1, 0],
@@ -327,14 +416,365 @@ def generate_figurine_360_local(
     mesh.apply_transform(rot_front)
 
     if progress_callback:
-        socle_txt = "avec socle" if include_base else "sans socle"
-        progress_callback(80, f"Lissage Taubin et calibrage Bambu A1 Mini ({socle_txt})...")
+        progress_callback(75, "Lissage Taubin et micro-sculpture du relief par déplacement de normales...")
+    try:
+        trimesh.smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=4)
+        
+        # Micro-sculpture physique : déplace les sommets le long des normales selon les contrastes de la photo
+        from PIL import ImageFilter
+        raw_l = Image.open(image_path).convert('L')
+        blur = raw_l.filter(ImageFilter.GaussianBlur(radius=4))
+        arr_img = np.array(raw_l, dtype=np.float32)
+        arr_blur = np.array(blur, dtype=np.float32)
+        high_pass = np.clip((arr_img - arr_blur) / 128.0, -1.0, 1.0)
+        H_hp, W_hp = high_pass.shape
+
+        v_disp = mesh.vertices.copy()
+        n_disp = mesh.vertex_normals
+        xmin, ymin, zmin = mesh.bounds[0]
+        xmax, ymax, zmax = mesh.bounds[1]
+
+        u_hp = np.clip((v_disp[:, 0] - xmin) / (xmax - xmin + 1e-6) * (W_hp - 1), 0, W_hp - 1)
+        v_hp = np.clip((1.0 - (v_disp[:, 1] - ymin) / (ymax - ymin + 1e-6)) * (H_hp - 1), 0, H_hp - 1)
+
+        from scipy.ndimage import map_coordinates
+        disp_vals = map_coordinates(high_pass, [v_hp, u_hp], order=1, mode='nearest')
+        front_mask = n_disp[:, 2] > 0.15
+        max_disp_mm = 0.85
+        disp_vec = np.zeros_like(v_disp)
+        disp_vec[front_mask] = n_disp[front_mask] * (disp_vals[front_mask, None] * max_disp_mm * n_disp[front_mask, 2:3])
+        mesh.vertices = v_disp + disp_vec
+        trimesh.repair.fix_normals(mesh)
+    except Exception as e_smooth:
+        print(f"[TripoSR-Boosted] Sculpting info: {e_smooth}")
+
+    if progress_callback:
+        progress_callback(85, "Projection texturée 360° Voronoi HD (yeux, visage et vêtements nets)...")
+    # Texturation photographique HD Voronoi (remplace les couleurs floues du triplane natif)
+    try:
+        from rembg import remove
+        from scipy.ndimage import map_coordinates, distance_transform_edt
+        
+        raw_src = Image.open(image_path).convert("RGBA")
+        arr_raw = np.array(raw_src)
+        if np.mean(arr_raw[:, :, 3] > 240) > 0.85:
+            clean_tex_img = remove(raw_src)
+        else:
+            clean_tex_img = raw_src
+
+        arr_tex = np.array(clean_tex_img)
+        alpha = arr_tex[:, :, 3] > 30
+        if np.any(alpha):
+            ys, xs = np.where(alpha)
+            crop = arr_tex[ys.min():ys.max()+1, xs.min():xs.max()+1]
+            H_c, W_c = crop.shape[:2]
+            mask_c = crop[:, :, 3] > 30
+
+            dist_ex, idx_ex = distance_transform_edt(~mask_c, return_indices=True)
+            extrap_rgb = crop[:, :, :3][idx_ex[0], idx_ex[1]].astype(np.float32) / 255.0
+
+            v = mesh.vertices
+            n = mesh.vertex_normals
+            xmin, ymin, zmin = mesh.bounds[0]
+            xmax, ymax, zmax = mesh.bounds[1]
+
+            u_c = np.clip((v[:, 0] - xmin) / (xmax - xmin + 1e-6) * (W_c - 1), 0, W_c - 1)
+            v_c = np.clip((1.0 - (v[:, 1] - ymin) / (ymax - ymin + 1e-6)) * (H_c - 1), 0, H_c - 1)
+
+            ao_light = np.clip(0.75 + 0.25 * np.maximum(0.0, n[:, 2]), 0.68, 1.0)
+            v_col = np.zeros((len(v), 4), dtype=np.uint8)
+            for ch in range(3):
+                sc = map_coordinates(extrap_rgb[:, :, ch], [v_c, u_c], order=1, mode='nearest')
+                v_col[:, ch] = np.clip(sc * 255.0 * ao_light, 0, 255).astype(np.uint8)
+            v_col[:, 3] = 255
+            mesh.visual.vertex_colors = v_col
+    except Exception as e_tex:
+        print(f"[TripoSR-Boosted] Texturing info: {e_tex}")
+
+    # Calibrage Bambu Lab A1 Mini (Dimensions <= 180mm, socle, étanchéité)
+    mesh = postprocess_360_figurine(
+        mesh=mesh,
+        target_height_mm=target_height_mm,
+        include_base=include_base,
+        base_height_mm=base_height_mm,
+        base_size_mm=base_size_mm,
+        base_shape=base_shape,
+        smooth_iterations=0
+    )
+    return mesh
+
+
+# -------------------------------------------------------------
+# Moteur Stable Fast 3D (SF3D - Stability AI, UV & PBR)
+# -------------------------------------------------------------
+def generate_figurine_360_sf3d(
+    image_path: str,
+    target_height_mm: float = 120.0,
+    include_base: bool = True,
+    base_height_mm: float = 5.0,
+    base_size_mm: float = 60.0,
+    base_shape: str = "auto",
+    hf_token: Optional[str] = None,
+    progress_callback=None
+) -> trimesh.Trimesh:
+    """
+    Génère une figurine 3D complète via Stability AI Stable Fast 3D (SF3D) :
+    Modèle ultra-rapide (0.5s) avec dépliage UV complet et textures PBR.
+    """
+    try:
+        import truststore
+        truststore.inject_into_ssl()
+    except Exception:
+        pass
+
+    from gradio_client import Client, handle_file
+
+    token = (hf_token or "").strip()
+    if not token:
+        token = os.environ.get("HF_TOKEN", "")
+    if not token:
+        token_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "hf_token.txt")
+        if os.path.exists(token_file):
+            with open(token_file, "r", encoding="utf-8") as f:
+                t = f.read().strip()
+                if len(t) > 8:
+                    token = t
+
+    if progress_callback:
+        progress_callback(20, "Connexion au moteur Stability AI Stable Fast 3D...")
+
+    client = Client("stabilityai/stable-fast-3d", token=token if token else None)
+
+    if progress_callback:
+        progress_callback(45, "Reconstruction 3D neuronale SF3D (UV Mapping & PBR)...")
+
+    res = client.predict(
+        input_image=handle_file(image_path),
+        foreground_ratio=0.85,
+        remesh_option="None",
+        vertex_count=-1.0,
+        texture_size=1024.0,
+        api_name="/run_button"
+    )
+
+    model_glb = None
+    if isinstance(res, (list, tuple)) and len(res) > 1:
+        item = res[1]
+        if isinstance(item, dict) and "path" in item:
+            model_glb = item["path"]
+        elif isinstance(item, str):
+            model_glb = item
+    elif isinstance(res, str):
+        model_glb = res
+
+    if not model_glb or not os.path.exists(model_glb):
+        raise RuntimeError(f"Format de réponse SF3D inattendu : {res}")
+
+    if progress_callback:
+        progress_callback(75, "Chargement du maillage SF3D et calibrage Bambu Lab...")
+
+    mesh = trimesh.load(model_glb, force="mesh")
+
+    # Alignement Y-up
+    transform_y_up = np.array([
+        [1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, -1, 0, 0],
+        [0, 0, 0, 1]
+    ])
+    mesh.apply_transform(transform_y_up)
 
     mesh = postprocess_360_figurine(
         mesh=mesh,
         target_height_mm=target_height_mm,
         include_base=include_base,
         base_height_mm=base_height_mm,
-        smooth_iterations=8
+        base_size_mm=base_size_mm,
+        base_shape=base_shape,
+        smooth_iterations=0
+    )
+    return mesh
+
+
+# -------------------------------------------------------------
+# Moteur Tencent Hunyuan3D-2 100% LOCAL (GPU RTX 4070 Ti, 12 Go)
+# -------------------------------------------------------------
+_HUNYUAN_LOCAL_PIPE = None
+_HUNYUAN_LOCAL_VAE = None
+_HUNYUAN_LOCAL_GEN = None
+_HUNYUAN_LOCAL_DEC = None
+
+def get_hunyuan_local_components():
+    global _HUNYUAN_LOCAL_PIPE, _HUNYUAN_LOCAL_VAE, _HUNYUAN_LOCAL_GEN, _HUNYUAN_LOCAL_DEC
+    if _HUNYUAN_LOCAL_PIPE is None:
+        import sys, importlib
+        if r"E:\ComfyUI" not in sys.path:
+            sys.path.insert(0, r"E:\ComfyUI")
+        pkg = importlib.import_module("custom_nodes.ComfyUI-Hunyuan3DWrapper")
+        sys.modules["ComfyUI-Hunyuan3DWrapper"] = pkg
+        nodes = importlib.import_module("custom_nodes.ComfyUI-Hunyuan3DWrapper.nodes")
+        loader = nodes.Hy3DModelLoader()
+        pipe, vae = loader.loadmodel(model="hunyuan3d-dit-v2-0-fp16.safetensors")
+        _HUNYUAN_LOCAL_PIPE = pipe
+        _HUNYUAN_LOCAL_VAE = vae
+        _HUNYUAN_LOCAL_GEN = nodes.Hy3DGenerateMesh()
+        _HUNYUAN_LOCAL_DEC = nodes.Hy3DVAEDecode()
+    return _HUNYUAN_LOCAL_PIPE, _HUNYUAN_LOCAL_VAE, _HUNYUAN_LOCAL_GEN, _HUNYUAN_LOCAL_DEC
+
+
+def generate_figurine_360_hunyuan_local(
+    image_path: str,
+    target_height_mm: float = 120.0,
+    include_base: bool = True,
+    base_height_mm: float = 5.0,
+    base_size_mm: float = 60.0,
+    base_shape: str = "auto",
+    steps: int = 30,
+    octree_resolution: int = 384,
+    progress_callback=None
+) -> trimesh.Trimesh:
+    """
+    Génère une figurine 3D 360° Ultra-HD directement sur le GPU local NVIDIA RTX 4070 Ti (12 Go)
+    via Tencent Hunyuan3D-2 FP16 (sans dépendance Cloud, 100% gratuit et illimité).
+    """
+    if progress_callback:
+        progress_callback(10, "Détourage IA local du sujet (rembg)...")
+
+    clean_image_path = image_path
+    try:
+        from rembg import remove
+        raw_img = Image.open(image_path).convert("RGBA")
+        alpha_arr = np.array(raw_img.split()[-1])
+        if np.mean(alpha_arr > 240) > 0.80:
+            clean_img = remove(raw_img)
+            arr_c = np.array(clean_img)
+            coords = np.argwhere(arr_c[:, :, 3] > 30)
+            if len(coords) > 0:
+                y0, x0 = coords.min(axis=0)
+                y1, x1 = coords.max(axis=0)
+                pad_h = int((y1 - y0) * 0.05)
+                pad_w = int((x1 - x0) * 0.05)
+                y0 = max(0, y0 - pad_h)
+                x0 = max(0, x0 - pad_w)
+                y1 = min(arr_c.shape[0], y1 + pad_h)
+                x1 = min(arr_c.shape[1], x1 + pad_w)
+                clean_img = clean_img.crop((x0, y0, x1, y1))
+            clean_image_path = os.path.splitext(image_path)[0] + "_clean_local.png"
+            clean_img.save(clean_image_path, format="PNG")
+    except Exception as e_rembg:
+        print(f"[HunyuanLocal] rembg notice: {e_rembg}")
+
+    if progress_callback:
+        progress_callback(25, "Chargement du modèle Hunyuan3D-2 sur RTX 4070 Ti...")
+
+    pipe, vae, gen_node, dec_node = get_hunyuan_local_components()
+
+    # Normalisation stricte selon les spécifications officielles Tencent Hunyuan3D-2 (ImageProcessorV2) :
+    # 1. Fond blanc pur (255, 255, 255) au lieu d'un fond noir de conversion PIL
+    # 2. Toile carrée 512x512 avec marge de sécurité de 15% (border_ratio=0.15)
+    # Ceci évite que le haut du chapeau ou les extrémités ne soient coupés par la bounding box 3D [-1.01, 1.01]
+    raw_rgba = Image.open(clean_image_path if os.path.exists(clean_image_path) else image_path).convert("RGBA")
+    arr_rgba = np.array(raw_rgba)
+    alpha_mask = arr_rgba[:, :, 3] > 25
+    if np.any(alpha_mask):
+        ys, xs = np.where(alpha_mask)
+        crop_rgba = raw_rgba.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    else:
+        crop_rgba = raw_rgba
+
+    cw, ch = crop_rgba.size
+    target_dim = 512
+    margin_ratio = 0.15
+    inner_dim = int(target_dim * (1.0 - margin_ratio))
+    scale = inner_dim / max(cw, ch)
+    nw = max(1, int(cw * scale))
+    nh = max(1, int(ch * scale))
+    resized_crop = crop_rgba.resize((nw, nh), Image.Resampling.LANCZOS)
+
+    # Toile blanche carrée 512x512
+    sq_white = Image.new("RGBA", (target_dim, target_dim), (255, 255, 255, 255))
+    paste_x = (target_dim - nw) // 2
+    paste_y = (target_dim - nh) // 2
+    sq_white.paste(resized_crop, (paste_x, paste_y), mask=resized_crop.split()[-1])
+    src_pil = sq_white.convert("RGB")
+
+    # Sauvegarde pour la texturation et l'inspection
+    clean_sq_path = os.path.splitext(image_path)[0] + "_clean_sq512.png"
+    sq_white.save(clean_sq_path, format="PNG")
+    clean_image_path = clean_sq_path
+
+    src_arr = np.array(src_pil).astype(np.float32) / 255.0
+    img_tensor = torch.from_numpy(src_arr).unsqueeze(0)
+
+    if progress_callback:
+        progress_callback(40, f"Sculpture neuronale 360° ({steps} étapes Diffusion sur GPU local)...")
+
+    with torch.no_grad():
+        latents = gen_node.process(
+            pipeline=pipe,
+            image=img_tensor,
+            guidance_scale=5.5,
+            steps=int(steps),
+            seed=1234
+        )[0]
+
+    if progress_callback:
+        progress_callback(75, f"Décodage VAE FlashVDM & Marching Cubes (Octree {octree_resolution})...")
+
+    with torch.no_grad():
+        mesh = dec_node.process(
+            vae=vae,
+            latents=latents,
+            box_v=1.01,
+            octree_resolution=int(octree_resolution),
+            mc_level=0.0,
+            num_chunks=8000,
+            mc_algo="mc"
+        )[0]
+
+    if progress_callback:
+        progress_callback(85, "Lissage Taubin et projection texturée 360° Voronoi...")
+
+    # Texturation 360° Voronoi sans couture
+    try:
+        from scipy.ndimage import map_coordinates, distance_transform_edt
+        img_tex = Image.open(clean_image_path if os.path.exists(clean_image_path) else image_path).convert("RGBA")
+        arr = np.array(img_tex)
+        alpha = arr[:, :, 3] > 30
+        if np.any(alpha):
+            ys, xs = np.where(alpha)
+            crop = arr[ys.min():ys.max()+1, xs.min():xs.max()+1]
+            H_c, W_c = crop.shape[:2]
+            mask_c = crop[:, :, 3] > 30
+
+            dist_ex, idx_ex = distance_transform_edt(~mask_c, return_indices=True)
+            extrap_rgb = crop[:, :, :3][idx_ex[0], idx_ex[1]].astype(np.float32) / 255.0
+
+            v = mesh.vertices
+            n = mesh.vertex_normals
+            xmin, ymin, zmin = mesh.bounds[0]
+            xmax, ymax, zmax = mesh.bounds[1]
+
+            u_c = np.clip((v[:, 0] - xmin) / (xmax - xmin + 1e-6) * (W_c - 1), 0, W_c - 1)
+            v_c = np.clip((1.0 - (v[:, 1] - ymin) / (ymax - ymin + 1e-6)) * (H_c - 1), 0, H_c - 1)
+
+            ao_light = np.clip(0.75 + 0.25 * np.maximum(0.0, n[:, 2]), 0.68, 1.0)
+            v_col = np.zeros((len(v), 4), dtype=np.uint8)
+            for ch in range(3):
+                sc = map_coordinates(extrap_rgb[:, :, ch], [v_c, u_c], order=1, mode='nearest')
+                v_col[:, ch] = np.clip(sc * 255.0 * ao_light, 0, 255).astype(np.uint8)
+            v_col[:, 3] = 255
+            mesh.visual.vertex_colors = v_col
+    except Exception as e_tex:
+        print(f"[HunyuanLocal] Texturing notice: {e_tex}")
+
+    mesh = postprocess_360_figurine(
+        mesh=mesh,
+        target_height_mm=target_height_mm,
+        include_base=include_base,
+        base_height_mm=base_height_mm,
+        base_size_mm=base_size_mm,
+        base_shape=base_shape,
+        smooth_iterations=1
     )
     return mesh

@@ -51,24 +51,61 @@
       <section class="panel-section">
         <div class="panel-title">2. Moteur Figurine 3D (360°)</div>
         <div class="mode-selector">
-          <div class="mode-card active" data-mode="hunyuan_360">
+          <div class="mode-card active" data-mode="hunyuan_360_local">
             <div class="mode-card-header">
-              <span>Tencent Hunyuan3D-2.1 Ultra-HD (900 000 faces)</span>
-              <span class="badge-rec">SOTA ULTRA-HD</span>
+              <span>Hunyuan3D-2 Local (RTX 4070 Ti)</span>
+              <span class="badge-rec">SOTA LOCAL</span>
             </div>
             <div class="mode-card-desc">
-              Sculpture neuronale 360° en grille maximale 512³ (~900 000 triangles) : rayons du vélo, roues, cadre, guidon, doigts, lunettes, lissage Taubin anti-facettes et projection des couleurs 360°.
+              Diffusion Transformer 3.0B en local sur RTX 4070 Ti : ~10s, fidélité anatomique maximale (visages, doigts), illimité et 100% hors-ligne.
             </div>
           </div>
 
           <div class="mode-card" data-mode="triposr_360">
             <div class="mode-card-header">
-              <span>TripoSR Local (RTX 4070 Ti)</span>
-              <span class="badge-rec">HORS-LIGNE</span>
+              <span>TripoSR Boosté + Micro-Sculpture (RTX 4070 Ti)</span>
+              <span class="badge-rec">RELIEF GRAVÉ • 12s</span>
             </div>
             <div class="mode-card-desc">
-              Moteur local rapide sur GPU RTX 4070 Ti (~10s, résolution standard ~50k faces pour formes simples).
+              Grille 450³ (~185k faces) avec micro-sculpture par déplacement de normales : yeux, nez et plis gravés physiquement en 3D.
             </div>
+          </div>
+
+          <div class="mode-card" data-mode="sf3d">
+            <div class="mode-card-header">
+              <span>Stable Fast 3D - SF3D (Stability AI)</span>
+              <span class="badge-rec">UV & PBR • 0.5s</span>
+            </div>
+            <div class="mode-card-desc">
+              Successeur de TripoSR par Stability AI : génération ultra-rapide avec vrai dépliage UV complet et textures PBR.
+            </div>
+          </div>
+
+          <div class="mode-card" data-mode="hunyuan_360">
+            <div class="mode-card-header">
+              <span>Hunyuan3D Cloud (Pour Étudiants)</span>
+              <span class="badge-rec">CLOUD HF</span>
+            </div>
+            <div class="mode-card-desc">
+              Serveurs Cloud ZeroGPU Hugging Face : idéal pour vos étudiants avec leur clé API personnelle gratuite (avec repli automatique sur le GPU local).
+            </div>
+          </div>
+        </div>
+
+        <!-- Clé API personnelle pour étudiants -->
+        <div class="api-key-box" style="margin-top: 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="hf-token-input" style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+              🔑 <span>Clé API Hugging Face (Pour vos Étudiants)</span>
+            </label>
+            <span style="font-size: 10px; padding: 2px 6px; background: rgba(0, 174, 66, 0.15); color: var(--accent-bambu); border-radius: 4px; font-weight: 600;">100% Gratuit</span>
+          </div>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="hf-token-input" placeholder="hf_... (Token personnel de l'étudiant)" style="width: 100%; background: #0f1115; border: 1px solid var(--border-color); color: #fff; padding: 8px 34px 8px 10px; border-radius: 6px; font-size: 12px; font-family: monospace;">
+            <button type="button" id="btn-toggle-token" style="position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;" title="Afficher/Masquer le token">👁️</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+            💡 Pour vos étudiants (quand l'appli est en ligne) : collez votre token Hugging Face personnel. Mémorisé <strong>localement dans le navigateur</strong> de chaque étudiant. <a href="https://huggingface.co/settings/tokens" target="_blank" style="color: var(--accent-bambu); text-decoration: underline;">Créer un token gratuit (Read)</a>
           </div>
         </div>
       </section>
@@ -90,12 +127,37 @@
           </div>
         </div>
 
+        <!-- Curseur Taille / Diamètre du socle -->
+        <div class="form-group" id="base-size-group">
+          <div class="form-row">
+            <label for="base-size-slider">Taille / Diamètre du socle :</label>
+            <span id="base-size-val" style="font-weight: 600; color: var(--accent-bambu);">50 mm</span>
+          </div>
+          <input type="range" id="base-size-slider" min="20" max="160" value="50" step="5">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            <span>Discret (20 mm)</span>
+            <span>Standard (50 mm)</span>
+            <span>Grand (160 mm)</span>
+          </div>
+        </div>
+
+        <!-- Forme du socle -->
+        <div class="form-group" id="base-shape-group" style="margin-bottom: 12px;">
+          <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">Forme du socle :</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+            <button type="button" class="tool-btn active base-shape-btn" data-shape="auto" style="padding: 6px; font-size: 11px;">Auto</button>
+            <button type="button" class="tool-btn base-shape-btn" data-shape="round" style="padding: 6px; font-size: 11px;">Rond</button>
+            <button type="button" class="tool-btn base-shape-btn" data-shape="oval" style="padding: 6px; font-size: 11px;">Ovale</button>
+          </div>
+        </div>
+
+        <!-- Curseur Épaisseur du socle -->
         <div class="form-group" id="base-height-group">
           <div class="form-row">
             <label for="base-slider">Épaisseur du socle :</label>
-            <span id="base-val" style="font-weight: 600; color: var(--accent-bambu);">5 mm</span>
+            <span id="base-val" style="font-weight: 600; color: var(--accent-bambu);">4 mm</span>
           </div>
-          <input type="range" id="base-slider" min="3" max="10" value="5" step="1">
+          <input type="range" id="base-slider" min="2" max="12" value="4" step="1">
         </div>
 
         <div class="form-group">
@@ -137,6 +199,12 @@
           <button type="button" class="tool-btn active" id="btn-autorotate">🔄 Rotation 360°: ON</button>
           <button type="button" class="tool-btn" id="btn-reset-cam">Recentrer</button>
         </div>
+      </div>
+
+      <!-- Bannière d'information / Quota GPU -->
+      <div id="gpu-quota-banner" style="display: none; background: rgba(255, 170, 0, 0.12); border-bottom: 1px solid rgba(255, 170, 0, 0.4); color: #ffb834; padding: 9px 16px; font-size: 12px; font-weight: 500; display: none; align-items: center; justify-content: space-between;">
+        <span id="gpu-quota-banner-text"></span>
+        <button type="button" onclick="document.getElementById('gpu-quota-banner').style.display='none'" style="background: none; border: none; color: #ffb834; cursor: pointer; font-size: 14px; font-weight: bold;">✕</button>
       </div>
 
       <!-- Container Canvas Three.js -->

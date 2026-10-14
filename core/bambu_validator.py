@@ -106,6 +106,13 @@ def export_all_formats(mesh: trimesh.Trimesh, base_filepath_no_ext: str) -> dict
     glb_path = f"{base_filepath_no_ext}.glb"
     obj_path = f"{base_filepath_no_ext}.obj"
 
+    # Forcer le calcul et la cohérence des normales de sommets pour Three.js / WebGL
+    try:
+        trimesh.repair.fix_normals(mesh)
+        _ = mesh.vertex_normals
+    except Exception as e:
+        print(f"[bambu_validator] Info calcul normales : {e}")
+
     # Export GLB (Y-up pour visualiseur Three.js)
     mesh.export(glb_path, file_type='glb')
 

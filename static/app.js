@@ -9,8 +9,9 @@ let currentTaskPollInterval = null;
 
 let selectedFile = null;
 let selectedDemoPath = null;
-let selectedMode = "hunyuan_360";
+let selectedMode = "hunyuan_360_local";
 let includeBase = true;
+let selectedBaseShape = "auto";
 
 let isShowingPreloadedDemo = true;
 
@@ -23,10 +24,10 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadPreloadedSotaShowcase(withBase) {
-  const folder = withBase ? "vanaert_5.4m_with_base" : "vanaert_5.4m_no_base";
+  const folder = withBase ? "vanaert_2.7m_with_base" : "vanaert_2.7m_no_base";
   const metrics = withBase
-    ? { dimensions_mm: { x: 77.0, y: 125.0, z: 118.5 }, volume_cm3: 70.30, weight_pla_g: 33.1, print_time_estimate: "1h 22m", face_count: 5376384 }
-    : { dimensions_mm: { x: 52.8, y: 120.0, z: 106.5 }, volume_cm3: 34.49, weight_pla_g: 16.2, print_time_estimate: "54 min", face_count: 5376000 };
+    ? { dimensions_mm: { x: 77.0, y: 125.0, z: 118.5 }, volume_cm3: 70.30, weight_pla_g: 33.1, print_time_estimate: "1h 15m", face_count: 2687500 }
+    : { dimensions_mm: { x: 52.8, y: 120.0, z: 106.5 }, volume_cm3: 34.49, weight_pla_g: 16.2, print_time_estimate: "48 min", face_count: 2687270 };
 
   handleTaskSuccess({
     include_base: withBase,
@@ -47,10 +48,10 @@ function initThreeJS() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f1115);
 
-  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+  camera = new THREE.PerspectiveCamera(45, width / height, 1.0, 1000);
   camera.position.set(0, 80, 210);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -75,6 +76,16 @@ function initThreeJS() {
   const keyLight = new THREE.DirectionalLight(0xfff6ea, 1.4);
   keyLight.position.set(120, 180, 120);
   keyLight.castShadow = true;
+  keyLight.shadow.mapSize.width = 2048;
+  keyLight.shadow.mapSize.height = 2048;
+  keyLight.shadow.camera.near = 10;
+  keyLight.shadow.camera.far = 450;
+  keyLight.shadow.camera.left = -150;
+  keyLight.shadow.camera.right = 150;
+  keyLight.shadow.camera.top = 150;
+  keyLight.shadow.camera.bottom = -150;
+  keyLight.shadow.bias = -0.0002;
+  keyLight.shadow.normalBias = 0.04;
   scene.add(keyLight);
 
   const fillLight = new THREE.DirectionalLight(0x90b4e8, 0.85);
@@ -115,20 +126,42 @@ function initEventListeners() {
   const btnWithBase = document.getElementById("btn-with-base");
   const btnWithoutBase = document.getElementById("btn-without-base");
   const baseHeightGroup = document.getElementById("base-height-group");
+  const baseSizeGroup = document.getElementById("base-size-group");
+  const baseShapeGroup = document.getElementById("base-shape-group");
 
   const baseSlider = document.getElementById("base-slider");
   const baseVal = document.getElementById("base-val");
+  const baseSizeSlider = document.getElementById("base-size-slider");
+  const baseSizeVal = document.getElementById("base-size-val");
   const heightSlider = document.getElementById("height-slider");
   const heightVal = document.getElementById("height-val");
   const resSlider = document.getElementById("res-slider");
   const resVal = document.getElementById("res-val");
+
+  // Clé API Hugging Face de l'étudiant (mémorisée en localStorage)
+  const tokenInput = document.getElementById("hf-token-input");
+  const btnToggleToken = document.getElementById("btn-toggle-token");
+  if (tokenInput) {
+    tokenInput.value = localStorage.getItem("student_hf_token") || "";
+    tokenInput.addEventListener("input", (e) => {
+      localStorage.setItem("student_hf_token", e.target.value.trim());
+    });
+  }
+  if (btnToggleToken && tokenInput) {
+    btnToggleToken.addEventListener("click", () => {
+      tokenInput.type = tokenInput.type === "password" ? "text" : "password";
+      btnToggleToken.textContent = tokenInput.type === "password" ? "👁️" : "🙈";
+    });
+  }
 
   // Boutons Avec / Sans Socle
   btnWithBase.addEventListener("click", () => {
     includeBase = true;
     btnWithBase.classList.add("active");
     btnWithoutBase.classList.remove("active");
-    baseHeightGroup.style.display = "flex";
+    baseHeightGroup.style.display = "block";
+    if (baseSizeGroup) baseSizeGroup.style.display = "block";
+    if (baseShapeGroup) baseShapeGroup.style.display = "block";
     if (isShowingPreloadedDemo) {
       loadPreloadedSotaShowcase(true);
     }
@@ -139,9 +172,27 @@ function initEventListeners() {
     btnWithoutBase.classList.add("active");
     btnWithBase.classList.remove("active");
     baseHeightGroup.style.display = "none";
+    if (baseSizeGroup) baseSizeGroup.style.display = "none";
+    if (baseShapeGroup) baseShapeGroup.style.display = "none";
     if (isShowingPreloadedDemo) {
       loadPreloadedSotaShowcase(false);
     }
+  });
+
+  // Slider Taille / Diamètre du socle
+  if (baseSizeSlider && baseSizeVal) {
+    baseSizeSlider.addEventListener("input", (e) => {
+      baseSizeVal.textContent = `${e.target.value} mm`;
+    });
+  }
+
+  // Forme du socle (Auto / Rond / Ovale)
+  document.querySelectorAll(".base-shape-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".base-shape-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedBaseShape = btn.getAttribute("data-shape") || "auto";
+    });
   });
 
   // Sliders
@@ -327,7 +378,14 @@ async function startConversionProcess() {
   formData.append("target_height_mm", document.getElementById("height-slider").value);
   formData.append("include_base", includeBase ? "true" : "false");
   formData.append("base_height_mm", document.getElementById("base-slider").value);
+  formData.append("base_size_mm", document.getElementById("base-size-slider") ? document.getElementById("base-size-slider").value : "50");
+  formData.append("base_shape", selectedBaseShape);
   formData.append("resolution", document.getElementById("res-slider").value);
+
+  const studentToken = document.getElementById("hf-token-input") ? document.getElementById("hf-token-input").value.trim() : "";
+  if (studentToken) {
+    formData.append("hf_token", studentToken);
+  }
 
   try {
     const res = await fetch("/api/convert", {
@@ -376,11 +434,25 @@ function pollTaskStatus(taskId) {
         btn.disabled = false;
         handleTaskSuccess(task.result);
 
+        if (task.result && task.result.warning) {
+          const banner = document.getElementById("gpu-quota-banner");
+          const bannerText = document.getElementById("gpu-quota-banner-text");
+          if (banner && bannerText) {
+            bannerText.textContent = "⚡ " + task.result.warning;
+            banner.style.display = "flex";
+          }
+        }
+
       } else if (task.status === "failed") {
         clearInterval(currentTaskPollInterval);
         overlay.style.display = "none";
         btn.disabled = false;
-        alert(`Échec de la modélisation : ${task.error || "Erreur inconnue"}`);
+        const err = task.error || "Erreur inconnue";
+        if (err.toLowerCase().includes("zerogpu") || err.toLowerCase().includes("quota") || err.toLowerCase().includes("429")) {
+          alert("Quota gratuit quotidien Hugging Face ZeroGPU atteint (60s max / 24h sur cette adresse IP).\n\n💡 Solution immédiate :\n1. Cliquez sur le mode 'TripoSR Local (RTX 4070 Ti)' dans le menu de gauche : il est 100% hors-ligne, gratuit et illimité !\n2. Ou renseignez un token Hugging Face personnel dans le champ 'Clé API Hugging Face'.");
+        } else {
+          alert(`Échec de la modélisation : ${err}`);
+        }
       }
     } catch (err) {
       console.error("Erreur de suivi :", err);
@@ -431,11 +503,19 @@ function loadGLBModel(glbUrl) {
       currentMesh.position.y = -box.min.y;
       currentMesh.position.z = -center.z;
 
-      // Sauvegarder le matériau d'origine sur chaque sous-maillage
+      // Sauvegarder le matériau d'origine sur chaque sous-maillage et fiabiliser les normales
       currentMesh.traverse((child) => {
         if (child.isMesh) {
+          // Recalcul et normalisation des normales si absentes ou corrompues
+          if (!child.geometry.attributes.normal) {
+            child.geometry.computeVertexNormals();
+          }
+          child.geometry.normalizeNormals();
+
+          // Projeter les ombres mais désactiver l'auto-ombrage sur le maillage pour stopper le scintillement (shadow acne)
           child.castShadow = true;
-          child.receiveShadow = true;
+          child.receiveShadow = false;
+
           child.userData.originalMaterial = child.material;
           child.userData.hasTexture = !!(child.material && child.material.map);
           child.userData.hasVertexColors = !!(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
@@ -474,42 +554,49 @@ function applyMaterial(type) {
           child.material = child.userData.originalMaterial;
           child.material.roughness = 0.38;
           child.material.metalness = 0.05;
+          child.material.side = THREE.DoubleSide;
           child.material.needsUpdate = true;
         } else if (child.userData.hasVertexColors) {
           child.material = new THREE.MeshStandardMaterial({
             vertexColors: true,
             roughness: 0.45,
-            metalness: 0.05
+            metalness: 0.05,
+            side: THREE.DoubleSide
           });
         }
       } else if (type === "white" || (type === "vertex" && !child.userData.hasVertexColors && !child.userData.hasTexture)) {
         child.material = new THREE.MeshStandardMaterial({
           color: 0xf0f2f5,
           roughness: 0.35,
-          metalness: 0.08
+          metalness: 0.08,
+          side: THREE.DoubleSide
         });
       } else if (type === "bambu-green") {
         child.material = new THREE.MeshStandardMaterial({
           color: 0x00ae42,
           roughness: 0.3,
-          metalness: 0.1
+          metalness: 0.1,
+          side: THREE.DoubleSide
         });
       } else if (type === "bronze") {
         child.material = new THREE.MeshStandardMaterial({
           color: 0xad8347,
           roughness: 0.38,
-          metalness: 0.78
+          metalness: 0.78,
+          side: THREE.DoubleSide
         });
       } else if (type === "marble") {
         child.material = new THREE.MeshStandardMaterial({
           color: 0xeae8e1,
           roughness: 0.22,
-          metalness: 0.02
+          metalness: 0.02,
+          side: THREE.DoubleSide
         });
       } else if (type === "wireframe") {
         child.material = new THREE.MeshBasicMaterial({
           color: 0x00ae42,
-          wireframe: true
+          wireframe: true,
+          side: THREE.DoubleSide
         });
       }
     }
