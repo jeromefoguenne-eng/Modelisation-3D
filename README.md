@@ -1,3 +1,14 @@
+---
+title: Studio 3D Haute Précision - Bambu Lab A1 Mini
+emoji: 🎭
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # 🖨️ Modélisation 3D — PNG to 3D Print (Bambu Lab A1 Mini)
 
 > **Application web haute précision pour transformer des images PNG/JPG en modèles 3D volumétriques et bas-reliefs prêts à l'impression 3D FDM sur Bambu Lab A1 mini (PLA monochrome).**

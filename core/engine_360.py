@@ -17,28 +17,35 @@ import torch
 import trimesh
 from typing import Optional
 
-# Ajout du chemin ComfyUI-Flowty-TripoSR
+# Chemins ComfyUI locaux (optionnels si exécuté en Cloud / Docker)
 COMFY_NODE_PATH = Path(r"E:\ComfyUI\custom_nodes\ComfyUI-Flowty-TripoSR")
 CHECKPOINT_PATH = Path(r"E:\ComfyUI\models\checkpoints\triposr_model.ckpt")
 CONFIG_PATH = COMFY_NODE_PATH / "config.yaml"
 
-if str(COMFY_NODE_PATH) not in sys.path:
+if COMFY_NODE_PATH.exists() and str(COMFY_NODE_PATH) not in sys.path:
     sys.path.insert(0, str(COMFY_NODE_PATH))
 
 _TRIPOSR_MODEL = None
 
 def get_triposr_model(device: str = "cuda"):
-    """Charge et met en cache le modèle TripoSR en VRAM avec 100% des poids (strict=True)."""
+    """Charge et met en cache le modèle TripoSR (localement ou via tsr)."""
     global _TRIPOSR_MODEL
     if _TRIPOSR_MODEL is None:
-        from tsr.system import TSR
-        print("[Engine360] Chargement de TripoSR (549/549 tenseurs, strict=True) sur RTX 4070 Ti...")
+        try:
+            from tsr.system import TSR
+        except ImportError:
+            raise RuntimeError("Le module TSR n'est pas disponible dans cet environnement.")
+
+        print(f"[Engine360] Chargement de TripoSR sur {device}...")
         t0 = time.time()
-        model = TSR.from_pretrained_custom(str(CHECKPOINT_PATH), str(CONFIG_PATH))
+        if CHECKPOINT_PATH.exists() and CONFIG_PATH.exists():
+            model = TSR.from_pretrained_custom(str(CHECKPOINT_PATH), str(CONFIG_PATH))
+        else:
+            model = TSR.from_pretrained("stabilityai/TripoSR", config_name="config.yaml", weight_name="model.ckpt")
         model.renderer.set_chunk_size(8192)
         model.to(device)
         _TRIPOSR_MODEL = model
-        print(f"[Engine360] Modèle TripoSR prêt en VRAM ({time.time() - t0:.2f}s).")
+        print(f"[Engine360] Modèle TripoSR prêt ({time.time() - t0:.2f}s).")
     return _TRIPOSR_MODEL
 
 

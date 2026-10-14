@@ -115,19 +115,37 @@ def background_generation_task(
             TASKS[task_id]["progress"] = pct
             TASKS[task_id]["step"] = step_msg
 
+        is_local_gpu_available = os.path.exists(r"E:\ComfyUI") and not os.environ.get("SPACE_ID")
+
         if mode == "hunyuan_360_local":
-            octree_res = max(256, min(512, int(resolution)))
-            mesh = generate_figurine_360_hunyuan_local(
-                image_path=image_path,
-                target_height_mm=target_height_mm,
-                include_base=include_base,
-                base_height_mm=base_height_mm,
-                base_size_mm=base_size_mm,
-                base_shape=base_shape,
-                steps=30,
-                octree_resolution=octree_res,
-                progress_callback=update_progress
-            )
+            if is_local_gpu_available:
+                octree_res = max(256, min(512, int(resolution)))
+                mesh = generate_figurine_360_hunyuan_local(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    steps=30,
+                    octree_resolution=octree_res,
+                    progress_callback=update_progress
+                )
+            else:
+                # Mode Cloud automatique si déployé sur Hugging Face Spaces
+                octree_res = max(256, min(512, int(resolution)))
+                mesh = generate_figurine_360_hunyuan(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    steps=40,
+                    octree_resolution=octree_res,
+                    hf_token=hf_token,
+                    progress_callback=update_progress
+                )
         elif mode == "hunyuan_360":
             try:
                 octree_res = max(256, min(512, int(resolution)))
@@ -146,7 +164,7 @@ def background_generation_task(
             except Exception as e_hy:
                 err_str = str(e_hy)
                 quota_terms = ["zerogpu", "quota", "exceeded", "429", "rate limit", "hour", "gpu quota"]
-                if any(t in err_str.lower() for t in quota_terms):
+                if is_local_gpu_available and any(t in err_str.lower() for t in quota_terms):
                     print(f"[App] Quota ZeroGPU Hugging Face atteint ({err_str}).")
                     print("[App] Bascule de secours automatique vers le moteur local Hunyuan3D-2 GPU RTX 4070 Ti...")
                     update_progress(35, "Quota Cloud Hugging Face atteint : bascule automatique sur votre moteur local Hunyuan3D-2 (GPU RTX 4070 Ti)...")
@@ -165,17 +183,30 @@ def background_generation_task(
                 else:
                     raise e_hy
         elif mode == "triposr_360":
-            mesh = generate_figurine_360_local(
-                image_path=image_path,
-                target_height_mm=target_height_mm,
-                include_base=include_base,
-                base_height_mm=base_height_mm,
-                base_size_mm=base_size_mm,
-                base_shape=base_shape,
-                resolution=max(384, min(512, int(resolution))),
-                threshold=20.0,
-                progress_callback=update_progress
-            )
+            if is_local_gpu_available:
+                mesh = generate_figurine_360_local(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    resolution=max(384, min(512, int(resolution))),
+                    threshold=20.0,
+                    progress_callback=update_progress
+                )
+            else:
+                # En Cloud, bascule automatique sur Stable Fast 3D (SF3D - Stability AI Tripo)
+                mesh = generate_figurine_360_sf3d(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    hf_token=hf_token,
+                    progress_callback=update_progress
+                )
         elif mode == "sf3d":
             mesh = generate_figurine_360_sf3d(
                 image_path=image_path,
@@ -357,4 +388,6 @@ def download_model(task_id: str, file_format: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8080, reload=False)
+    port = int(os.environ.get("PORT", 7860 if os.environ.get("SPACE_ID") else 8080))
+    host = "0.0.0.0" if os.environ.get("SPACE_ID") else "127.0.0.1"
+    uvicorn.run("app:app", host=host, port=port, reload=False)
