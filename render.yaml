@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: studio-3d-bambulab
-    env: docker
-    plan: free
-    region: frankfurt
-    autoDeploy: true
-    healthCheckPath: /api/health
