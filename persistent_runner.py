@@ -130,20 +130,13 @@ def extract_tunnel_url():
         pass
     return None
 
-def on_exit():
-    print("\n[Watchdog] Arrêt du service. Mise à jour du statut GitHub...")
-    update_github_live_url("", status="offline")
-
-atexit.register(on_exit)
-
 def main():
     print("=" * 70)
-    print("  🎨 Studio 3D Figurine (Bambu Lab A1 Mini - RTX 4070 Ti)")
-    print("  🔗 SERVICE DE REDIRECTION PERMANENTE ACTIF")
+    print("  Studio 3D Figurine (Bambu Lab A1 Mini - RTX 4070 Ti)")
+    print("  SERVICE DE REDIRECTION PERMANENTE ACTIF (24/7)")
     print("=" * 70)
-    print(f"👉 LIEN PERMANENT POUR VOS ÉTUDIANTS : {PERMANENT_LINK_SHORT}")
-    print(f"   (ou lien direct GitHub Pages      : {PERMANENT_LINK_PAGES})")
-    print(f"🔑 Mot de passe requis              : fmttnhech")
+    print(f"LIEN PERMANENT POUR VOS ETUDIANTS : {PERMANENT_LINK_SHORT}")
+    print(f"   (ou lien direct GitHub Pages   : {PERMANENT_LINK_PAGES})")
     print("=" * 70)
 
     uvicorn_proc = None

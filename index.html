@@ -101,24 +101,6 @@
       color: var(--text-muted);
       line-height: 1.45;
     }
-    .password-info {
-      background: rgba(59, 130, 246, 0.1);
-      border: 1px dashed rgba(59, 130, 246, 0.4);
-      color: #93c5fd;
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      margin-bottom: 24px;
-    }
-    .password-code {
-      font-family: monospace;
-      font-weight: 700;
-      color: #ffffff;
-      background: rgba(59, 130, 246, 0.3);
-      padding: 2px 8px;
-      border-radius: 4px;
-      letter-spacing: 1px;
-    }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -153,10 +135,6 @@
     <h1>Studio 3D Figurine</h1>
     <div class="subtitle">Portail Permanent — Cours de M. Foguenne</div>
 
-    <div class="password-info">
-      🔑 Mot de passe requis : <span class="password-code">fmttnhech</span>
-    </div>
-
     <div class="status-box" id="status-box">
       <div class="spinner" id="spinner"></div>
       <div class="status-title" id="status-title">Connexion au serveur Studio 3D...</div>
@@ -180,27 +158,53 @@
     const actionContainer = document.getElementById("action-container");
     const directBtn = document.getElementById("direct-btn");
 
-    async function checkTunnel() {
+    async function fetchTunnelConfig() {
+      const timestamp = Date.now();
+
+      // Source 1 : raw.githubusercontent.com (aucun quota de requêtes, JSON direct)
       try {
-        // Horodatage pour éviter tout cache navigateur ou CDN
-        const timestamp = Date.now();
+        const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/active_tunnel.json?t=${timestamp}`;
+        const resp = await fetch(rawUrl, { cache: "no-store" });
+        if (resp.ok) {
+          const cfg = await resp.json();
+          if (cfg && cfg.url) return cfg;
+        }
+      } catch (e) {}
+
+      // Source 2 : api.github.com
+      try {
         const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/active_tunnel.json?t=${timestamp}`;
-        
-        const response = await fetch(apiUrl, {
+        const resp = await fetch(apiUrl, {
           cache: "no-store",
           headers: { "Accept": "application/vnd.github.v3+json" }
         });
-
-        if (!response.ok) {
-          throw new Error("Impossible de récupérer l'état du serveur.");
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.content) {
+            const cfg = JSON.parse(atob(data.content));
+            if (cfg && cfg.url) return cfg;
+          }
         }
+      } catch (e) {}
 
-        const data = await response.json();
-        // Décodage base64 du contenu GitHub
-        const decodedContent = atob(data.content);
-        const tunnelConfig = JSON.parse(decodedContent);
+      // Source 3 : GitHub Pages local
+      try {
+        const pagesUrl = `./active_tunnel.json?t=${timestamp}`;
+        const resp = await fetch(pagesUrl, { cache: "no-store" });
+        if (resp.ok) {
+          const cfg = await resp.json();
+          if (cfg && cfg.url) return cfg;
+        }
+      } catch (e) {}
 
-        if (tunnelConfig.status === "online" && tunnelConfig.url) {
+      return null;
+    }
+
+    async function checkTunnel() {
+      try {
+        const tunnelConfig = await fetchTunnelConfig();
+
+        if (tunnelConfig && tunnelConfig.status === "online" && tunnelConfig.url) {
           statusTitle.textContent = "Serveur en ligne ! Redirection...";
           statusDesc.textContent = "Ouverture du Studio 3D en cours (GPU RTX 4070 Ti actif)...";
           directBtn.href = tunnelConfig.url;
@@ -209,12 +213,12 @@
           // Redirection immédiate
           setTimeout(() => {
             window.location.replace(tunnelConfig.url);
-          }, 400);
+          }, 300);
         } else {
-          showOffline("Le serveur est actuellement en veille.");
+          showOffline("Le serveur est actuellement en cours de démarrage ou en veille.");
         }
       } catch (err) {
-        showOffline("Le serveur est temporairement éteint ou inaccessible.");
+        showOffline("Le serveur est temporairement inaccessible.");
       }
     }
 
@@ -222,15 +226,15 @@
       spinner.style.display = "none";
       statusTitle.innerHTML = "🔴 Serveur Studio 3D hors-ligne";
       statusTitle.style.color = "#ef4444";
-      statusDesc.innerHTML = `${message}<br><br>Veuillez demander à <strong>M. Foguenne</strong> de lancer l'application sur son ordinateur pour activer la carte graphique.<br><br><small>Vérification automatique toutes les 6 secondes...</small>`;
+      statusDesc.innerHTML = `${message}<br><br>Veuillez demander à <strong>M. Foguenne</strong> d'activer l'application sur son ordinateur pour lancer la carte graphique.<br><br><small>Vérification automatique toutes les 5 secondes...</small>`;
       
-      // Réessayer automatiquement après 6 secondes
+      // Réessayer automatiquement après 5 secondes
       setTimeout(() => {
         spinner.style.display = "block";
         statusTitle.textContent = "Reconnexion en cours...";
         statusTitle.style.color = "";
         checkTunnel();
-      }, 6000);
+      }, 5000);
     }
 
     // Lancer la détection dès l'ouverture
