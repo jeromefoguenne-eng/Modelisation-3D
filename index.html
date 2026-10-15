@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio 3D Figurine — M. Jérôme Foguenne</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --border: rgba(255, 255, 255, 0.1);
+      --primary: #00e599;
+      --primary-glow: rgba(0, 229, 153, 0.3);
+      --text: #f0f4fc;
+      --text-muted: #8a99b5;
+      --accent: #3b82f6;
+      --error: #ef4444;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: radial-gradient(circle at 50% 20%, #152238 0%, var(--bg) 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px var(--primary-glow);
+      position: relative;
+    }
+    .badge-bambu {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 229, 153, 0.12);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 40%, #00e599 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+    .status-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(0, 229, 153, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .status-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .status-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .password-info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px dashed rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+    .password-code {
+      font-family: monospace;
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(59, 130, 246, 0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #090d16;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 12px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 229, 153, 0.4);
+    }
+    .footer {
+      margin-top: 25px;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge-bambu">⚡ Bambu Lab A1 Mini — GPU RTX 4070 Ti</div>
+    <h1>Studio 3D Figurine</h1>
+    <div class="subtitle">Portail Permanent — Cours de M. Foguenne</div>
+
+    <div class="password-info">
+      🔑 Mot de passe requis : <span class="password-code">fmttnhech</span>
+    </div>
+
+    <div class="status-box" id="status-box">
+      <div class="spinner" id="spinner"></div>
+      <div class="status-title" id="status-title">Connexion au serveur Studio 3D...</div>
+      <div class="status-desc" id="status-desc">Recherche du lien actif sur la station de calcul de M. Foguenne...</div>
+    </div>
+
+    <div id="action-container" style="display: none;">
+      <a id="direct-btn" href="#" class="btn">🚀 Entrer dans le Studio 3D</a>
+    </div>
+
+    <div class="footer">
+      Lien permanent officiel : <strong>https://tinyurl.com/studio3d-edufog</strong>
+    </div>
+  </div>
+
+  <script>
+    const GITHUB_REPO = "jeromefoguenne-eng/Modelisation-3D";
+    const statusTitle = document.getElementById("status-title");
+    const statusDesc = document.getElementById("status-desc");
+    const spinner = document.getElementById("spinner");
+    const actionContainer = document.getElementById("action-container");
+    const directBtn = document.getElementById("direct-btn");
+
+    async function checkTunnel() {
+      try {
+        // Horodatage pour éviter tout cache navigateur ou CDN
+        const timestamp = Date.now();
+        const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/active_tunnel.json?t=${timestamp}`;
+        
+        const response = await fetch(apiUrl, {
+          cache: "no-store",
+          headers: { "Accept": "application/vnd.github.v3+json" }
+        });
+
+        if (!response.ok) {
+          throw new Error("Impossible de récupérer l'état du serveur.");
+        }
+
+        const data = await response.json();
+        // Décodage base64 du contenu GitHub
+        const decodedContent = atob(data.content);
+        const tunnelConfig = JSON.parse(decodedContent);
+
+        if (tunnelConfig.status === "online" && tunnelConfig.url) {
+          statusTitle.textContent = "Serveur en ligne ! Redirection...";
+          statusDesc.textContent = "Ouverture du Studio 3D en cours (GPU RTX 4070 Ti actif)...";
+          directBtn.href = tunnelConfig.url;
+          actionContainer.style.display = "block";
+          
+          // Redirection immédiate
+          setTimeout(() => {
+            window.location.replace(tunnelConfig.url);
+          }, 400);
+        } else {
+          showOffline("Le serveur est actuellement en veille.");
+        }
+      } catch (err) {
+        showOffline("Le serveur est temporairement éteint ou inaccessible.");
+      }
+    }
+
+    function showOffline(message) {
+      spinner.style.display = "none";
+      statusTitle.innerHTML = "🔴 Serveur Studio 3D hors-ligne";
+      statusTitle.style.color = "#ef4444";
+      statusDesc.innerHTML = `${message}<br><br>Veuillez demander à <strong>M. Foguenne</strong> de lancer l'application sur son ordinateur pour activer la carte graphique.<br><br><small>Vérification automatique toutes les 6 secondes...</small>`;
+      
+      // Réessayer automatiquement après 6 secondes
+      setTimeout(() => {
+        spinner.style.display = "block";
+        statusTitle.textContent = "Reconnexion en cours...";
+        statusTitle.style.color = "";
+        checkTunnel();
+      }, 6000);
+    }
+
+    // Lancer la détection dès l'ouverture
+    checkTunnel();
+  </script>
+</body>
+</html>

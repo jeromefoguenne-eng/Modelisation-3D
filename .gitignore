@@ -20,3 +20,6 @@ inspect_app.py
 *.3mf
 static/demo/*.glb
 static/demo/*.stl
+tunnel.log
+PUBLIC_URL.txt
+.github_token
