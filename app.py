@@ -8,19 +8,16 @@ import uuid
 import time
 import shutil
 from typing import Optional
-from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import torch
 
 from core.engine_360 import (
-    generate_figurine_360_local,
     generate_figurine_360_hunyuan,
-    generate_figurine_360_hunyuan_local,
-    generate_figurine_360_sf3d
+    generate_figurine_360_hunyuan_local
 )
-from core.engine_lithophane import create_pure_relief_mesh
 from core.bambu_validator import validate_and_scale_for_bambu, export_all_formats
 from core.studio_renderer import render_mesh_preview
 
@@ -42,6 +39,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+SITE_PASSWORD = "fmttnhech"
+AUTH_TOKEN_VALUE = "auth_token_fmttnhech_verified"
+AUTH_COOKIE_NAME = "studio3d_session"
+
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    password: str
+
+@app.post("/api/auth/login")
+async def auth_login(req: LoginRequest, response: Response):
+    if req.password == SITE_PASSWORD:
+        response.set_cookie(
+            key=AUTH_COOKIE_NAME,
+            value=AUTH_TOKEN_VALUE,
+            httponly=False,
+            max_age=30 * 24 * 3600,
+            samesite="lax"
+        )
+        return {"success": True, "token": AUTH_TOKEN_VALUE}
+    raise HTTPException(status_code=401, detail="Mot de passe incorrect")
+
+@app.get("/api/auth/check")
+def auth_check(request: Request):
+    token = request.headers.get("X-Site-Auth") or request.cookies.get(AUTH_COOKIE_NAME)
+    return {"authenticated": token == AUTH_TOKEN_VALUE}
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/outputs", StaticFiles(directory=OUTPUTS_DIR), name="outputs")
@@ -117,36 +141,7 @@ def background_generation_task(
 
         is_local_gpu_available = os.path.exists(r"E:\ComfyUI") and not os.environ.get("SPACE_ID")
 
-        if mode == "hunyuan_360_local":
-            if is_local_gpu_available:
-                octree_res = max(256, min(512, int(resolution)))
-                mesh = generate_figurine_360_hunyuan_local(
-                    image_path=image_path,
-                    target_height_mm=target_height_mm,
-                    include_base=include_base,
-                    base_height_mm=base_height_mm,
-                    base_size_mm=base_size_mm,
-                    base_shape=base_shape,
-                    steps=30,
-                    octree_resolution=octree_res,
-                    progress_callback=update_progress
-                )
-            else:
-                # Mode Cloud automatique si déployé sur Hugging Face Spaces
-                octree_res = max(256, min(512, int(resolution)))
-                mesh = generate_figurine_360_hunyuan(
-                    image_path=image_path,
-                    target_height_mm=target_height_mm,
-                    include_base=include_base,
-                    base_height_mm=base_height_mm,
-                    base_size_mm=base_size_mm,
-                    base_shape=base_shape,
-                    steps=40,
-                    octree_resolution=octree_res,
-                    hf_token=hf_token,
-                    progress_callback=update_progress
-                )
-        elif mode == "hunyuan_360":
+        if mode == "hunyuan_360":
             try:
                 octree_res = max(256, min(512, int(resolution)))
                 mesh = generate_figurine_360_hunyuan(
@@ -182,67 +177,34 @@ def background_generation_task(
                     )
                 else:
                     raise e_hy
-        elif mode == "triposr_360":
+        else:
+            # Mode Hunyuan3D-2 Local (RTX 4070 Ti) par défaut
+            octree_res = max(256, min(512, int(resolution)))
             if is_local_gpu_available:
-                mesh = generate_figurine_360_local(
+                mesh = generate_figurine_360_hunyuan_local(
                     image_path=image_path,
                     target_height_mm=target_height_mm,
                     include_base=include_base,
                     base_height_mm=base_height_mm,
                     base_size_mm=base_size_mm,
                     base_shape=base_shape,
-                    resolution=max(384, min(512, int(resolution))),
-                    threshold=20.0,
+                    steps=30,
+                    octree_resolution=octree_res,
                     progress_callback=update_progress
                 )
             else:
-                # En Cloud, bascule automatique sur Stable Fast 3D (SF3D - Stability AI Tripo)
-                mesh = generate_figurine_360_sf3d(
+                mesh = generate_figurine_360_hunyuan(
                     image_path=image_path,
                     target_height_mm=target_height_mm,
                     include_base=include_base,
                     base_height_mm=base_height_mm,
                     base_size_mm=base_size_mm,
                     base_shape=base_shape,
+                    steps=40,
+                    octree_resolution=octree_res,
                     hf_token=hf_token,
                     progress_callback=update_progress
                 )
-        elif mode == "sf3d":
-            mesh = generate_figurine_360_sf3d(
-                image_path=image_path,
-                target_height_mm=target_height_mm,
-                include_base=include_base,
-                base_height_mm=base_height_mm,
-                base_size_mm=base_size_mm,
-                base_shape=base_shape,
-                hf_token=hf_token,
-                progress_callback=update_progress
-            )
-        elif mode == "bas_relief":
-            update_progress(35, "Sculpture du Bas-Relief Haute Fidélité...")
-            mesh = create_pure_relief_mesh(
-                image_path=image_path,
-                target_width_mm=target_height_mm,
-                mode="bas_relief",
-                base_thickness_mm=2.5,
-                relief_depth_mm=4.5,
-                curvature_angle_deg=0.0,
-                resolution_dpi=400
-            )
-        else:
-            octree_res = max(256, min(512, int(resolution)))
-            mesh = generate_figurine_360_hunyuan(
-                image_path=image_path,
-                target_height_mm=target_height_mm,
-                include_base=include_base,
-                base_height_mm=base_height_mm,
-                base_size_mm=base_size_mm,
-                base_shape=base_shape,
-                steps=35,
-                octree_resolution=octree_res,
-                hf_token=hf_token,
-                progress_callback=update_progress
-            )
 
         update_progress(85, "Validation des cotes Bambu Lab A1 Mini et export STL / GLB...")
         metrics = validate_and_scale_for_bambu(
@@ -286,6 +248,7 @@ def background_generation_task(
 
 @app.post("/api/convert")
 async def start_conversion(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: Optional[UploadFile] = File(None),
     demo_image_path: Optional[str] = Form(None),
@@ -299,8 +262,15 @@ async def start_conversion(
     hf_token: Optional[str] = Form(None)
 ):
     """
-    Lance une tâche de modélisation de figurine 3D 360° en arrière-plan.
+    Lance une tâche de modélisation de figurine 3D 360° en arrière-plan (Hunyuan3D uniquement, accès protégé).
     """
+    token = request.headers.get("X-Site-Auth") or request.cookies.get(AUTH_COOKIE_NAME)
+    if token != AUTH_TOKEN_VALUE:
+        raise HTTPException(status_code=401, detail="Accès protégé. Veuillez saisir le mot de passe du site.")
+
+    # Moteur Hunyuan exclusivement
+    if mode not in ("hunyuan_360_local", "hunyuan_360"):
+        mode = "hunyuan_360_local"
     task_id = str(uuid.uuid4())[:8]
     task_upload_dir = os.path.join(UPLOADS_DIR, f"task_{task_id}")
     os.makedirs(task_upload_dir, exist_ok=True)

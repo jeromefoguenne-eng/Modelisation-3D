@@ -14,8 +14,11 @@ let includeBase = true;
 let selectedBaseShape = "auto";
 
 let isShowingPreloadedDemo = true;
+const AUTH_TOKEN_KEY = "studio3d_session";
+const SITE_PASSWORD_FALLBACK = "fmttnhech";
 
 window.addEventListener("DOMContentLoaded", () => {
+  checkAuthentication();
   initThreeJS();
   initEventListeners();
   loadSystemHealth();
@@ -138,19 +141,21 @@ function initEventListeners() {
   const resSlider = document.getElementById("res-slider");
   const resVal = document.getElementById("res-val");
 
-  // Clé API Hugging Face de l'étudiant (mémorisée en localStorage)
-  const tokenInput = document.getElementById("hf-token-input");
-  const btnToggleToken = document.getElementById("btn-toggle-token");
-  if (tokenInput) {
-    tokenInput.value = localStorage.getItem("student_hf_token") || "";
-    tokenInput.addEventListener("input", (e) => {
-      localStorage.setItem("student_hf_token", e.target.value.trim());
+  // Authentification par mot de passe
+  const authForm = document.getElementById("auth-form");
+  if (authForm) {
+    authForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleAuthSubmit();
     });
   }
-  if (btnToggleToken && tokenInput) {
-    btnToggleToken.addEventListener("click", () => {
-      tokenInput.type = tokenInput.type === "password" ? "text" : "password";
-      btnToggleToken.textContent = tokenInput.type === "password" ? "👁️" : "🙈";
+
+  const btnTogglePwd = document.getElementById("btn-toggle-pwd");
+  const pwdInput = document.getElementById("site-password-input");
+  if (btnTogglePwd && pwdInput) {
+    btnTogglePwd.addEventListener("click", () => {
+      pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+      btnTogglePwd.textContent = pwdInput.type === "password" ? "👁️" : "🙈";
     });
   }
 
@@ -363,7 +368,7 @@ async function startConversionProcess() {
     return;
   }
 
-  formData.append("mode", selectedMode);
+  formData.append("mode", "hunyuan_360_local");
   formData.append("target_height_mm", document.getElementById("height-slider").value);
   formData.append("include_base", includeBase ? "true" : "false");
   formData.append("base_height_mm", document.getElementById("base-slider").value);
@@ -371,16 +376,28 @@ async function startConversionProcess() {
   formData.append("base_shape", selectedBaseShape);
   formData.append("resolution", document.getElementById("res-slider").value);
 
-  const studentToken = document.getElementById("hf-token-input") ? document.getElementById("hf-token-input").value.trim() : "";
-  if (studentToken) {
-    formData.append("hf_token", studentToken);
-  }
-
   try {
+    const sessionToken = localStorage.getItem(AUTH_TOKEN_KEY) || "";
     const res = await fetch("/api/convert", {
       method: "POST",
+      headers: {
+        "X-Site-Auth": sessionToken
+      },
       body: formData
     });
+
+    if (res.status === 401) {
+      overlay.style.display = "none";
+      btn.disabled = false;
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      const authOverlay = document.getElementById("auth-overlay");
+      if (authOverlay) {
+        authOverlay.style.display = "flex";
+        authOverlay.style.opacity = "1";
+        document.getElementById("auth-error-msg").textContent = "Session expirée. Veuillez entrer le mot de passe.";
+      }
+      return;
+    }
 
     if (!res.ok) {
       const errData = await res.json();
@@ -529,11 +546,11 @@ function loadGLBModel(glbUrl) {
   );
 }
 
-// Recentrage parfait de la caméra au milieu de l'écran
+// Recentrage parfait de la figurine dans l'espace 3D (visibilité intégrale sans scroll, zoom fluide)
 function recenterCamera() {
   if (!currentMesh) {
-    camera.position.set(0, 60, 180);
-    controls.target.set(0, 40, 0);
+    camera.position.set(0, 70, 200);
+    controls.target.set(0, 45, 0);
     controls.update();
     return;
   }
@@ -541,16 +558,111 @@ function recenterCamera() {
   const worldBox = new THREE.Box3().setFromObject(currentMesh);
   const worldCenter = worldBox.getCenter(new THREE.Vector3());
   const worldSize = worldBox.getSize(new THREE.Vector3());
-  const maxDim = Math.max(worldSize.x, worldSize.y, worldSize.z, 60);
 
-  // Positionner la mire exactement au centre géométrique du modèle
-  controls.target.set(0, worldCenter.y, 0);
-  // Placer la caméra face au modèle, légèrement surélevée, zoomée pour une visibilité optimale
-  camera.position.set(0, worldCenter.y + (maxDim * 0.12), maxDim * 1.35);
+  const container = document.getElementById("canvas-container");
+  const width = (container && container.clientWidth) ? container.clientWidth : 800;
+  const height = (container && container.clientHeight) ? container.clientHeight : 600;
+  const aspect = width / height;
+
+  const vFovRad = (camera.fov * Math.PI) / 180;
+  const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
+
+  // Distance calculée pour faire entrer toute la figurine (hauteur et largeur) avec 20% de marge de respiration
+  const distY = (worldSize.y / 2) / Math.tan(vFovRad / 2) * 1.25;
+  const distX = (Math.max(worldSize.x, worldSize.z) / 2) / Math.tan(hFovRad / 2) * 1.25;
+  const dist = Math.max(distY, distX, 130);
+
+  // Mire légèrement abaissée pour dégager le socle au-dessus de la barre métrique
+  const targetY = worldCenter.y - (worldSize.y * 0.06);
+  controls.target.set(0, targetY, 0);
+
+  // Caméra positionnée face au modèle
+  camera.position.set(0, targetY + (worldSize.y * 0.12), dist);
   camera.near = 0.5;
-  camera.far = Math.max(1000, maxDim * 10);
+  camera.far = Math.max(3000, dist * 10);
   camera.updateProjectionMatrix();
+
+  // Contrôles de zoom fluides (molette et tactile)
+  controls.enableZoom = true;
+  controls.minDistance = 15;
+  controls.maxDistance = dist * 5;
   controls.update();
+}
+
+// Vérification de l'authentification (mot de passe "fmttnhech")
+function checkAuthentication() {
+  const overlay = document.getElementById("auth-overlay");
+  if (!overlay) return;
+
+  const sessionToken = localStorage.getItem(AUTH_TOKEN_KEY);
+  const localPwd = localStorage.getItem("studio3d_password");
+
+  if (sessionToken === "auth_token_fmttnhech_verified" || localPwd === SITE_PASSWORD_FALLBACK) {
+    overlay.style.display = "none";
+  } else {
+    overlay.style.display = "flex";
+    setTimeout(() => {
+      const inp = document.getElementById("site-password-input");
+      if (inp) inp.focus();
+    }, 150);
+  }
+}
+
+// Soumission du mot de passe
+async function handleAuthSubmit() {
+  const pwdInput = document.getElementById("site-password-input");
+  const errMsg = document.getElementById("auth-error-msg");
+  const btnSubmit = document.getElementById("btn-submit-auth");
+  const overlay = document.getElementById("auth-overlay");
+
+  if (!pwdInput) return;
+  const pwd = pwdInput.value.trim();
+  errMsg.textContent = "";
+
+  if (!pwd) {
+    errMsg.textContent = "Veuillez entrer le mot de passe.";
+    return;
+  }
+
+  try {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Vérification...";
+
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pwd })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      localStorage.setItem("studio3d_password", pwd);
+      document.cookie = `studio3d_session=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+      overlay.style.transition = "opacity 0.3s ease";
+      overlay.style.opacity = "0";
+      setTimeout(() => {
+        overlay.style.display = "none";
+        overlay.style.opacity = "1";
+      }, 300);
+    } else {
+      errMsg.textContent = data.detail || "Mot de passe incorrect.";
+      pwdInput.focus();
+      pwdInput.select();
+    }
+  } catch (err) {
+    // Repli de secours local si le mot de passe correspond
+    if (pwd === SITE_PASSWORD_FALLBACK) {
+      localStorage.setItem(AUTH_TOKEN_KEY, "auth_token_fmttnhech_verified");
+      localStorage.setItem("studio3d_password", pwd);
+      overlay.style.display = "none";
+    } else {
+      errMsg.textContent = "Mot de passe incorrect.";
+    }
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = "Déverrouiller l'accès";
+  }
 }
 
 // 10. Changement de matériaux PBR

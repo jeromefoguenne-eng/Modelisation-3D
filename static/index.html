@@ -47,65 +47,16 @@
         </div>
       </section>
 
-      <!-- 2. Choix du Moteur 360° -->
+      <!-- 2. Moteur Figurine 3D 360° (Hunyuan3D-2 Local RTX 4070 Ti uniquement) -->
       <section class="panel-section">
         <div class="panel-title">2. Moteur Figurine 3D (360°)</div>
-        <div class="mode-selector">
-          <div class="mode-card active" data-mode="hunyuan_360_local">
-            <div class="mode-card-header">
-              <span>Hunyuan3D-2 Local (RTX 4070 Ti)</span>
-              <span class="badge-rec">SOTA LOCAL</span>
-            </div>
-            <div class="mode-card-desc">
-              Diffusion Transformer 3.0B en local sur RTX 4070 Ti : ~10s, fidélité anatomique maximale (visages, doigts), illimité et 100% hors-ligne.
-            </div>
+        <div class="mode-card active" data-mode="hunyuan_360_local" style="cursor: default; border-color: var(--accent-bambu); background: rgba(0, 174, 66, 0.08);">
+          <div class="mode-card-header">
+            <span style="font-weight: 700; color: #fff;">Hunyuan3D-2 Local (RTX 4070 Ti)</span>
+            <span class="badge-rec">GPU DÉDIÉ • ACTIF</span>
           </div>
-
-          <div class="mode-card" data-mode="triposr_360">
-            <div class="mode-card-header">
-              <span>TripoSR Boosté + Micro-Sculpture (RTX 4070 Ti)</span>
-              <span class="badge-rec">RELIEF GRAVÉ • 12s</span>
-            </div>
-            <div class="mode-card-desc">
-              Grille 450³ (~185k faces) avec micro-sculpture par déplacement de normales : yeux, nez et plis gravés physiquement en 3D.
-            </div>
-          </div>
-
-          <div class="mode-card" data-mode="sf3d">
-            <div class="mode-card-header">
-              <span>Stable Fast 3D - SF3D (Stability AI)</span>
-              <span class="badge-rec">UV & PBR • 0.5s</span>
-            </div>
-            <div class="mode-card-desc">
-              Successeur de TripoSR par Stability AI : génération ultra-rapide avec vrai dépliage UV complet et textures PBR.
-            </div>
-          </div>
-
-          <div class="mode-card" data-mode="hunyuan_360">
-            <div class="mode-card-header">
-              <span>Hunyuan3D Cloud (Pour Étudiants)</span>
-              <span class="badge-rec">CLOUD HF</span>
-            </div>
-            <div class="mode-card-desc">
-              Serveurs Cloud ZeroGPU Hugging Face : idéal pour vos étudiants avec leur clé API personnelle gratuite (avec repli automatique sur le GPU local).
-            </div>
-          </div>
-        </div>
-
-        <!-- Clé API personnelle pour étudiants -->
-        <div class="api-key-box" style="margin-top: 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label for="hf-token-input" style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-              🔑 <span>Clé API Hugging Face (Pour vos Étudiants)</span>
-            </label>
-            <span style="font-size: 10px; padding: 2px 6px; background: rgba(0, 174, 66, 0.15); color: var(--accent-bambu); border-radius: 4px; font-weight: 600;">100% Gratuit</span>
-          </div>
-          <div style="position: relative; display: flex; align-items: center;">
-            <input type="password" id="hf-token-input" placeholder="hf_... (Token personnel de l'étudiant)" style="width: 100%; background: #0f1115; border: 1px solid var(--border-color); color: #fff; padding: 8px 34px 8px 10px; border-radius: 6px; font-size: 12px; font-family: monospace;">
-            <button type="button" id="btn-toggle-token" style="position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;" title="Afficher/Masquer le token">👁️</button>
-          </div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
-            💡 Pour vos étudiants (quand l'appli est en ligne) : collez votre token Hugging Face personnel. Mémorisé <strong>localement dans le navigateur</strong> de chaque étudiant. <a href="https://huggingface.co/settings/tokens" target="_blank" style="color: var(--accent-bambu); text-decoration: underline;">Créer un token gratuit (Read)</a>
+          <div class="mode-card-desc" style="color: #cad1db; margin-top: 6px; line-height: 1.45;">
+            Diffusion Transformer 3.0B exécuté directement sur votre carte graphique RTX 4070 Ti (12 Go VRAM). Génération ultra-rapide (~10 à 25s), fidélité anatomique maximale (visages, doigts, textures 360°), illimité et 100% hors-ligne.
           </div>
         </div>
       </section>
@@ -260,8 +211,26 @@
         </div>
       </div>
     </section>
-  </main>
+  <!-- Modal d'authentification par mot de passe -->
+  <div id="auth-overlay" class="auth-overlay" style="display: none;">
+    <div class="auth-card">
+      <div class="auth-icon">🔒</div>
+      <h2>Accès Sécurisé</h2>
+      <p class="auth-subtitle">Ce studio 3D est réservé aux étudiants de Jérôme Foguenne.<br>Veuillez entrer le mot de passe d'accès pour déverrouiller la modélisation.</p>
+      
+      <form id="auth-form">
+        <div class="auth-input-group">
+          <input type="password" id="site-password-input" placeholder="Mot de passe d'accès..." autocomplete="current-password" autofocus required>
+          <button type="button" id="btn-toggle-pwd" title="Afficher/Masquer le mot de passe">👁️</button>
+        </div>
+        <div id="auth-error-msg" class="auth-error"></div>
+        <button type="submit" id="btn-submit-auth" class="btn-primary" style="width: 100%; margin-top: 14px; padding: 12px; font-size: 14px; justify-content: center;">
+          Déverrouiller l'accès
+        </button>
+      </form>
+    </div>
+  </div>
 
-  <script src="/static/app.js?v=8.0"></script>
+  <script src="/static/app.js?v=9.0"></script>
 </body>
 </html>
