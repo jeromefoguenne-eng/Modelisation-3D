@@ -139,15 +139,19 @@
       <!-- Barre d'outils 3D -->
       <div class="viewport-toolbar">
         <div class="toolbar-group">
-          <button type="button" class="tool-btn active" data-mat="vertex">🎨 Couleurs 360° Studio</button>
-          <button type="button" class="tool-btn" data-mat="white">PLA Blanc</button>
+          <button type="button" class="tool-btn active" data-mat="white" id="btn-pla" title="Cliquer pour changer la couleur du filament PLA" style="display: inline-flex; align-items: center; gap: 7px; position: relative;">
+            <span id="pla-color-preview" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #f0f2f5; border: 1.5px solid #a0aec0; box-shadow: 0 0 3px rgba(0,0,0,0.3);"></span>
+            <span id="pla-label">PLA Blanc</span>
+            <input type="color" id="pla-color-picker" value="#f0f2f5" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;">
+          </button>
+          <button type="button" class="tool-btn" data-mat="vertex">🎨 Couleurs 360° Studio</button>
           <button type="button" class="tool-btn" data-mat="bambu-green">Vert Bambu</button>
           <button type="button" class="tool-btn" data-mat="bronze">Bronze</button>
           <button type="button" class="tool-btn" data-mat="marble">Marbre</button>
-          <button type="button" class="tool-btn" data-mat="wireframe">Maillage 2.7M (Ultra-HD)</button>
+          <button type="button" class="tool-btn" data-mat="wireframe">Maillage 3D</button>
         </div>
         <div class="toolbar-group">
-          <button type="button" class="tool-btn active" id="btn-autorotate">🔄 Rotation 360°: ON</button>
+          <button type="button" class="tool-btn" id="btn-autorotate">🔄 Rotation 360°: OFF</button>
           <button type="button" class="tool-btn" id="btn-reset-cam">Recentrer</button>
         </div>
       </div>

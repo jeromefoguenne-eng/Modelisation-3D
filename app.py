@@ -102,12 +102,14 @@ def health():
 
 @app.get("/api/demo-images")
 def list_demo_images():
-    """Renvoie les images de test disponibles."""
+    """Renvoie les images de test disponibles (sans Van Aert)."""
     demos = []
     seen_names = set()
     if os.path.exists(UPLOADS_DIR):
         for f in sorted(os.listdir(UPLOADS_DIR)):
             if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                if any(kw in f.lower() for kw in ["van_aert", "vanaert", "van aert"]):
+                    continue
                 full_p = os.path.join(UPLOADS_DIR, f)
                 if os.path.isfile(full_p):
                     demos.append({

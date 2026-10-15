@@ -14,6 +14,7 @@ let includeBase = true;
 let selectedBaseShape = "auto";
 
 let isShowingPreloadedDemo = true;
+let currentPlaColor = "#f0f2f5";
 const AUTH_TOKEN_KEY = "studio3d_session";
 const SITE_PASSWORD_FALLBACK = "fmttnhech";
 
@@ -27,17 +28,20 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadPreloadedSotaShowcase(withBase) {
-  const folder = withBase ? "vanaert_2.7m_with_base" : "vanaert_2.7m_no_base";
-  const metrics = withBase
-    ? { dimensions_mm: { x: 77.0, y: 125.0, z: 118.5 }, volume_cm3: 70.30, weight_pla_g: 33.1, print_time_estimate: "1h 15m", face_count: 2687500 }
-    : { dimensions_mm: { x: 52.8, y: 120.0, z: 106.5 }, volume_cm3: 34.49, weight_pla_g: 16.2, print_time_estimate: "48 min", face_count: 2687270 };
+  const metrics = {
+    dimensions_mm: { x: 62.4, y: 120.0, z: 58.2 },
+    volume_cm3: 38.5,
+    weight_pla_g: 18.1,
+    print_time_estimate: "52 min",
+    face_count: 534920
+  };
 
   handleTaskSuccess({
     include_base: withBase,
     metrics: metrics,
     files: {
-      stl: `/outputs/${folder}/model_bambu.stl`,
-      glb: `/outputs/${folder}/model_bambu.glb`
+      stl: `/outputs/version_clown/model_bambu.stl`,
+      glb: `/outputs/version_clown/model_bambu.glb`
     }
   });
 }
@@ -69,7 +73,7 @@ function initThreeJS() {
   controls.dampingFactor = 0.05;
   controls.maxDistance = 600;
   controls.minDistance = 20;
-  controls.autoRotate = true;
+  controls.autoRotate = false;
   controls.autoRotateSpeed = 2.0;
 
   // Éclairage Studio PBR 360° Haute Visibilité
@@ -254,11 +258,37 @@ function initEventListeners() {
     });
   });
 
-  // Auto-rotation 360°
+  // Bouton PLA et sélecteur de couleur interactif
+  const btnPla = document.getElementById("btn-pla");
+  const plaPicker = document.getElementById("pla-color-picker");
+  const plaPreview = document.getElementById("pla-color-preview");
+  const plaLabel = document.getElementById("pla-label");
+
+  if (btnPla && plaPicker) {
+    btnPla.addEventListener("click", (e) => {
+      // Déclenche l'ouverture de la palette de couleurs au clic
+      plaPicker.click();
+    });
+
+    plaPicker.addEventListener("input", (e) => {
+      currentPlaColor = e.target.value;
+      if (plaPreview) plaPreview.style.backgroundColor = currentPlaColor;
+      if (plaLabel) {
+        plaLabel.textContent = (currentPlaColor.toLowerCase() === "#f0f2f5" || currentPlaColor.toLowerCase() === "#ffffff")
+          ? "PLA Blanc"
+          : `PLA (${currentPlaColor.toUpperCase()})`;
+      }
+      document.querySelectorAll(".tool-btn[data-mat]").forEach((b) => b.classList.remove("active"));
+      btnPla.classList.add("active");
+      applyMaterial("white");
+    });
+  }
+
+  // Auto-rotation 360° (Désactivée par défaut, s'active au clic)
   const btnAutoRotate = document.getElementById("btn-autorotate");
   btnAutoRotate.addEventListener("click", () => {
     controls.autoRotate = !controls.autoRotate;
-    btnAutoRotate.textContent = controls.autoRotate ? "🔄 Rotation 360°: ON" : "⏸ Rotation 360°: OFF";
+    btnAutoRotate.textContent = controls.autoRotate ? "🔄 Rotation 360°: ON" : "🔄 Rotation 360°: OFF";
     btnAutoRotate.classList.toggle("active", controls.autoRotate);
   });
 
@@ -312,8 +342,8 @@ async function loadDemoGallery() {
         });
         strip.appendChild(img);
 
-        // Pré-sélectionner Van Aert ou la première image par défaut pour que le bouton soit actif d'office
-        if (idx === 0 || d.name.toLowerCase().includes("van aert")) {
+        // Pré-sélectionner la première image par défaut pour que le bouton soit actif d'office
+        if (idx === 0) {
           img.click();
         }
       });
@@ -688,7 +718,7 @@ function applyMaterial(type) {
         }
       } else if (type === "white" || (type === "vertex" && !child.userData.hasVertexColors && !child.userData.hasTexture)) {
         child.material = new THREE.MeshStandardMaterial({
-          color: 0xf0f2f5,
+          color: new THREE.Color(currentPlaColor || "#f0f2f5"),
           roughness: 0.35,
           metalness: 0.08,
           side: THREE.DoubleSide
