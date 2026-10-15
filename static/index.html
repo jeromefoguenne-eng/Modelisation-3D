@@ -82,12 +82,12 @@
         <div class="form-group" id="base-size-group">
           <div class="form-row">
             <label for="base-size-slider">Taille / Diamètre du socle :</label>
-            <span id="base-size-val" style="font-weight: 600; color: var(--accent-bambu);">50 mm</span>
+            <span id="base-size-val" style="font-weight: 600; color: var(--accent-bambu);">40 mm</span>
           </div>
-          <input type="range" id="base-size-slider" min="20" max="160" value="50" step="5">
+          <input type="range" id="base-size-slider" min="10" max="160" value="40" step="2">
           <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-            <span>Discret (20 mm)</span>
-            <span>Standard (50 mm)</span>
+            <span>Mini (10 mm)</span>
+            <span>Standard (40 mm)</span>
             <span>Grand (160 mm)</span>
           </div>
         </div>
@@ -106,17 +106,29 @@
         <div class="form-group" id="base-height-group">
           <div class="form-row">
             <label for="base-slider">Épaisseur du socle :</label>
-            <span id="base-val" style="font-weight: 600; color: var(--accent-bambu);">4 mm</span>
+            <span id="base-val" style="font-weight: 600; color: var(--accent-bambu);">3 mm</span>
           </div>
-          <input type="range" id="base-slider" min="2" max="12" value="4" step="1">
+          <input type="range" id="base-slider" min="1.5" max="12" value="3" step="0.5">
         </div>
 
         <div class="form-group">
           <div class="form-row">
             <label for="height-slider">Hauteur de la figurine :</label>
-            <span id="height-val" style="font-weight: 600; color: var(--accent-bambu);">120 mm</span>
+            <span id="height-val" style="font-weight: 600; color: var(--accent-bambu);">100 mm</span>
           </div>
-          <input type="range" id="height-slider" min="50" max="175" value="120" step="5">
+          <input type="range" id="height-slider" min="20" max="175" value="100" step="1">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            <span>Miniature (20 mm)</span>
+            <span>Standard (100 mm)</span>
+            <span>Maxi (175 mm)</span>
+          </div>
+          <!-- Préréglages rapides de taille -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px;">
+            <button type="button" class="tool-btn height-preset-btn" data-height="20" style="padding: 5px 2px; font-size: 10px;">🔍 20 mm</button>
+            <button type="button" class="tool-btn height-preset-btn" data-height="28" style="padding: 5px 2px; font-size: 10px;">🎲 28 mm</button>
+            <button type="button" class="tool-btn height-preset-btn" data-height="50" style="padding: 5px 2px; font-size: 10px;">📏 50 mm</button>
+            <button type="button" class="tool-btn height-preset-btn active" data-height="100" style="padding: 5px 2px; font-size: 10px;">⭐ 100 mm</button>
+          </div>
         </div>
 
         <div class="form-group">

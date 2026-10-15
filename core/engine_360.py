@@ -135,8 +135,12 @@ def postprocess_360_figurine(
     # 5. Ajout optionnel du socle selon la taille choisie par l'utilisateur
     if include_base:
         ext_x, ext_y, ext_z = mesh.extents
-        target_diam = max(20.0, min(175.0, float(base_size_mm)))
+        target_diam = max(8.0, min(175.0, float(base_size_mm)))
         aspect_ratio = ext_z / max(ext_x, 1e-4)
+
+        # Marge proportionnelle pour que les petites figurines (ex: 20mm) aient un socle élégant
+        margin = min(4.0, max(1.2, min(ext_x, ext_z) * 0.15))
+        margin_oval = min(3.0, max(1.0, min(ext_x, ext_z) * 0.12))
 
         if base_shape == "round":
             rx = target_diam / 2.0
@@ -144,23 +148,23 @@ def postprocess_360_figurine(
         elif base_shape == "oval":
             if aspect_ratio > 1.2:
                 rz = target_diam / 2.0
-                rx = max((ext_x / 2.0) + 3.0, (target_diam / 2.0) * 0.55)
+                rx = max((ext_x / 2.0) + margin_oval, (target_diam / 2.0) * 0.55)
             elif aspect_ratio < 0.8:
                 rx = target_diam / 2.0
-                rz = max((ext_z / 2.0) + 3.0, (target_diam / 2.0) * 0.55)
+                rz = max((ext_z / 2.0) + margin_oval, (target_diam / 2.0) * 0.55)
             else:
                 rx = target_diam / 2.0
                 rz = target_diam / 2.0
         else:  # "auto"
-            # Si modèle allongé (ex: vélo en longueur Z)
+            # Si modèle allongé (ex: véhicule, quadrupède en longueur)
             if aspect_ratio > 1.35:
-                rz = max((ext_z / 2.0) + 4.0, target_diam / 2.0)
-                rx = max((ext_x / 2.0) + 4.0, rz * 0.50)
+                rz = max((ext_z / 2.0) + margin, target_diam / 2.0)
+                rx = max((ext_x / 2.0) + margin, rz * 0.50)
             elif aspect_ratio < 0.7:
-                rx = max((ext_x / 2.0) + 4.0, target_diam / 2.0)
-                rz = max((ext_z / 2.0) + 4.0, rx * 0.50)
+                rx = max((ext_x / 2.0) + margin, target_diam / 2.0)
+                rz = max((ext_z / 2.0) + margin, rx * 0.50)
             else:
-                # Modèle debout / équilibré (clown, personnage, animal) : Disque rond paramétrable
+                # Modèle debout / équilibré : Disque rond paramétrable
                 rx = target_diam / 2.0
                 rz = target_diam / 2.0
 

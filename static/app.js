@@ -209,8 +209,41 @@ function initEventListeners() {
     baseVal.textContent = `${e.target.value} mm`;
   });
 
+  // Préréglages rapides de hauteur (20mm, 28mm, 50mm, 100mm)
+  document.querySelectorAll(".height-preset-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".height-preset-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const h = btn.getAttribute("data-height");
+      heightSlider.value = h;
+      heightVal.textContent = `${h} mm`;
+
+      // Si miniature (<= 30mm), adapter automatiquement la taille du socle pour des proportions parfaites
+      if (parseInt(h) <= 30 && baseSizeSlider) {
+        const recommendedBase = parseInt(h) <= 22 ? 20 : 25;
+        if (parseInt(baseSizeSlider.value) > 30) {
+          baseSizeSlider.value = recommendedBase;
+          if (baseSizeVal) baseSizeVal.textContent = `${recommendedBase} mm`;
+        }
+        if (baseSlider && parseFloat(baseSlider.value) > 3) {
+          baseSlider.value = 2.5;
+          if (baseVal) baseVal.textContent = "2.5 mm";
+        }
+      }
+    });
+  });
+
   heightSlider.addEventListener("input", (e) => {
-    heightVal.textContent = `${e.target.value} mm`;
+    const val = e.target.value;
+    heightVal.textContent = `${val} mm`;
+    // Mettre à jour l'état actif des boutons préréglés
+    document.querySelectorAll(".height-preset-btn").forEach((b) => {
+      if (b.getAttribute("data-height") === val) {
+        b.classList.add("active");
+      } else {
+        b.classList.remove("active");
+      }
+    });
   });
 
   resSlider.addEventListener("input", (e) => {
@@ -597,10 +630,11 @@ function recenterCamera() {
   const vFovRad = (camera.fov * Math.PI) / 180;
   const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
 
-  // Distance calculée pour faire entrer toute la figurine (hauteur et largeur) avec 20% de marge de respiration
+  // Distance calculée pour faire entrer toute la figurine (hauteur et largeur) avec marge de respiration
   const distY = (worldSize.y / 2) / Math.tan(vFovRad / 2) * 1.25;
   const distX = (Math.max(worldSize.x, worldSize.z) / 2) / Math.tan(hFovRad / 2) * 1.25;
-  const dist = Math.max(distY, distX, 130);
+  // S'adapte parfaitement aux miniatures de 20mm comme aux grandes statuettes de 175mm
+  const dist = Math.max(distY, distX, 25);
 
   // Mire légèrement abaissée pour dégager le socle au-dessus de la barre métrique
   const targetY = worldCenter.y - (worldSize.y * 0.06);
@@ -608,13 +642,13 @@ function recenterCamera() {
 
   // Caméra positionnée face au modèle
   camera.position.set(0, targetY + (worldSize.y * 0.12), dist);
-  camera.near = 0.5;
+  camera.near = 0.2;
   camera.far = Math.max(3000, dist * 10);
   camera.updateProjectionMatrix();
 
-  // Contrôles de zoom fluides (molette et tactile)
+  // Contrôles de zoom fluides (molette et tactile, zoom très proche sur les détails de miniatures)
   controls.enableZoom = true;
-  controls.minDistance = 15;
+  controls.minDistance = 3;
   controls.maxDistance = dist * 5;
   controls.update();
 }
