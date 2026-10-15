@@ -14,6 +14,14 @@ import atexit
 import subprocess
 import urllib.request
 
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CLOUDFLARED_PATH = os.path.join(BASE_DIR, "cloudflared.exe")
 TUNNEL_LOG = os.path.join(BASE_DIR, "tunnel.log")
