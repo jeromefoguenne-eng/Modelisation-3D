@@ -57,7 +57,7 @@ function initThreeJS() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.35;
 
   container.appendChild(renderer.domElement);
 
@@ -69,11 +69,11 @@ function initThreeJS() {
   controls.autoRotate = true;
   controls.autoRotateSpeed = 2.0;
 
-  // Éclairage Studio PBR 360°
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  // Éclairage Studio PBR 360° Haute Visibilité
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
   scene.add(ambientLight);
 
-  const keyLight = new THREE.DirectionalLight(0xfff6ea, 1.4);
+  const keyLight = new THREE.DirectionalLight(0xfff8ee, 1.8);
   keyLight.position.set(120, 180, 120);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.width = 2048;
@@ -88,12 +88,12 @@ function initThreeJS() {
   keyLight.shadow.normalBias = 0.04;
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0x90b4e8, 0.85);
+  const fillLight = new THREE.DirectionalLight(0xa5c5f5, 1.25);
   fillLight.position.set(-120, 100, -100);
   scene.add(fillLight);
 
-  const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
-  rimLight.position.set(0, 120, -150);
+  const rimLight = new THREE.DirectionalLight(0xffffff, 1.3);
+  rimLight.position.set(0, 140, -150);
   scene.add(rimLight);
 
   // Plateau d'impression Bambu Lab A1 Mini (Grille 180x180 mm)
@@ -258,18 +258,7 @@ function initEventListeners() {
   });
 
   // Recentrer vue
-  document.getElementById("btn-reset-cam").addEventListener("click", () => {
-    if (currentMesh) {
-      const box = new THREE.Box3().setFromObject(currentMesh);
-      const size = box.getSize(new THREE.Vector3());
-      controls.target.set(0, size.y * 0.48, 0);
-      camera.position.set(0, size.y * 0.65, Math.max(size.x, size.y, size.z) * 1.75);
-    } else {
-      camera.position.set(0, 80, 210);
-      controls.target.set(0, 40, 0);
-    }
-    controls.update();
-  });
+  document.getElementById("btn-reset-cam").addEventListener("click", recenterCamera);
 
   // Bouton de lancement
   btnGenerate.addEventListener("click", startConversionProcess);
@@ -529,11 +518,8 @@ function loadGLBModel(glbUrl) {
 
       scene.add(currentMesh);
 
-      // Cadrage caméra idéal pour statuette 360°
-      const maxDim = Math.max(size.x, size.y, size.z);
-      camera.position.set(0, size.y * 0.65, maxDim * 1.75);
-      controls.target.set(0, size.y * 0.48, 0);
-      controls.update();
+      // Cadrage automatique centré et lumineux pour statuette 360°
+      recenterCamera();
     },
     undefined,
     (err) => {
@@ -541,6 +527,30 @@ function loadGLBModel(glbUrl) {
       alert("Erreur de chargement du modèle 3D dans le visualiseur.");
     }
   );
+}
+
+// Recentrage parfait de la caméra au milieu de l'écran
+function recenterCamera() {
+  if (!currentMesh) {
+    camera.position.set(0, 60, 180);
+    controls.target.set(0, 40, 0);
+    controls.update();
+    return;
+  }
+  currentMesh.updateMatrixWorld(true);
+  const worldBox = new THREE.Box3().setFromObject(currentMesh);
+  const worldCenter = worldBox.getCenter(new THREE.Vector3());
+  const worldSize = worldBox.getSize(new THREE.Vector3());
+  const maxDim = Math.max(worldSize.x, worldSize.y, worldSize.z, 60);
+
+  // Positionner la mire exactement au centre géométrique du modèle
+  controls.target.set(0, worldCenter.y, 0);
+  // Placer la caméra face au modèle, légèrement surélevée, zoomée pour une visibilité optimale
+  camera.position.set(0, worldCenter.y + (maxDim * 0.12), maxDim * 1.35);
+  camera.near = 0.5;
+  camera.far = Math.max(1000, maxDim * 10);
+  camera.updateProjectionMatrix();
+  controls.update();
 }
 
 // 10. Changement de matériaux PBR
