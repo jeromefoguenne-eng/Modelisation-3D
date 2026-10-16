@@ -72,8 +72,8 @@ def validate_and_scale_for_bambu(
     # Estimation PLA : Densité 1.24 g/cm3, 15% infill + 3 parois (~38% du volume plein)
     estimated_weight_g = round(volume_cm3 * 1.24 * 0.38, 1)
 
-    # Estimation temps d'impression Bambu A1 Mini (adapté de la miniature 20mm aux grandes pièces)
-    estimated_time_minutes = int(max(6, round(estimated_weight_g * 1.6 + (dy / 0.20) * 0.06)))
+    # Estimation temps d'impression Bambu A1 Mini (adapté du micro pion 10mm aux grandes pièces)
+    estimated_time_minutes = int(max(4, round(estimated_weight_g * 1.6 + (dy / 0.20) * 0.06)))
     hours = estimated_time_minutes // 60
     mins = estimated_time_minutes % 60
     time_str = f"{hours}h {mins:02d}m" if hours > 0 else f"{mins} min"

@@ -135,12 +135,12 @@ def postprocess_360_figurine(
     # 5. Ajout optionnel du socle selon la taille choisie par l'utilisateur
     if include_base:
         ext_x, ext_y, ext_z = mesh.extents
-        target_diam = max(8.0, min(175.0, float(base_size_mm)))
+        target_diam = max(4.0, min(175.0, float(base_size_mm)))
         aspect_ratio = ext_z / max(ext_x, 1e-4)
 
-        # Marge proportionnelle pour que les petites figurines (ex: 20mm) aient un socle élégant
-        margin = min(4.0, max(1.2, min(ext_x, ext_z) * 0.15))
-        margin_oval = min(3.0, max(1.0, min(ext_x, ext_z) * 0.12))
+        # Marge proportionnelle pour que même un micro pion (10mm) conserve un socle discret et fin
+        margin = min(4.0, max(0.6, min(ext_x, ext_z) * 0.12))
+        margin_oval = min(3.0, max(0.5, min(ext_x, ext_z) * 0.10))
 
         if base_shape == "round":
             rx = target_diam / 2.0
@@ -178,8 +178,8 @@ def postprocess_360_figurine(
             cyl_colors = np.full((len(cyl.vertices), 4), [65, 70, 80, 255], dtype=np.uint8)
             cyl.visual.vertex_colors = cyl_colors
 
-        # Ancrer le bas des roues/pieds de 1.8 mm dans le socle pour une tenue mécanique parfaite
-        overlap_mm = min(1.8, base_height_mm * 0.4)
+        # Ancrer le bas du modèle dans le socle (maximum 8% de la hauteur du modèle pour ne pas engloutir les micro pions)
+        overlap_mm = min(1.8, base_height_mm * 0.35, ext_y * 0.08)
         cyl.apply_translation([0, (base_height_mm / 2.0) - overlap_mm, 0])
         mesh.apply_translation([0, base_height_mm - overlap_mm, 0])
 

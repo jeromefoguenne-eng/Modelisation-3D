@@ -218,16 +218,25 @@ function initEventListeners() {
       heightSlider.value = h;
       heightVal.textContent = `${h} mm`;
 
-      // Si miniature (<= 30mm), adapter automatiquement la taille du socle pour des proportions parfaites
-      if (parseInt(h) <= 30 && baseSizeSlider) {
-        const recommendedBase = parseInt(h) <= 22 ? 20 : 25;
-        if (parseInt(baseSizeSlider.value) > 30) {
+      // Si miniature ou micro pion (<= 30mm), adapter automatiquement la taille du socle pour des proportions parfaites
+      const hInt = parseInt(h);
+      if (hInt <= 30 && baseSizeSlider) {
+        let recommendedBase = 25;
+        let recommendedThickness = 2.5;
+        if (hInt <= 12) {
+          recommendedBase = 10;
+          recommendedThickness = 1.5;
+        } else if (hInt <= 22) {
+          recommendedBase = 18;
+          recommendedThickness = 2.0;
+        }
+        if (parseInt(baseSizeSlider.value) > recommendedBase + 5) {
           baseSizeSlider.value = recommendedBase;
           if (baseSizeVal) baseSizeVal.textContent = `${recommendedBase} mm`;
         }
-        if (baseSlider && parseFloat(baseSlider.value) > 3) {
-          baseSlider.value = 2.5;
-          if (baseVal) baseVal.textContent = "2.5 mm";
+        if (baseSlider && parseFloat(baseSlider.value) > recommendedThickness + 0.5) {
+          baseSlider.value = recommendedThickness;
+          if (baseVal) baseVal.textContent = `${recommendedThickness} mm`;
         }
       }
     });
@@ -633,8 +642,8 @@ function recenterCamera() {
   // Distance calculée pour faire entrer toute la figurine (hauteur et largeur) avec marge de respiration
   const distY = (worldSize.y / 2) / Math.tan(vFovRad / 2) * 1.25;
   const distX = (Math.max(worldSize.x, worldSize.z) / 2) / Math.tan(hFovRad / 2) * 1.25;
-  // S'adapte parfaitement aux miniatures de 20mm comme aux grandes statuettes de 175mm
-  const dist = Math.max(distY, distX, 25);
+  // S'adapte parfaitement aux micro pions de 10mm comme aux grandes statuettes de 175mm
+  const dist = Math.max(distY, distX, 14);
 
   // Mire légèrement abaissée pour dégager le socle au-dessus de la barre métrique
   const targetY = worldCenter.y - (worldSize.y * 0.06);
@@ -642,13 +651,13 @@ function recenterCamera() {
 
   // Caméra positionnée face au modèle
   camera.position.set(0, targetY + (worldSize.y * 0.12), dist);
-  camera.near = 0.2;
+  camera.near = 0.1;
   camera.far = Math.max(3000, dist * 10);
   camera.updateProjectionMatrix();
 
-  // Contrôles de zoom fluides (molette et tactile, zoom très proche sur les détails de miniatures)
+  // Contrôles de zoom fluides (molette et tactile, zoom macro sur micro pions)
   controls.enableZoom = true;
-  controls.minDistance = 3;
+  controls.minDistance = 1.2;
   controls.maxDistance = dist * 5;
   controls.update();
 }
