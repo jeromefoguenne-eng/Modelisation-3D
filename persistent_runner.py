@@ -117,6 +117,18 @@ def is_uvicorn_running():
     except Exception:
         return False
 
+def is_tunnel_healthy(url):
+    if not url:
+        return False
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Studio3D-Watchdog/1.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            return resp.status in (200, 302, 401, 405)
+    except urllib.error.HTTPError as e:
+        return e.code in (200, 302, 401, 405)
+    except Exception:
+        return False
+
 def extract_tunnel_url():
     if not os.path.exists(TUNNEL_LOG):
         return None
@@ -133,7 +145,7 @@ def extract_tunnel_url():
 def main():
     print("=" * 70)
     print("  Studio 3D Figurine (Bambu Lab A1 Mini - RTX 4070 Ti)")
-    print("  SERVICE DE REDIRECTION PERMANENTE ACTIF (24/7)")
+    print("  SERVICE DE REDIRECTION PERMANENTE ACTIF (24/7 AUTO-HEALING)")
     print("=" * 70)
     print(f"LIEN PERMANENT POUR VOS ETUDIANTS : {PERMANENT_LINK_SHORT}")
     print(f"   (ou lien direct GitHub Pages   : {PERMANENT_LINK_PAGES})")
@@ -142,6 +154,7 @@ def main():
     uvicorn_proc = None
     cloudflared_proc = None
     last_known_url = None
+    failed_pings = 0
 
     while True:
         try:
@@ -157,7 +170,25 @@ def main():
                 )
                 time.sleep(3)
 
-            # 2. Vérifier / Démarrer Cloudflared
+            # 2. Vérifier activement si le tunnel public est vivant et accessible
+            if last_known_url:
+                if not is_tunnel_healthy(last_known_url):
+                    failed_pings += 1
+                    print(f"[Watchdog] Avertissement: tunnel public injoignable ({failed_pings}/2) : {last_known_url}")
+                    if failed_pings >= 2:
+                        print("[Watchdog] Tunnel Cloudflare expiré ou coupé. Relance immédiate d'un nouveau tunnel...")
+                        if cloudflared_proc and cloudflared_proc.poll() is None:
+                            try:
+                                cloudflared_proc.kill()
+                            except Exception:
+                                pass
+                        cloudflared_proc = None
+                        last_known_url = None
+                        failed_pings = 0
+                else:
+                    failed_pings = 0
+
+            # 3. Vérifier / Démarrer Cloudflared
             cf_alive = cloudflared_proc and cloudflared_proc.poll() is None
             if not cf_alive:
                 print("[Watchdog] Démarrage du tunnel Cloudflare sécurisé...")
@@ -181,10 +212,11 @@ def main():
                 )
                 time.sleep(6)
 
-            # 3. Extraire et synchroniser l'URL si elle a changé
+            # 4. Extraire et synchroniser l'URL si elle a changé
             url = extract_tunnel_url()
             if url and url != last_known_url:
                 last_known_url = url
+                failed_pings = 0
                 with open(PUBLIC_URL_FILE, "w", encoding="utf-8") as f:
                     f.write(url)
                 print(f"\n[Watchdog] >>> SERVEUR ACTIF : {url} <<<")
