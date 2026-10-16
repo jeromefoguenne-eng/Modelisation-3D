@@ -24,3 +24,7 @@ tunnel.log
 PUBLIC_URL.txt
 .github_token
 runner_debug.log
+watchdog.log
+uvicorn.log
+err.log
+runner_error.log
