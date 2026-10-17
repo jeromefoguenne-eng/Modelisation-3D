@@ -14,6 +14,11 @@ import socket
 import subprocess
 import urllib.request
 
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CLOUDFLARED_PATH = os.path.join(BASE_DIR, "cloudflared.exe")
 TUNNEL_LOG = os.path.join(BASE_DIR, "tunnel.log")
@@ -203,6 +208,18 @@ def start_cloudflared():
             return proc, url
     return proc, None
 
+def prevent_windows_sleep():
+    """
+    Empêche Windows d'endormir le CPU et le réseau (Mode Veille suspendu)
+    pendant que le serveur Studio 3D est actif (Away Mode).
+    """
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001 | 0x00000040)
+        log("[Watchdog] Protection anti-mise en veille Windows activée (CPU & réseau maintenus 24/7).")
+    except Exception as e:
+        log(f"[Watchdog] Note alimentation : {e}")
+
 def main():
     # 1. Mutex Singleton (évite les doublons)
     lock_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -212,6 +229,8 @@ def main():
     except Exception:
         log("[Watchdog] Une instance du Watchdog est déjà active sur le système. Arrêt.")
         sys.exit(0)
+
+    prevent_windows_sleep()
 
     log("=" * 70)
     log("  Studio 3D Figurine (Bambu Lab A1 Mini - RTX 4070 Ti)")

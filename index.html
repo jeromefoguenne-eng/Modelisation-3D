@@ -205,15 +205,38 @@
         const tunnelConfig = await fetchTunnelConfig();
 
         if (tunnelConfig && tunnelConfig.status === "online" && tunnelConfig.url) {
-          statusTitle.textContent = "Serveur en ligne ! Redirection...";
-          statusDesc.textContent = "Ouverture du Studio 3D en cours (GPU RTX 4070 Ti actif)...";
-          directBtn.href = tunnelConfig.url;
-          actionContainer.style.display = "block";
-          
-          // Redirection immédiate
-          setTimeout(() => {
-            window.location.replace(tunnelConfig.url);
-          }, 300);
+          statusTitle.textContent = "Vérification de la station de calcul...";
+          statusDesc.textContent = "Test de liaison directe avec la carte graphique RTX 4070 Ti...";
+
+          // Vérification réelle de connectivité avant toute redirection
+          let reachable = false;
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const pingResp = await fetch(tunnelConfig.url + "/api/health", {
+              method: "GET",
+              signal: controller.signal,
+              mode: "cors"
+            });
+            clearTimeout(timeoutId);
+            if (pingResp.ok) {
+              reachable = true;
+            }
+          } catch (e) {
+            reachable = false;
+          }
+
+          if (reachable) {
+            statusTitle.textContent = "Serveur en ligne ! Redirection...";
+            statusDesc.textContent = "Ouverture de Studio 3D (GPU RTX 4070 Ti connecté)...";
+            directBtn.href = tunnelConfig.url;
+            actionContainer.style.display = "block";
+            setTimeout(() => {
+              window.location.replace(tunnelConfig.url);
+            }, 300);
+          } else {
+            showOffline("Le serveur est en cours de synchronisation ou l'ordinateur de M. Foguenne est en veille.");
+          }
         } else {
           showOffline("Le serveur est actuellement en cours de démarrage ou en veille.");
         }
