@@ -192,6 +192,8 @@ def start_cloudflared():
         CLOUDFLARED_PATH,
         "tunnel",
         "--url", "http://127.0.0.1:8080",
+        "--retries", "10",
+        "--edge-ip-version", "auto",
         "--logfile", TUNNEL_LOG
     ]
     proc = subprocess.Popen(
@@ -261,7 +263,19 @@ def main():
                 )
                 time.sleep(3)
 
-            # 2. Adopter ou vérifier le tunnel Cloudflare
+            # 2. Détection de crash immédiat du processus cloudflared
+            if cloudflared_proc is not None and cloudflared_proc.poll() is not None:
+                log("[Watchdog] Processus Cloudflare interrompu. Relance immédiate...")
+                cloudflared_proc, new_url = start_cloudflared()
+                if new_url:
+                    last_known_url = new_url
+                    failed_pings = 0
+                    log(f"[Watchdog] Tunnel Cloudflare rétabli : {last_known_url}")
+                    with open(PUBLIC_URL_FILE, "w", encoding="utf-8") as f:
+                        f.write(last_known_url)
+                    update_github_live_url(last_known_url, status="online")
+
+            # 3. Adopter ou vérifier le tunnel Cloudflare
             if not last_known_url:
                 # Vérifier si un tunnel préexistant est encore actif et valide
                 candidate_url = extract_tunnel_url()
@@ -280,13 +294,12 @@ def main():
             else:
                 # Tester la santé du tunnel actif
                 if not is_tunnel_healthy(last_known_url):
-                    # Vérifier si Internet est disponible sur la machine
                     if not is_internet_available():
                         log("[Watchdog] Connexion Internet interrompue sur le PC. En attente de reconnexion...")
                     else:
                         failed_pings += 1
-                        log(f"[Watchdog] Alerte : Tunnel public injoignable ({failed_pings}/3) : {last_known_url}")
-                        if failed_pings >= 3:
+                        log(f"[Watchdog] Alerte : Tunnel public injoignable ({failed_pings}/2) : {last_known_url}")
+                        if failed_pings >= 2:
                             log("[Watchdog] Tunnel Cloudflare expiré ou rompu. Régénération immédiate...")
                             cloudflared_proc, new_url = start_cloudflared()
                             if new_url:
@@ -299,13 +312,13 @@ def main():
                 else:
                     failed_pings = 0
 
-            # 3. Heartbeat périodique (toutes les 30 minutes) pour rafraîchir le timestamp
-            if last_known_url and (time.time() - last_heartbeat_sync > 1800):
-                log("[Watchdog] Heartbeat 30min : rafraîchissement du statut en ligne...")
+            # 4. Heartbeat périodique (toutes les 15 minutes) pour maintenir le timestamp frais
+            if last_known_url and (time.time() - last_heartbeat_sync > 900):
+                log("[Watchdog] Heartbeat 15min : rafraîchissement du statut en ligne...")
                 update_github_live_url(last_known_url, status="online")
                 last_heartbeat_sync = time.time()
 
-            time.sleep(10)
+            time.sleep(5)
 
         except KeyboardInterrupt:
             log("[Watchdog] Arrêt manuel demandé.")

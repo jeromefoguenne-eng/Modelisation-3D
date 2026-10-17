@@ -1,13 +1,16 @@
 Set WshShell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 
-pythonwPath = "E:\ComfyUI\venv\Scripts\pythonw.exe"
-If Not fso.FileExists(pythonwPath) Then
-    pythonwPath = "pythonw.exe"
+pythonPath = "E:\ComfyUI\venv\Scripts\pythonw.exe"
+If Not fso.FileExists(pythonPath) Then
+    pythonPath = "E:\ComfyUI\venv\Scripts\python.exe"
+End If
+If Not fso.FileExists(pythonPath) Then
+    pythonPath = "pythonw.exe"
 End If
 
 scriptPath = "C:\Users\TrendingPC\.gemini\antigravity\scratch\Modelisation-3D\persistent_runner.py"
 workingDir = "C:\Users\TrendingPC\.gemini\antigravity\scratch\Modelisation-3D"
 
 WshShell.CurrentDirectory = workingDir
-WshShell.Run """" & pythonwPath & """ """ & scriptPath & """", 0, False
+WshShell.Run """" & pythonPath & """ """ & scriptPath & """", 0, False

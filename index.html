@@ -158,20 +158,29 @@
     const actionContainer = document.getElementById("action-container");
     const directBtn = document.getElementById("direct-btn");
 
-    async function fetchTunnelConfig() {
-      const timestamp = Date.now();
-
-      // Source 1 : raw.githubusercontent.com (aucun quota de requêtes, JSON direct)
+    async function pingHealth(url) {
+      if (!url) return false;
       try {
-        const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/active_tunnel.json?t=${timestamp}`;
-        const resp = await fetch(rawUrl, { cache: "no-store" });
-        if (resp.ok) {
-          const cfg = await resp.json();
-          if (cfg && cfg.url) return cfg;
-        }
-      } catch (e) {}
+        const cleanUrl = url.replace(/\/+$/, "");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const resp = await fetch(cleanUrl + "/api/health", {
+          method: "GET",
+          signal: controller.signal,
+          mode: "cors"
+        });
+        clearTimeout(timeoutId);
+        return resp.ok;
+      } catch (e) {
+        return false;
+      }
+    }
 
-      // Source 2 : api.github.com
+    async function fetchCandidateUrls() {
+      const timestamp = Date.now();
+      const urls = new Set();
+
+      // Source 1 : api.github.com (TEMPS RÉEL, zéro mise en cache CDN)
       try {
         const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/active_tunnel.json?t=${timestamp}`;
         const resp = await fetch(apiUrl, {
@@ -182,64 +191,56 @@
           const data = await resp.json();
           if (data && data.content) {
             const cfg = JSON.parse(atob(data.content));
-            if (cfg && cfg.url) return cfg;
+            if (cfg && cfg.url) urls.add(cfg.url);
           }
+        }
+      } catch (e) {}
+
+      // Source 2 : raw.githubusercontent.com (secours)
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/active_tunnel.json?nocache=${timestamp}`;
+        const resp = await fetch(rawUrl, { cache: "no-store" });
+        if (resp.ok) {
+          const cfg = await resp.json();
+          if (cfg && cfg.url) urls.add(cfg.url);
         }
       } catch (e) {}
 
       // Source 3 : GitHub Pages local
       try {
-        const pagesUrl = `./active_tunnel.json?t=${timestamp}`;
+        const pagesUrl = `./active_tunnel.json?nocache=${timestamp}`;
         const resp = await fetch(pagesUrl, { cache: "no-store" });
         if (resp.ok) {
           const cfg = await resp.json();
-          if (cfg && cfg.url) return cfg;
+          if (cfg && cfg.url) urls.add(cfg.url);
         }
       } catch (e) {}
 
-      return null;
+      return Array.from(urls);
     }
 
     async function checkTunnel() {
       try {
-        const tunnelConfig = await fetchTunnelConfig();
+        statusTitle.textContent = "Vérification de la station de calcul...";
+        statusDesc.textContent = "Recherche de la connexion active avec la carte graphique RTX 4070 Ti...";
 
-        if (tunnelConfig && tunnelConfig.status === "online" && tunnelConfig.url) {
-          statusTitle.textContent = "Vérification de la station de calcul...";
-          statusDesc.textContent = "Test de liaison directe avec la carte graphique RTX 4070 Ti...";
+        const candidateUrls = await fetchCandidateUrls();
 
-          // Vérification réelle de connectivité avant toute redirection
-          let reachable = false;
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3500);
-            const pingResp = await fetch(tunnelConfig.url + "/api/health", {
-              method: "GET",
-              signal: controller.signal,
-              mode: "cors"
-            });
-            clearTimeout(timeoutId);
-            if (pingResp.ok) {
-              reachable = true;
-            }
-          } catch (e) {
-            reachable = false;
-          }
-
-          if (reachable) {
+        for (const url of candidateUrls) {
+          const isAlive = await pingHealth(url);
+          if (isAlive) {
             statusTitle.textContent = "Serveur en ligne ! Redirection...";
             statusDesc.textContent = "Ouverture de Studio 3D (GPU RTX 4070 Ti connecté)...";
-            directBtn.href = tunnelConfig.url;
+            directBtn.href = url;
             actionContainer.style.display = "block";
             setTimeout(() => {
-              window.location.replace(tunnelConfig.url);
-            }, 300);
-          } else {
-            showOffline("Le serveur est en cours de synchronisation ou l'ordinateur de M. Foguenne est en veille.");
+              window.location.replace(url);
+            }, 250);
+            return;
           }
-        } else {
-          showOffline("Le serveur est actuellement en cours de démarrage ou en veille.");
         }
+
+        showOffline("Le serveur est en cours de synchronisation ou l'ordinateur de M. Foguenne est en veille.");
       } catch (err) {
         showOffline("Le serveur est temporairement inaccessible.");
       }
@@ -249,15 +250,15 @@
       spinner.style.display = "none";
       statusTitle.innerHTML = "🔴 Serveur Studio 3D hors-ligne";
       statusTitle.style.color = "#ef4444";
-      statusDesc.innerHTML = `${message}<br><br>Veuillez demander à <strong>M. Foguenne</strong> d'activer l'application sur son ordinateur pour lancer la carte graphique.<br><br><small>Vérification automatique toutes les 5 secondes...</small>`;
+      statusDesc.innerHTML = `${message}<br><br>Vérification continue en arrière-plan...<br><br><small>Test automatique toutes les 4 secondes...</small>`;
       
-      // Réessayer automatiquement après 5 secondes
+      // Réessayer automatiquement après 4 secondes
       setTimeout(() => {
         spinner.style.display = "block";
         statusTitle.textContent = "Reconnexion en cours...";
         statusTitle.style.color = "";
         checkTunnel();
-      }, 5000);
+      }, 4000);
     }
 
     // Lancer la détection dès l'ouverture
