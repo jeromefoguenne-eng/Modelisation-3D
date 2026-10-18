@@ -145,17 +145,32 @@ def background_generation_task(
         is_local_gpu_available = os.path.exists(r"E:\ComfyUI") and not os.environ.get("SPACE_ID")
 
         if mode == "triposr_fast":
-            update_progress(20, "Modélisation Express 360° en cours (TripoSR GPU ~5s)...")
-            mesh = generate_figurine_360_local(
-                image_path=image_path,
-                target_height_mm=target_height_mm,
-                include_base=include_base,
-                base_height_mm=base_height_mm,
-                base_size_mm=base_size_mm,
-                base_shape=base_shape,
-                resolution=450,
-                progress_callback=update_progress
-            )
+            if is_local_gpu_available:
+                update_progress(20, "Modélisation Express 360° en cours (TripoSR GPU ~5s)...")
+                mesh = generate_figurine_360_local(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    resolution=450,
+                    progress_callback=update_progress
+                )
+            else:
+                update_progress(20, "Modélisation Cloud Rapide (Hunyuan3D-2 Fast)...")
+                mesh = generate_figurine_360_hunyuan(
+                    image_path=image_path,
+                    target_height_mm=target_height_mm,
+                    include_base=include_base,
+                    base_height_mm=base_height_mm,
+                    base_size_mm=base_size_mm,
+                    base_shape=base_shape,
+                    steps=20,
+                    octree_resolution=256,
+                    hf_token=hf_token,
+                    progress_callback=update_progress
+                )
         elif mode == "hunyuan_360":
             try:
                 octree_res = max(256, min(512, int(resolution)))

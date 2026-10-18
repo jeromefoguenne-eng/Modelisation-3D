@@ -19,6 +19,7 @@ inspect_app.py
 *.obj
 *.3mf
 static/demo/*.glb
+!static/demo/Chien_Avec_Socle_Hunyuan.glb
 static/demo/*.stl
 tunnel.log
 PUBLIC_URL.txt
