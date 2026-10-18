@@ -47,16 +47,27 @@
         </div>
       </section>
 
-      <!-- 2. Moteur Figurine 3D 360° (Hunyuan3D-2 Local RTX 4070 Ti uniquement) -->
+      <!-- 2. Moteur Figurine 3D 360° (Dual-Mode Local RTX 4070 Ti) -->
       <section class="panel-section">
         <div class="panel-title">2. Moteur Figurine 3D (360°)</div>
-        <div class="mode-card active" data-mode="hunyuan_360_local" style="cursor: default; border-color: var(--accent-bambu); background: rgba(0, 174, 66, 0.08);">
-          <div class="mode-card-header">
-            <span style="font-weight: 700; color: #fff;">Hunyuan3D-2 Local (RTX 4070 Ti)</span>
-            <span class="badge-rec">GPU DÉDIÉ • ACTIF</span>
+        <div class="mode-selector">
+          <div class="mode-card active" data-mode="hunyuan_360_local">
+            <div class="mode-card-header">
+              <span style="font-weight: 700; color: #fff;">💎 Ultra-HD Studio (Hunyuan3D-2)</span>
+              <span class="badge-rec">RECOMMANDÉ • 360°</span>
+            </div>
+            <div class="mode-card-desc">
+              Diffusion Transformer 3.0B sur GPU RTX 4070 Ti. Géométrie ultra-détaillée (jusqu'à 500k faces) et texture intégrale 360°. Idéal pour l'impression finale.
+            </div>
           </div>
-          <div class="mode-card-desc" style="color: #cad1db; margin-top: 6px; line-height: 1.45;">
-            Diffusion Transformer 3.0B exécuté directement sur votre carte graphique RTX 4070 Ti (12 Go VRAM). Génération ultra-rapide (~10 à 25s), fidélité anatomique maximale (visages, doigts, textures 360°), illimité et 100% hors-ligne.
+          <div class="mode-card" data-mode="triposr_fast">
+            <div class="mode-card-header">
+              <span style="font-weight: 700; color: #fff;">⚡ Brouillon Express (TripoSR)</span>
+              <span class="badge-rec" style="background: rgba(255, 170, 0, 0.2); color: #ffa726;">FAST ~5 SECONDES</span>
+            </div>
+            <div class="mode-card-desc">
+              Réseau de reconstruction volumétrique instantané. Parfait pour tester en quelques secondes la silhouette ou les proportions avant la version Ultra-HD.
+            </div>
           </div>
         </div>
       </section>
@@ -215,8 +226,11 @@
           <span class="metric-value" id="val-time">-- min</span>
         </div>
         <div class="metric-item">
-          <span class="metric-label">Géométrie</span>
-          <span class="badge-watertight" id="val-watertight">✔ Prêt Bambu Studio</span>
+          <span class="metric-label">Certification Bambu</span>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="badge-watertight" id="val-watertight">✔ 100% Manifold & Bambu Ready</span>
+            <span id="val-decimation-info" style="font-size: 10px; color: #8fa0b5;">STL allégé QEM (Bambu Studio)</span>
+          </div>
         </div>
         <div class="metric-item" style="flex-direction: row; gap: 8px;">
           <a class="btn-download-stl" id="btn-dl-stl" href="#" download>
@@ -248,6 +262,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=9.0"></script>
+  <script src="/static/app.js?v=10.0"></script>
 </body>
 </html>

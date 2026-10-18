@@ -77,7 +77,9 @@ def prepare_image_for_360(image_path: str, foreground_ratio: float = 0.85) -> Im
 
     arr = np.array(square_rgba).astype(np.float32) / 255.0
     rgb = arr[:, :, :3] * arr[:, :, 3:4] + (1.0 - arr[:, :, 3:4]) * 0.5
-    return Image.fromarray((rgb * 255.0).astype(np.uint8)).convert("RGB")
+    res_img = Image.fromarray((rgb * 255.0).astype(np.uint8)).convert("RGB")
+    res_img._clean_rgba = square_rgba
+    return res_img
 
 
 def postprocess_360_figurine(
@@ -466,12 +468,12 @@ def generate_figurine_360_local(
         from rembg import remove
         from scipy.ndimage import map_coordinates, distance_transform_edt
         
-        raw_src = Image.open(image_path).convert("RGBA")
-        arr_raw = np.array(raw_src)
-        if np.mean(arr_raw[:, :, 3] > 240) > 0.85:
-            clean_tex_img = remove(raw_src)
+        if hasattr(in_img, "_clean_rgba") and in_img._clean_rgba is not None:
+            clean_tex_img = in_img._clean_rgba
         else:
-            clean_tex_img = raw_src
+            raw_src = Image.open(image_path).convert("RGBA")
+            arr_raw = np.array(raw_src)
+            clean_tex_img = remove(raw_src) if np.mean(arr_raw[:, :, 3] > 240) > 0.85 else raw_src
 
         arr_tex = np.array(clean_tex_img)
         alpha = arr_tex[:, :, 3] > 30

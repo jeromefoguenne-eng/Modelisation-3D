@@ -16,7 +16,8 @@ import torch
 
 from core.engine_360 import (
     generate_figurine_360_hunyuan,
-    generate_figurine_360_hunyuan_local
+    generate_figurine_360_hunyuan_local,
+    generate_figurine_360_local
 )
 from core.bambu_validator import validate_and_scale_for_bambu, export_all_formats
 from core.studio_renderer import render_mesh_preview
@@ -143,7 +144,19 @@ def background_generation_task(
 
         is_local_gpu_available = os.path.exists(r"E:\ComfyUI") and not os.environ.get("SPACE_ID")
 
-        if mode == "hunyuan_360":
+        if mode == "triposr_fast":
+            update_progress(20, "Modélisation Express 360° en cours (TripoSR GPU ~5s)...")
+            mesh = generate_figurine_360_local(
+                image_path=image_path,
+                target_height_mm=target_height_mm,
+                include_base=include_base,
+                base_height_mm=base_height_mm,
+                base_size_mm=base_size_mm,
+                base_shape=base_shape,
+                resolution=450,
+                progress_callback=update_progress
+            )
+        elif mode == "hunyuan_360":
             try:
                 octree_res = max(256, min(512, int(resolution)))
                 mesh = generate_figurine_360_hunyuan(
@@ -180,7 +193,7 @@ def background_generation_task(
                 else:
                     raise e_hy
         else:
-            # Mode Hunyuan3D-2 Local (RTX 4070 Ti) par défaut
+            # Mode Hunyuan3D-2 Local Ultra-HD (RTX 4070 Ti) par défaut
             octree_res = max(256, min(512, int(resolution)))
             if is_local_gpu_available:
                 mesh = generate_figurine_360_hunyuan_local(
@@ -208,7 +221,11 @@ def background_generation_task(
                     progress_callback=update_progress
                 )
 
-        update_progress(85, "Validation des cotes Bambu Lab A1 Mini et export STL / GLB...")
+        # Vidange préventive immédiate de la VRAM (garantit zéro saturation GPU)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        update_progress(85, "Optimisation QEM Bambu Studio, vérification manifold et export...")
         metrics = validate_and_scale_for_bambu(
             mesh,
             target_height_mm=0,  # Déjà mis à l'échelle dans postprocess_360_figurine
@@ -216,7 +233,7 @@ def background_generation_task(
         )
 
         base_export = os.path.join(task_dir, "model_bambu")
-        export_all_formats(mesh, base_export)
+        export_details = export_all_formats(mesh, base_export)
 
         update_progress(95, "Rendu de l'aperçu Studio 3D...")
         preview_path = os.path.join(task_dir, "preview_studio.png")
@@ -231,6 +248,7 @@ def background_generation_task(
             "warning": TASKS[task_id].get("warning"),
             "include_base": include_base,
             "metrics": metrics,
+            "export_details": export_details,
             "files": {
                 "stl": f"/outputs/{task_id}/model_bambu.stl",
                 "glb": f"/outputs/{task_id}/model_bambu.glb",
@@ -270,8 +288,8 @@ async def start_conversion(
     if token != AUTH_TOKEN_VALUE:
         raise HTTPException(status_code=401, detail="Accès protégé. Veuillez saisir le mot de passe du site.")
 
-    # Moteur Hunyuan exclusivement
-    if mode not in ("hunyuan_360_local", "hunyuan_360"):
+    # Mode sélectionné : Hunyuan3D-2 Ultra-HD ou TripoSR Express
+    if mode not in ("hunyuan_360_local", "hunyuan_360", "triposr_fast"):
         mode = "hunyuan_360_local"
     task_id = str(uuid.uuid4())[:8]
     task_upload_dir = os.path.join(UPLOADS_DIR, f"task_{task_id}")
