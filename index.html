@@ -3,264 +3,281 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studio 3D Figurine — M. Jérôme Foguenne</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
-  <style>
-    :root {
-      --bg: #090d16;
-      --card-bg: rgba(18, 24, 38, 0.85);
-      --border: rgba(255, 255, 255, 0.1);
-      --primary: #00e599;
-      --primary-glow: rgba(0, 229, 153, 0.3);
-      --text: #f0f4fc;
-      --text-muted: #8a99b5;
-      --accent: #3b82f6;
-      --error: #ef4444;
+  <title>Studio 3D Figurine 360° — Bambu Lab A1 Mini (Édition Cloud)</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+  <link rel="stylesheet" href="static/style.css?v=6.0">
+  <!-- Correctif CORS universel pour appels directs navigateur vers Hugging Face Spaces (*.hf.space) -->
+  <script>
+    (function() {
+      const origFetch = window.fetch;
+      window.fetch = function(input, init) {
+        let url = typeof input === "string" ? input : (input && input.url ? input.url : "");
+        if (url.includes(".hf.space") || url.includes("huggingface.co")) {
+          init = Object.assign({}, init || {}, { credentials: "omit" });
+          if (input instanceof Request) {
+            input = new Request(input, { credentials: "omit" });
+          }
+        }
+        return origFetch.call(this, input, init);
+      };
+      if (window.EventSource) {
+        const OrigEventSource = window.EventSource;
+        window.EventSource = function(url, config) {
+          if (typeof url === "string" && (url.includes(".hf.space") || url.includes("huggingface.co"))) {
+            config = Object.assign({}, config || {}, { withCredentials: false });
+          }
+          return new OrigEventSource(url, config);
+        };
+        window.EventSource.prototype = OrigEventSource.prototype;
+      }
+    })();
+  </script>
+  <!-- Three.js, Contrôles & Exportateur STL -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+  <!-- Client Cloud IA Gradio (Hugging Face ZeroGPU) -->
+  <script type="module">
+    try {
+      const module = await import("https://cdn.jsdelivr.net/npm/@gradio/client@1.3.0/dist/index.min.js");
+      window.GradioClient = module.Client;
+    } catch (e) {
+      console.warn("GradioClient pre-load notice:", e);
     }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    body {
-      background: radial-gradient(circle at 50% 20%, #152238 0%, var(--bg) 70%);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 520px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px var(--primary-glow);
-      position: relative;
-    }
-    .badge-bambu {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0, 229, 153, 0.12);
-      border: 1px solid var(--primary);
-      color: var(--primary);
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      letter-spacing: 0.5px;
-    }
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #ffffff 40%, #00e599 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-bottom: 28px;
-    }
-    .status-box {
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 25px;
-    }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(0, 229, 153, 0.2);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .status-title {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .status-desc {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      line-height: 1.45;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: var(--primary);
-      color: #090d16;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 12px 24px;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      border: none;
-      width: 100%;
-    }
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 229, 153, 0.4);
-    }
-    .footer {
-      margin-top: 25px;
-      font-size: 0.8rem;
-      color: #64748b;
-    }
-  </style>
+  </script>
 </head>
 <body>
-  <div class="card">
-    <div class="badge-bambu">⚡ Bambu Lab A1 Mini — GPU RTX 4070 Ti</div>
-    <h1>Studio 3D Figurine</h1>
-    <div class="subtitle">Portail Permanent — Cours de M. Foguenne</div>
 
-    <div class="status-box" id="status-box">
-      <div class="spinner" id="spinner"></div>
-      <div class="status-title" id="status-title">Connexion au serveur Studio 3D...</div>
-      <div class="status-desc" id="status-desc">Recherche de la station de calcul active...</div>
+  <header>
+    <div class="logo-container">
+      <span class="logo-badge">FIGURINE 360° CLOUD</span>
+      <h1>Studio 3D Haute Précision — Bambu Lab A1 Mini</h1>
     </div>
-
-    <div id="action-container" style="display: none;">
-      <a id="direct-btn" href="#" class="btn">🚀 Entrer dans le Studio 3D</a>
+    <div class="gpu-status">
+      <div class="status-dot" id="gpu-dot" style="background-color: #00ea55;"></div>
+      <span id="gpu-text">☁️ IA Cloud A100 (Hugging Face) • En Ligne 24/7</span>
     </div>
+  </header>
 
-    <div class="footer">
-      Lien permanent officiel : <strong>https://tinyurl.com/studio3d-edufog</strong>
+  <main class="main-layout">
+    <!-- Colonne latérale de commande -->
+    <aside class="sidebar">
+      <!-- 1. Sélection Image -->
+      <section class="panel-section">
+        <div class="panel-title">1. Image Source (2D)</div>
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">📷</div>
+          <p>Glissez-déposez une photo ou <span class="highlight">parcourez</span></p>
+          <input type="file" id="file-input" accept="image/*" style="display: none;">
+        </div>
+
+        <div class="image-preview-box" id="preview-box">
+          <img id="source-preview" src="" alt="Aperçu source">
+        </div>
+
+        <div style="margin-top: 14px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Ou cliquez sur une image de démo :</div>
+          <div class="demo-strip" id="demo-strip">
+            <!-- Détecté dynamiquement -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Moteur IA Cloud 360° -->
+      <section class="panel-section">
+        <div class="panel-title">2. Moteur Figurine 3D (360°)</div>
+        <div class="mode-selector">
+          <div class="mode-card active" data-mode="hunyuan_cloud" style="border-color: var(--accent-bambu); background: rgba(0, 174, 66, 0.08);">
+            <div class="mode-card-header">
+              <span style="font-weight: 700; color: #fff;">💎 Tencent Hunyuan3D-2.1 Cloud</span>
+              <span class="badge-rec" style="background: rgba(0, 229, 153, 0.2); color: #00ea55;">CLOUD A100 • 24/7</span>
+            </div>
+            <div class="mode-card-desc">
+              Diffusion Transformer 3.0B exécuté directement sur cluster GPU Nvidia A100 dans le Cloud. 100% gratuit, permanent, sans solliciter votre ordinateur.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Socle & Dimensions Bambu Lab A1 Mini -->
+      <section class="panel-section">
+        <div class="panel-title">3. Socle & Dimensions (Bambu A1 Mini)</div>
+
+        <!-- Option Avec ou Sans Socle -->
+        <div class="form-group" style="margin-top: 0; margin-bottom: 14px;">
+          <label style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Configuration du Socle :</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" class="tool-btn active" id="btn-with-base" style="border: 1px solid var(--border-color); padding: 10px; font-weight: 600;">
+              🟢 Avec Socle
+            </button>
+            <button type="button" class="tool-btn" id="btn-without-base" style="border: 1px solid var(--border-color); padding: 10px; font-weight: 600;">
+              ⚪ Sans Socle
+            </button>
+          </div>
+        </div>
+
+        <!-- Curseur Taille / Diamètre du socle -->
+        <div class="form-group" id="base-size-group">
+          <div class="form-row">
+            <label for="base-size-slider">Taille / Diamètre du socle :</label>
+            <span id="base-size-val" style="font-weight: 600; color: var(--accent-bambu);">40 mm</span>
+          </div>
+          <input type="range" id="base-size-slider" min="5" max="160" value="40" step="1">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            <span>Micro (5 mm)</span>
+            <span>Standard (40 mm)</span>
+            <span>Grand (160 mm)</span>
+          </div>
+        </div>
+
+        <!-- Forme du socle -->
+        <div class="form-group" id="base-shape-group" style="margin-bottom: 12px;">
+          <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">Forme du socle :</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+            <button type="button" class="tool-btn active base-shape-btn" data-shape="auto" style="padding: 6px; font-size: 11px;">Auto</button>
+            <button type="button" class="tool-btn base-shape-btn" data-shape="round" style="padding: 6px; font-size: 11px;">Rond</button>
+            <button type="button" class="tool-btn base-shape-btn" data-shape="oval" style="padding: 6px; font-size: 11px;">Ovale</button>
+          </div>
+        </div>
+
+        <!-- Curseur Épaisseur du socle -->
+        <div class="form-group" id="base-height-group">
+          <div class="form-row">
+            <label for="base-slider">Épaisseur du socle :</label>
+            <span id="base-val" style="font-weight: 600; color: var(--accent-bambu);">3 mm</span>
+          </div>
+          <input type="range" id="base-slider" min="1.0" max="12" value="3" step="0.5">
+        </div>
+
+        <div class="form-group">
+          <div class="form-row">
+            <label for="height-slider">Hauteur de la figurine / pion :</label>
+            <span id="height-val" style="font-weight: 600; color: var(--accent-bambu);">100 mm</span>
+          </div>
+          <input type="range" id="height-slider" min="10" max="175" value="100" step="1">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            <span>Micro pion (10 mm)</span>
+            <span>Standard (100 mm)</span>
+            <span>Maxi (175 mm)</span>
+          </div>
+          <!-- Préréglages rapides de taille -->
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px;">
+            <button type="button" class="tool-btn height-preset-btn" data-height="10" style="padding: 5px 1px; font-size: 10px;" title="Micro pion d'échecs ou de plateau">♟️ 10 mm</button>
+            <button type="button" class="tool-btn height-preset-btn" data-height="20" style="padding: 5px 1px; font-size: 10px;" title="Petite figurine miniature">🔍 20 mm</button>
+            <button type="button" class="tool-btn height-preset-btn" data-height="28" style="padding: 5px 1px; font-size: 10px;" title="Pion de jeu de rôle / Tabletop">🎲 28 mm</button>
+            <button type="button" class="tool-btn height-preset-btn" data-height="50" style="padding: 5px 1px; font-size: 10px;" title="Statuette moyenne">📏 50 mm</button>
+            <button type="button" class="tool-btn height-preset-btn active" data-height="100" style="padding: 5px 1px; font-size: 10px;" title="Format standard">⭐ 100 mm</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bouton d'action -->
+      <button type="button" class="btn-generate" id="btn-generate" disabled>
+        <span>🧊 Générer la Figurine 3D (360°)</span>
+      </button>
+    </aside>
+
+    <!-- Zone principale : Visualiseur 3D et Métriques -->
+    <section class="viewport-container">
+      <!-- Barre d'outils 3D -->
+      <div class="viewport-toolbar">
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn active" data-mat="white" id="btn-pla" title="Cliquer pour changer la couleur du filament PLA" style="display: inline-flex; align-items: center; gap: 7px; position: relative;">
+            <span id="pla-color-preview" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #f0f2f5; border: 1.5px solid #a0aec0; box-shadow: 0 0 3px rgba(0,0,0,0.3);"></span>
+            <span id="pla-label">PLA Blanc</span>
+            <input type="color" id="pla-color-picker" value="#f0f2f5" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;">
+          </button>
+          <button type="button" class="tool-btn" data-mat="vertex">🎨 Couleurs 360° Studio</button>
+          <button type="button" class="tool-btn" data-mat="bambu-green">Vert Bambu</button>
+          <button type="button" class="tool-btn" data-mat="bronze">Bronze</button>
+          <button type="button" class="tool-btn" data-mat="marble">Marbre</button>
+          <button type="button" class="tool-btn" data-mat="wireframe">Maillage 3D</button>
+        </div>
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn" id="btn-autorotate">🔄 Rotation 360°: OFF</button>
+          <button type="button" class="tool-btn" id="btn-reset-cam">Recentrer</button>
+        </div>
+      </div>
+
+      <!-- Container Canvas Three.js -->
+      <div id="canvas-container">
+        <div class="empty-viewport" id="empty-viewport">
+          <div class="empty-icon">🧍</div>
+          <h3>Prêt pour la modélisation 360° Ultra-HD</h3>
+          <p>Sélectionnez une image à gauche puis cliquez sur <strong>Générer la Figurine 3D (360°)</strong>.</p>
+        </div>
+      </div>
+
+      <!-- Écran de chargement / progression -->
+      <div class="progress-overlay" id="progress-overlay">
+        <div class="progress-card">
+          <div class="spinner"></div>
+          <h3 id="progress-title">Sculpture de la Figurine 360°...</h3>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+          </div>
+          <div class="progress-step-text" id="progress-step">Connexion au cluster IA Cloud A100...</div>
+        </div>
+      </div>
+
+      <!-- Panneau des métriques physiques Bambu A1 Mini -->
+      <div class="metrics-panel" id="metrics-panel">
+        <div class="metric-item">
+          <span class="metric-label">Dimensions (L×P×H)</span>
+          <span class="metric-value" id="val-dims">-- × -- × -- mm</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Volume 3D</span>
+          <span class="metric-value" id="val-volume">-- cm³</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Masse PLA estimée</span>
+          <span class="metric-value" id="val-weight">-- g</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Temps Bambu A1 Mini</span>
+          <span class="metric-value" id="val-time">-- min</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Certification Bambu</span>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="badge-watertight" id="val-watertight">✔ 100% Manifold & Bambu Ready</span>
+            <span id="val-decimation-info" style="font-size: 10px; color: #8fa0b5;">STL Slicer Optimisé (Bambu Studio)</span>
+          </div>
+        </div>
+        <div class="metric-item" style="flex-direction: row; gap: 8px;">
+          <a class="btn-download-stl" id="btn-dl-stl" href="#">
+            📥 Télécharger STL (Bambu Studio)
+          </a>
+          <a class="btn-download-stl" id="btn-dl-glb" href="#" target="_blank" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+            GLB
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal d'authentification par mot de passe -->
+  <div id="auth-overlay" class="auth-overlay" style="display: none;">
+    <div class="auth-card">
+      <div class="auth-icon">🔒</div>
+      <h2>Accès Sécurisé</h2>
+      <p class="auth-subtitle">Ce studio 3D est réservé aux étudiants de Jérôme Foguenne.<br>Veuillez entrer le mot de passe d'accès pour déverrouiller la modélisation.</p>
+      
+      <form id="auth-form">
+        <div class="auth-input-group">
+          <input type="password" id="site-password-input" placeholder="Mot de passe d'accès..." autocomplete="current-password" autofocus required>
+          <button type="button" id="btn-toggle-pwd" title="Afficher/Masquer le mot de passe">👁️</button>
+        </div>
+        <div id="auth-error-msg" class="auth-error"></div>
+        <button type="submit" id="btn-submit-auth" class="btn-primary" style="width: 100%; margin-top: 14px; padding: 12px; font-size: 14px; justify-content: center;">
+          Déverrouiller l'accès
+        </button>
+      </form>
     </div>
   </div>
 
-  <script>
-    const GITHUB_REPO = "jeromefoguenne-eng/Modelisation-3D";
-    const statusTitle = document.getElementById("status-title");
-    const statusDesc = document.getElementById("status-desc");
-    const spinner = document.getElementById("spinner");
-    const actionContainer = document.getElementById("action-container");
-    const directBtn = document.getElementById("direct-btn");
-
-    async function pingHealth(url) {
-      if (!url) return false;
-      try {
-        const cleanUrl = url.replace(/\/+$/, "");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
-        const resp = await fetch(cleanUrl + "/api/health", {
-          method: "GET",
-          signal: controller.signal,
-          mode: "cors"
-        });
-        clearTimeout(timeoutId);
-        return resp.ok;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    async function fetchCandidateUrls() {
-      const timestamp = Date.now();
-      const urls = new Set();
-
-      // Source 1 : api.github.com (TEMPS RÉEL, zéro mise en cache CDN)
-      try {
-        const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/active_tunnel.json?t=${timestamp}`;
-        const resp = await fetch(apiUrl, {
-          cache: "no-store",
-          headers: { "Accept": "application/vnd.github.v3+json" }
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data && data.content) {
-            const cfg = JSON.parse(atob(data.content));
-            if (cfg && cfg.url) urls.add(cfg.url);
-          }
-        }
-      } catch (e) {}
-
-      // Source 2 : raw.githubusercontent.com (secours)
-      try {
-        const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/active_tunnel.json?nocache=${timestamp}`;
-        const resp = await fetch(rawUrl, { cache: "no-store" });
-        if (resp.ok) {
-          const cfg = await resp.json();
-          if (cfg && cfg.url) urls.add(cfg.url);
-        }
-      } catch (e) {}
-
-      // Source 3 : GitHub Pages local
-      try {
-        const pagesUrl = `./active_tunnel.json?nocache=${timestamp}`;
-        const resp = await fetch(pagesUrl, { cache: "no-store" });
-        if (resp.ok) {
-          const cfg = await resp.json();
-          if (cfg && cfg.url) urls.add(cfg.url);
-        }
-      } catch (e) {}
-
-      return Array.from(urls);
-    }
-
-    async function checkTunnel() {
-      try {
-        statusTitle.textContent = "Vérification de la station de calcul...";
-        statusDesc.textContent = "Recherche de la connexion active avec le serveur Studio 3D...";
-
-        const candidateUrls = await fetchCandidateUrls();
-
-        for (const url of candidateUrls) {
-          const isAlive = await pingHealth(url);
-          if (isAlive) {
-            statusTitle.textContent = "Serveur en ligne ! Redirection...";
-            statusDesc.textContent = "Ouverture immédiate du Studio 3D...";
-            directBtn.href = url;
-            actionContainer.style.display = "block";
-            setTimeout(() => {
-              window.location.replace(url);
-            }, 150);
-            return;
-          }
-        }
-
-        showOffline("Le serveur est en cours de démarrage ou l'ordinateur de M. Foguenne est éteint.");
-      } catch (err) {
-        showOffline("Le serveur est temporairement inaccessible.");
-      }
-    }
-
-    function showOffline(message) {
-      spinner.style.display = "none";
-      statusTitle.innerHTML = "🔴 Serveur Studio 3D hors-ligne";
-      statusTitle.style.color = "#ef4444";
-      statusDesc.innerHTML = `${message}<br><br>Test automatique de reconnexion en cours...`;
-      
-      setTimeout(() => {
-        spinner.style.display = "block";
-        statusTitle.textContent = "Reconnexion en cours...";
-        statusTitle.style.color = "";
-        checkTunnel();
-      }, 3500);
-    }
-
-    checkTunnel();
-  </script>
+  <script src="static/client_app.js?v=3.0"></script>
 </body>
 </html>
