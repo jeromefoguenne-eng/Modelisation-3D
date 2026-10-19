@@ -143,7 +143,7 @@ def export_all_formats(mesh: trimesh.Trimesh, base_filepath_no_ext: str) -> dict
             trimesh.repair.fix_normals(mesh_stl)
             trimesh.repair.fill_holes(mesh_stl)
             decimated = True
-            print(f"[bambu_validator] ✅ Décimation QEM réussie : STL réduit à {len(mesh_stl.faces)} faces.")
+            print(f"[bambu_validator] [OK] Decimation QEM reussie : STL reduit a {len(mesh_stl.faces)} faces.")
         except Exception as e_dec:
             print(f"[bambu_validator] Note simplification QEM : {e_dec}")
 
